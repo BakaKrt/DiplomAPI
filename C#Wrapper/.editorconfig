@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# SYSLIB1054: Используйте \"LibraryImportAttribute\" вместо \"DllImportAttribute\" для генерирования кода маршализации P/Invoke во время компиляции
+dotnet_diagnostic.SYSLIB1054.severity = none
+
+# CA1401: Методы P/Invoke не должны быть видимыми
+dotnet_diagnostic.CA1401.severity = none
