@@ -5,7 +5,18 @@
         static unsafe void Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
-            Flat2DByte Matrix = new(10, 10);
+
+            UInt64 SizeX = 10, SizeY = 10;
+
+            Flat2DByte Matrix = new(SizeX, SizeY);
+
+            Random rand = new();
+
+            for(UInt64 x = 0; x < SizeX * SizeY; x++)
+            {
+                Matrix[x] = (byte)rand.Next(255);
+            }
+
             //Matrix[0, 0] = 255;
             //Matrix[0, 1] = 1;
 
@@ -17,6 +28,7 @@
             Console.WriteLine("\n\n\n");
 
             Console.WriteLine(t);
+
             //Console.WriteLine(Matrix);
         }
     }

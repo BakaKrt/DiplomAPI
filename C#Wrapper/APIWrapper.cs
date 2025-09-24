@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System.Collections;
+using System.Data.Common;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -179,6 +180,7 @@ namespace C_Wrapper
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+            Console.WriteLine($"{nameof(Flat2DByte)}:Dispose");
         }
 
         protected virtual unsafe void Dispose(bool disposing)
@@ -207,10 +209,11 @@ namespace C_Wrapper
         }
     }
 
-    public class Flat2DByteSafe: IDisposable
+    public class Flat2DByteSafe: IList<byte>
     {
-        private readonly byte[] Array;
         private size_t Width, Height, Length;
+
+        private readonly byte[] Array;
 
         public Flat2DByteSafe(Flat2DByte flatArray)
         {
@@ -227,31 +230,69 @@ namespace C_Wrapper
             Marshal.Copy(DataPtr, this.Array, 0, Size);
         }
 
-        public override string ToString()
+        public Flat2DByteSafe(size_t Width, size_t Height)
         {
-            StringBuilder sb = new();
+            this.Width = Width;
+            this.Height = Height;
+            this.Length = Width * Height;
 
-            for (size_t x = 0; x < Length; x++)
-            {
-                if (x != 0 && x % Width == 0) sb.AppendLine();
-                sb.Append($"{Array[x]} ");
-            }
-
-            return sb.ToString();
+            this.Array = new byte[Length];
         }
 
-        public void Dispose()
+        public byte this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public int Count => (int)Length;
+
+        public bool IsReadOnly => false;
+
+        public void Add(byte item)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            throw new NotImplementedException();
         }
 
-        protected virtual void Dispose(bool disposing)
+        public void Clear()
         {
-            if (disposing)
-            {
+            throw new NotImplementedException();
+        }
 
-            }
+        public bool Contains(byte item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyTo(byte[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<byte> GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int IndexOf(byte item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Insert(int index, byte item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Remove(byte item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveAt(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }
