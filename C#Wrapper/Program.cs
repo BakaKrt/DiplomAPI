@@ -1,4 +1,6 @@
-﻿namespace C_Wrapper
+﻿using C_Wrapper.Arrays;
+
+namespace C_Wrapper
 {
     internal class Program
     {
