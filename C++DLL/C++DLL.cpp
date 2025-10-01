@@ -57,9 +57,8 @@ static void BenchmarkTickVsTickAsync(size_t benchmarkIterations, size_t operatio
 
         // --- Измеряем асинхронную версию ---
         start = std::chrono::steady_clock::now(); // Используем steady_clock
-        for (size_t i = 0; i < operationsPerIteration; i++) {
-            async_map.TickAsync(); // Предполагается, что TickAsync теперь корректно реализован
-        }
+        async_map.TickAsync(operationsPerIteration); // Предполагается, что TickAsync теперь корректно реализован
+
         end = std::chrono::steady_clock::now();
         totalAsyncTime += end - start;
     }
@@ -200,7 +199,7 @@ int main()
 {
     using std::cout;
 
-    //BenchmarkTickVsTickAsync(1000, 5, 1000, 1000, 4);
+    BenchmarkTickVsTickAsync(58, 4, 1000, 1000, 4);
     
     /*Flat2DByte matrix = Flat2DByte(100000, 100000);
     benchmark(1000000, 4096, size_t(1024 * 1024));*/

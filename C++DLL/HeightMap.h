@@ -70,7 +70,7 @@ public:
     /// <summary>
     /// Tick в ThreadsCount потоков
     /// </summary>
-    void TickAsync() noexcept;
+    void TickAsync(int count = 1) noexcept;
 
     /// <summary>
     /// ”станавливает количество потоков дл€ TickAsync

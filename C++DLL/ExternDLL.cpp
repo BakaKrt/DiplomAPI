@@ -62,14 +62,10 @@ extern "C" {
     /// ����� Tick � ��������� �������
     /// </summary>
     /// <param name="obj">��������� �� ����� �����</param>
-    DLL_EXPORT void HeightMap_TickMT(HeightMap* obj) {
-
+    DLL_EXPORT void HeightMap_TickMT(HeightMap* obj, int count) {
         if (obj) {
-
-            obj->TickAsync();
-
+            obj->TickAsync(count);
         }
-
     }
 
 

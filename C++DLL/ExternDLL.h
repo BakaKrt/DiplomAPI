@@ -60,7 +60,7 @@ extern "C" {
     /// Многопоточная реализация Tick()
     /// </summary>
     /// <param name="obj">Указатель на карту высот</param>
-    DLL_EXPORT void HeightMap_TickMT(HeightMap* obj);
+    DLL_EXPORT void HeightMap_TickMT(HeightMap* obj, int count = 1);
     
     /// <summary>
     /// 

@@ -144,34 +144,37 @@ void HeightMap::Tick() noexcept {
 /// <summary>
 /// Tick в ThreadsCount потоков, работает быстро при большом размере карты (500*500 и выше)
 /// </summary>
-void HeightMap::TickAsync() noexcept {
+void HeightMap::TickAsync(int count) noexcept {
     const int THREADS_COUNT = this->ThreadsCount;
     static const int CHUNK_SIZE = ((int)this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
 
-    static vector<thread> THREADS;
-    THREADS.reserve(ThreadsCount);
+    for (int i = 0; i < count; i++) {
 
-    for (int i = 0; i < this->Height && THREADS.size() < ThreadsCount; i += CHUNK_SIZE) {
-        size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
+        static vector<thread> THREADS;
+        THREADS.reserve(ThreadsCount);
 
-        if (LineFrom + CHUNK_SIZE > _MainMatrix->Width && LineFrom != _MainMatrix->Width) {
-            LineTo = _MainMatrix->Width;
+        for (int i = 0; i < this->Height && THREADS.size() < ThreadsCount; i += CHUNK_SIZE) {
+            size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
+
+            if (LineFrom + CHUNK_SIZE > _MainMatrix->Width && LineFrom != _MainMatrix->Width) {
+                LineTo = _MainMatrix->Width;
+            }
+
+            THREADS.emplace_back([LineFrom, LineTo, this]() {
+                this->TickAsyncRealization(LineFrom, LineTo);
+                });
         }
 
-        THREADS.emplace_back([LineFrom, LineTo, this]() {
-            this->TickAsyncRealization(LineFrom, LineTo);
-        });
-    }
+        for (auto& th : THREADS) {
+            th.join();
+        }
+        THREADS.clear();
 
-    for (auto& th : THREADS) {
-        th.join();
+        // Меняем местами матрицы
+        Flat2DByte* temp = _MainMatrix;
+        _MainMatrix = _SecondMatrix;
+        _SecondMatrix = temp;
     }
-    THREADS.clear();
-
-    // Меняем местами матрицы
-    Flat2DByte* temp = _MainMatrix;
-    _MainMatrix = _SecondMatrix;
-    _SecondMatrix = temp;
 }
 
 /// <summary>
