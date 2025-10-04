@@ -29,11 +29,18 @@ public:
 
     HeightMap(size_t Width, size_t Height, bool SetRandomValue = true);
 
+    HeightMap(size_t Width, size_t Height, int ThreadCount = 1, bool SetRandomValue = true);
+
     // Конструктор копирования
     HeightMap(const HeightMap& other);
 
     // Оператор присваивания
     HeightMap& operator=(const HeightMap& other);
+
+    /// <summary>
+    /// Установить матрицу от другого
+    /// </summary>
+    void SetMatrix(Flat2DByte* matrix);
 
     /// <summary>
     /// Установить правила для Tick() и TickAsync()
@@ -71,12 +78,6 @@ public:
     /// Tick в ThreadsCount потоков
     /// </summary>
     void TickAsync(int count = 1) noexcept;
-
-    /// <summary>
-    /// Устанавливает количество потоков для TickAsync
-    /// </summary>
-    /// <param name="Count">Количество потоков. 0 для автоопределения</param>
-    int SetThreadCount(const int Count);
 
     /// <summary>
     /// Получить количество установленных потоков

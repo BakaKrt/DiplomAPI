@@ -43,9 +43,8 @@ static void BenchmarkTickVsTickAsync(size_t benchmarkIterations, size_t operatio
 
     for (size_t x = 0; x < benchmarkIterations; x++) {
         // Создаем объекты до измерения времени
-        HeightMap sync_map = HeightMap(width, height, true);
+        HeightMap sync_map = HeightMap(width, height, threadCount, true);
         HeightMap async_map = sync_map; // Копируем из sync_map
-        async_map.SetThreadCount(threadCount);
 
         // --- Измеряем синхронную версию ---
         start = std::chrono::steady_clock::now(); // Используем steady_clock
@@ -199,7 +198,7 @@ int main()
 {
     using std::cout;
 
-    BenchmarkTickVsTickAsync(58, 4, 1000, 1000, 4);
+    BenchmarkTickVsTickAsync(1, 7, 1000000, 2*1024, 4);
     
     /*Flat2DByte matrix = Flat2DByte(100000, 100000);
     benchmark(1000000, 4096, size_t(1024 * 1024));*/

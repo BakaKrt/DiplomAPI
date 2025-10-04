@@ -71,6 +71,19 @@ HeightMap::HeightMap(size_t Width, size_t Height, bool SetRandomValue)
     }
 }
 
+HeightMap::HeightMap(size_t Width, size_t Height, int ThreadCount, bool SetRandomValue)
+{
+    this->Width = Width;
+    this->Height = Height;
+    this->_MainMatrix = new Flat2DByte(Width, Height);
+    this->_SecondMatrix = new Flat2DByte(Width, Height);
+    this->ThreadsCount = ThreadCount;
+
+    if (SetRandomValue) {
+        InitMatrixRandomValue();
+    }
+}
+
 //  онструктор копировани€
 HeightMap::HeightMap(const HeightMap& other) {
     this->Width = other.Width;
@@ -126,7 +139,7 @@ void HeightMap::SetRules(cbool r1, cbool r2, cbool r3, cbool r4, cbool r5, cbool
 }
 
 /// <summary>
-/// ќднопоточный Tick, работает быстро дл€ небольших карт (до ~300*300)
+/// ќднопоточный Tick, работает быстро дл€ небольших карт (до ~500*500)
 /// </summary>
 void HeightMap::Tick() noexcept {
     for (size_t x = 0; x < this->Width; x++) {
@@ -145,26 +158,40 @@ void HeightMap::Tick() noexcept {
 /// Tick в ThreadsCount потоков, работает быстро при большом размере карты (500*500 и выше)
 /// </summary>
 void HeightMap::TickAsync(int count) noexcept {
-    const int THREADS_COUNT = this->ThreadsCount;
+    static const int THREADS_COUNT = this->ThreadsCount;
     static const int CHUNK_SIZE = ((int)this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
 
-    for (int i = 0; i < count; i++) {
+    static vector<int> CHUNKS;
+    CHUNKS.reserve(THREADS_COUNT * 2);
 
-        static vector<thread> THREADS;
-        THREADS.reserve(ThreadsCount);
-
-        for (int i = 0; i < this->Height && THREADS.size() < ThreadsCount; i += CHUNK_SIZE) {
+    if (CHUNKS.empty()) {
+        for (int i = 0; i < this->Height; i += CHUNK_SIZE) {
             size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
 
             if (LineFrom + CHUNK_SIZE > _MainMatrix->Width && LineFrom != _MainMatrix->Width) {
                 LineTo = _MainMatrix->Width;
             }
-
-            THREADS.emplace_back([LineFrom, LineTo, this]() {
-                this->TickAsyncRealization(LineFrom, LineTo);
-                });
+            CHUNKS.push_back(LineFrom);
+            CHUNKS.push_back(LineTo);
         }
+    }
 
+    vector<thread> THREADS;
+    THREADS.reserve(THREADS_COUNT);
+
+    for (size_t idx = 0; idx < CHUNKS.size(); idx += 2) {
+        // ”бедимс€, что у нас есть пара (from, to)
+        if (idx + 1 < CHUNKS.size()) {
+            int start = CHUNKS[idx];     // «начение захватываетс€
+            int end = CHUNKS[idx + 1];   // «начение захватываетс€
+
+            THREADS.emplace_back([this, start, end]() { // «ахватываем значени€ start и end по значению
+                this->TickAsyncRealization(start, end);
+            });
+        }
+    }
+
+    for (int i = 0; i < count; i++) {
         for (auto& th : THREADS) {
             th.join();
         }
@@ -177,15 +204,6 @@ void HeightMap::TickAsync(int count) noexcept {
     }
 }
 
-/// <summary>
-/// ”станавливает количество потоков дл€ TickAsync
-/// </summary>
-/// <param name="Count"> оличество потоков. 0 дл€ автоопределени€</param>
-int HeightMap::SetThreadCount(const int Count) {
-    if (Count == 0) this->ThreadsCount = (int)thread::hardware_concurrency();
-    else this->ThreadsCount = Count;
-    return this->ThreadsCount;
-}
 
 int HeightMap::GetThreadsCount() const {
     return this->ThreadsCount;
@@ -214,6 +232,11 @@ std::ostream& HeightMap::operator<<(std::ostream& stream)
         else stream << ' ';
     }
     return stream;
+}
+
+void HeightMap::SetMatrix(Flat2DByte* matrix)
+{
+    this->_MainMatrix = matrix;
 }
 
 std::ostream& operator<<(std::ostream& stream, HeightMap& map)
