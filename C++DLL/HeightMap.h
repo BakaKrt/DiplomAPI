@@ -15,14 +15,14 @@ private:
 
     byte _rulesLen = 8;
 
-    int ThreadsCount = 1;
+    size_t ThreadsCount = 1;
 
     size_t Width, Height;
 
 
     byte GetAVGSum(size_t x, size_t y) noexcept;
 
-    void InitMatrixRandomValue();
+    void InitMatrixRandomValue() noexcept;
 
     void TickAsyncRealization(size_t LineFrom, size_t LineTo);
 public:
@@ -72,18 +72,18 @@ public:
     /// <summary>
     /// Однопоточный Tick
     /// </summary>
-    void Tick() noexcept;
+    void Tick(const size_t count = 1) noexcept;
 
     /// <summary>
     /// Tick в ThreadsCount потоков
     /// </summary>
-    void TickAsync(int count = 1) noexcept;
+    void TickAsync(const size_t count = 1) noexcept;
 
     /// <summary>
     /// Получить количество установленных потоков
     /// </summary>
     /// <returns>Количество потоков для TickAsync</returns>
-    int GetThreadsCount() const;
+    size_t GetThreadsCount() const;
 
     /// <summary>
     /// Получить ширину карты высот

@@ -14,8 +14,8 @@ byte HeightMap::GetAVGSum(size_t x, size_t y) noexcept {
     // [3]  X  [4]    (-1, 0)        (1, 0)
     // [5] [6] [7]    (-1, 1) (0, 1) (1, 1)
 
-    const int dx[8] = { -1,  0,  1, -1, 1, -1, 0, 1 };
-    const int dy[8] = { -1, -1, -1,  0, 0,  1, 1, 1 };
+    constexpr int dx[8] = { -1,  0,  1, -1, 1, -1, 0, 1 };
+    constexpr int dy[8] = { -1, -1, -1,  0, 0,  1, 1, 1 };
 
     byte count = 0;
     for (int i = 0; i < 8; i++) {
@@ -24,11 +24,11 @@ byte HeightMap::GetAVGSum(size_t x, size_t y) noexcept {
             continue;
         }
 
-        int nx = (int)x + dx[i];
-        int ny = (int)y + dy[i];
+        size_t nx = x + dx[i];
+        size_t ny = y + dy[i];
 
         // Проверяем границы массива
-        if (nx >= 0 && nx < (int)Width && ny >= 0 && ny < (int)Height) {
+        if (nx >= 0 && nx < Width && ny >= 0 && ny < Height) {
             byte value = _MainMatrix->at(nx, ny);
             res += value;
             count++;
@@ -38,7 +38,7 @@ byte HeightMap::GetAVGSum(size_t x, size_t y) noexcept {
     return count > 0 ? (byte)(res / count) : 0;
 }
 
-void HeightMap::InitMatrixRandomValue() {
+void HeightMap::InitMatrixRandomValue() noexcept {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static std::uniform_int_distribution<int> dis(0, 255);
@@ -50,11 +50,12 @@ void HeightMap::InitMatrixRandomValue() {
     }
 }
 
-void HeightMap::TickAsyncRealization(size_t LineFrom, size_t LineTo) {
-    for (; LineFrom < LineTo; LineFrom++) {
+void HeightMap::TickAsyncRealization(const size_t LineFrom, const size_t LineTo) {
+    size_t iterator = LineFrom;
+    for (; iterator < LineTo; iterator++) {
         for (size_t y = 0; y < this->Width; y++) {
-            byte AVG = GetAVGSum(y, LineFrom);
-            _SecondMatrix->at(y, LineFrom) = AVG;
+            byte AVG = GetAVGSum(y, iterator);
+            _SecondMatrix->at(y, iterator) = AVG;
         }
     }
 }
@@ -139,13 +140,15 @@ void HeightMap::SetRules(cbool r1, cbool r2, cbool r3, cbool r4, cbool r5, cbool
 }
 
 /// <summary>
-/// Однопоточный Tick, работает быстро для небольших карт (до ~500*500)
+/// Однопоточный Tick, работает быстро для небольших карт (до ~300*300)
 /// </summary>
-void HeightMap::Tick() noexcept {
-    for (size_t x = 0; x < this->Width; x++) {
-        for (size_t y = 0; y < this->Height; y++) {
-            byte AVG = GetAVGSum(x, y);
-            _SecondMatrix->at(x, y) = AVG;
+void HeightMap::Tick(const size_t count) noexcept {
+    for (size_t i = 0; i < count; i++) {
+        for (size_t x = 0; x < this->Width; x++) {
+            for (size_t y = 0; y < this->Height; y++) {
+                byte AVG = GetAVGSum(x, y);
+                _SecondMatrix->at(x, y) = AVG;
+            }
         }
     }
     // Обмениваем указатели вместо копирования данных для лучшей производительности
@@ -157,15 +160,15 @@ void HeightMap::Tick() noexcept {
 /// <summary>
 /// Tick в ThreadsCount потоков, работает быстро при большом размере карты (500*500 и выше)
 /// </summary>
-void HeightMap::TickAsync(int count) noexcept {
-    static const int THREADS_COUNT = this->ThreadsCount;
-    static const int CHUNK_SIZE = ((int)this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
+void HeightMap::TickAsync(const size_t count) noexcept {
+    static const size_t THREADS_COUNT = this->ThreadsCount;
+    static const size_t CHUNK_SIZE = (this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
 
-    static vector<int> CHUNKS;
+    static vector<size_t> CHUNKS;
     CHUNKS.reserve(THREADS_COUNT * 2);
 
     if (CHUNKS.empty()) {
-        for (int i = 0; i < this->Height; i += CHUNK_SIZE) {
+        for (size_t i = 0; i < this->Height; i += CHUNK_SIZE) {
             size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
 
             if (LineFrom + CHUNK_SIZE > _MainMatrix->Width && LineFrom != _MainMatrix->Width) {
@@ -182,8 +185,8 @@ void HeightMap::TickAsync(int count) noexcept {
     for (size_t idx = 0; idx < CHUNKS.size(); idx += 2) {
         // Убедимся, что у нас есть пара (from, to)
         if (idx + 1 < CHUNKS.size()) {
-            int start = CHUNKS[idx];     // Значение захватывается
-            int end = CHUNKS[idx + 1];   // Значение захватывается
+            size_t start = CHUNKS[idx];     // Значение захватывается
+            size_t end = CHUNKS[idx + 1];   // Значение захватывается
 
             THREADS.emplace_back([this, start, end]() { // Захватываем значения start и end по значению
                 this->TickAsyncRealization(start, end);
@@ -205,7 +208,7 @@ void HeightMap::TickAsync(int count) noexcept {
 }
 
 
-int HeightMap::GetThreadsCount() const {
+size_t HeightMap::GetThreadsCount() const {
     return this->ThreadsCount;
 }
 

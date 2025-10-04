@@ -24,42 +24,40 @@ using std::thread;
 using byte = uint8_t;
 
 
-
-// DLL API реализация
-
-
-
 static void BenchmarkTickVsTickAsync(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {
+    using namespace std::chrono;
+    using std::cout;
     if (operationsPerIteration == 0) {
-        std::cout << "Error: operationsPerIteration must be greater than 0.\n";
+        cout << "Error: operationsPerIteration must be greater than 0.\n";
         return;
     }
 
-    std::chrono::duration<double> totalSyncTime = std::chrono::duration<double>(0.0);
-    std::chrono::duration<double> totalAsyncTime = std::chrono::duration<double>(0.0);
+    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
+        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCount << '\n';
 
-    std::chrono::steady_clock::time_point start;
-    std::chrono::steady_clock::time_point end;
+    duration<double> totalSyncTime = duration<double>(0.0);
+    duration<double> totalAsyncTime = duration<double>(0.0);
+
+    steady_clock::time_point start;
+    steady_clock::time_point end;
 
     for (size_t x = 0; x < benchmarkIterations; x++) {
-        // Создаем объекты до измерения времени
         HeightMap sync_map = HeightMap(width, height, threadCount, true);
         HeightMap async_map = sync_map; // Копируем из sync_map
 
-        // --- Измеряем синхронную версию ---
-        start = std::chrono::steady_clock::now(); // Используем steady_clock
-        for (size_t i = 0; i < operationsPerIteration; i++) {
-            sync_map.Tick();
-        }
-        end = std::chrono::steady_clock::now();
-        totalSyncTime += end - start;
-
         // --- Измеряем асинхронную версию ---
-        start = std::chrono::steady_clock::now(); // Используем steady_clock
-        async_map.TickAsync(operationsPerIteration); // Предполагается, что TickAsync теперь корректно реализован
-
-        end = std::chrono::steady_clock::now();
+        start = steady_clock::now();
+        async_map.TickAsync(operationsPerIteration);
+        end = steady_clock::now();
         totalAsyncTime += end - start;
+        //cout << "totalAsyncTime" << totalAsyncTime.count() << "\n";
+
+        // --- Измеряем синхронную версию ---
+        start = steady_clock::now();
+        sync_map.Tick(operationsPerIteration);
+        end = steady_clock::now();
+        totalSyncTime += end - start;
+        //cout << "totalSyncTime" << totalSyncTime.count() << "\n";
     }
 
     // Вычисляем среднее время на одну операцию (Tick или TickAsync)
@@ -67,24 +65,24 @@ static void BenchmarkTickVsTickAsync(size_t benchmarkIterations, size_t operatio
     double avgAsyncTimeMs = (totalAsyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
 
     // Выводим результаты
-    std::cout << "Benchmark Results:\n";
-    std::cout << "Total Sync Time: " << totalSyncTime.count() << " seconds\n";
-    std::cout << "Total Async Time: " << totalAsyncTime.count() << " seconds\n";
-    std::cout << "Average Sync Time per operation: " << avgSyncTimeMs << " ms\n";
-    std::cout << "Average Async Time per operation: " << avgAsyncTimeMs << " ms\n";
+    cout << "Benchmark Results:\n";
+    cout << "Total Sync Time: " << totalSyncTime.count() << " seconds\n";
+    cout << "Total Async Time: " << totalAsyncTime.count() << " seconds\n";
+    cout << "Average Sync Time per operation: " << avgSyncTimeMs << " ms\n";
+    cout << "Average Async Time per operation: " << avgAsyncTimeMs << " ms\n";
 
     // Выводим коэффициент ускорения, если асинхронный метод быстрее (и делаем проверку на 0)
     if (avgSyncTimeMs > 0.0) {
         if (avgAsyncTimeMs > 0.0) {
             double speedup = avgSyncTimeMs / avgAsyncTimeMs;
-            std::cout << "Speedup (Sync/Async): " << speedup << "x\n";
+            cout << "Speedup (Sync/Async): " << speedup << "x\n";
         }
         else {
-            std::cout << "Async time is 0, cannot calculate speedup.\n";
+            cout << "Async time is 0, cannot calculate speedup.\n";
         }
     }
     else {
-        std::cout << "Sync time is 0, cannot calculate speedup.\n";
+        cout << "Sync time is 0, cannot calculate speedup.\n";
     }
 }
 
@@ -198,7 +196,7 @@ int main()
 {
     using std::cout;
 
-    BenchmarkTickVsTickAsync(1, 7, 1000000, 2*1024, 4);
+    BenchmarkTickVsTickAsync(50, 7, 1000, 1000, 2);
     
     /*Flat2DByte matrix = Flat2DByte(100000, 100000);
     benchmark(1000000, 4096, size_t(1024 * 1024));*/

@@ -54,7 +54,7 @@ extern "C" {
     /// Однопоточная реализация Tick()
     /// </summary>
     /// <param name="obj">Указатель на карту высот</param>
-    DLL_EXPORT void HeightMap_Tick(HeightMap* obj);
+    DLL_EXPORT void HeightMap_Tick(HeightMap* obj, size_t count = 1);
     
     /// <summary>
     /// Многопоточная реализация Tick()
@@ -66,16 +66,8 @@ extern "C" {
     /// 
     /// </summary>
     /// <param name="obj"></param>
-    /// <param name="threadCount"></param>
     /// <returns></returns>
-    DLL_EXPORT int HeightMap_SetThreadCount(HeightMap* obj, const int threadCount);
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    DLL_EXPORT int HeightMap_GetThreadCount(HeightMap* obj);
+    DLL_EXPORT size_t HeightMap_GetThreadCount(HeightMap* obj);
     
     /// <summary>
     /// 
