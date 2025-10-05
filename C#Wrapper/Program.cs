@@ -3,36 +3,21 @@
 
 namespace C_Wrapper
 {
+    using size_t = UInt64;
     internal class Program
     {
         static unsafe void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            size_t SizeX = 10, SizeY = 10;
 
-            UInt64 SizeX = 10, SizeY = 10;
+            HeightMap map = new(SizeX, SizeY);
+            Console.WriteLine($"{map}\n");
 
-            Flat2DByte Matrix = new(SizeX, SizeY);
+            map.MakeGood(1);
 
-            Random rand = new();
+            Console.WriteLine($"{map}\n");
 
-            for(UInt64 x = 0; x < SizeX * SizeY; x++)
-            {
-                Matrix[x] = (byte)rand.Next(255);
-            }
-
-            //Matrix[0, 0] = 255;
-            //Matrix[0, 1] = 1;
-
-            Console.WriteLine(Matrix);
-
-
-            var t = Matrix.ToSafe(true);
-
-            Console.WriteLine("\n\n\n");
-
-            Console.WriteLine(t);
-
-            //Console.WriteLine(Matrix);
+            map.Dispose();
         }
     }
 }

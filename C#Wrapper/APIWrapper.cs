@@ -13,8 +13,12 @@ namespace C_Wrapper
         // ==================== HeightMap API ====================
 
         // Создать объект HeightMap и вернуть указатель на него
+        //[DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        //public static extern IntPtr HeightMap_Create(size_t width, size_t height, [MarshalAs(UnmanagedType.Bool)] bool setRandomValue = true);
+
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateHeightMap(size_t width, size_t height, [MarshalAs(UnmanagedType.Bool)] bool setRandomValue);
+        public static extern IntPtr HeightMap_Create(size_t width, size_t height, [MarshalAs(UnmanagedType.U8)] size_t threadCount,[MarshalAs(UnmanagedType.Bool)] bool setRandomValue = true);
+
 
         // Установить правила
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -32,9 +36,13 @@ namespace C_Wrapper
                                                        [MarshalAs(UnmanagedType.Bool)] bool r7,
                                                        [MarshalAs(UnmanagedType.Bool)] bool r8);
 
-        // Выполнить один шаг симуляции
+        // Выполнить count шагов симуляции
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void HeightMap_Tick(IntPtr obj);
+        public static extern void HeightMap_Tick(IntPtr obj, [MarshalAs(UnmanagedType.U8)] size_t count);
+        
+        // Выполнить count шагов симуляции
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void HeightMap_TickMT(IntPtr obj, [MarshalAs(UnmanagedType.U8)] size_t count);
 
         // Получить указатель на матрицу
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -48,9 +56,16 @@ namespace C_Wrapper
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern size_t HeightMap_GetHeight(IntPtr obj);
 
+        // Сделать хорошо
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern size_t HeightMap_MakeGood(IntPtr obj, int type = 1);
+        
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void HeightMap_Normalize(IntPtr obj);
+
         // Уничтожить объект HeightMap
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyHeightMap(IntPtr obj);
+        public static extern void HeightMap_Destroy(IntPtr obj);
 
         // ==================== Flat2DByte API ====================
 

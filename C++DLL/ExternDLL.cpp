@@ -10,7 +10,7 @@ extern "C" {
     /// <param name="height">Высота</param>
     /// <param name="setRandomValue">Заполнить случайными значениями, по умолчанию true</param>
     /// <returns>Указатель на карту высот</returns>
-    DLL_EXPORT HeightMap* CreateHeightMap(size_t width, size_t height, bool setRandomValue = true) {
+    DLL_EXPORT HeightMap* CreateHeightMap(size_t width, size_t height, bool setRandomValue) {
         try {
             return new HeightMap(width, height, setRandomValue);
         }
@@ -25,11 +25,28 @@ extern "C" {
     /// <param name="width">Ширина</param>
     /// <param name="height">Высота</param>
     /// <param name="setRandomValue">Заполнить случайными значениями, по умолчанию true</param>
+    ///// <returns>Указатель на карту высот</returns>
+    //DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, bool setRandomValue)
+    //{
+    //    try {
+    //        return new HeightMap(width, height, setRandomValue);
+    //    }
+    //    catch (...) {
+    //        return nullptr;
+    //    }
+    //}
+
+    /// <summary>
+    /// Создать карту высот
+    /// </summary>
+    /// <param name="width">Ширина</param>
+    /// <param name="height">Высота</param>
+    /// <param name="threadCount">Количество потоков</param>
+    /// <param name="setRandomValue">Заполнить случайными значениями</param>
     /// <returns>Указатель на карту высот</returns>
-    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, bool setRandomValue)
-    {
+    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, size_t threadCount, bool setRandomValue) {
         try {
-            return new HeightMap(width, height, setRandomValue);
+            return new HeightMap(width, height, threadCount, setRandomValue);
         }
         catch (...) {
             return nullptr;
@@ -132,6 +149,28 @@ extern "C" {
     }
 
     /// <summary>
+    /// Нормализация карты высот
+    /// </summary>
+    /// <param name="obj">Указатель на карту высот</param>
+    /// <returns></returns>
+    DLL_EXPORT void HeightMap_Normalize(HeightMap* obj) {
+        if (obj) {
+            obj->Normalize();
+        }
+    }
+
+    /// <summary>
+    /// Кнопка сделать хорошо
+    /// </summary>
+    /// <param name="obj">Указатель на карту высот</param>
+    /// <param name="type">Тип</param>
+    DLL_EXPORT void HeightMap_MakeGood(HeightMap* obj, int type) {
+        if (obj) {
+            obj->MakeGood(type);
+        }
+    }
+
+    /// <summary>
     /// Уничтожить карту высот
     /// </summary>
     /// <param name="obj">Указатель на карту высот</param>
@@ -222,4 +261,90 @@ extern "C" {
         delete obj;
     }
 #pragma endregion
+}
+
+static void BenchmarkTickVsTickAsync(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {
+    using namespace std::chrono;
+    using std::cout;
+    if (operationsPerIteration == 0) {
+        cout << "Error: operationsPerIteration must be greater than 0.\n";
+        return;
+    }
+
+    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
+        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCount << '\n';
+
+    duration<double> totalSyncTime = duration<double>(0.0);
+    duration<double> totalAsyncTime = duration<double>(0.0);
+
+    steady_clock::time_point start;
+    steady_clock::time_point end;
+
+    for (size_t x = 0; x < benchmarkIterations; x++) {
+        HeightMap sync_map = HeightMap(width, height, threadCount, true);
+        HeightMap async_map = sync_map; // Копируем из sync_map
+
+        // --- Измеряем асинхронную версию ---
+        start = steady_clock::now();
+        async_map.TickMT(operationsPerIteration);
+        end = steady_clock::now();
+        totalAsyncTime += end - start;
+        //cout << "totalAsyncTime" << totalAsyncTime.count() << "\n";
+
+        // --- Измеряем синхронную версию ---
+        start = steady_clock::now();
+        sync_map.Tick(operationsPerIteration);
+        end = steady_clock::now();
+        totalSyncTime += end - start;
+        //cout << "totalSyncTime" << totalSyncTime.count() << "\n";
+    }
+
+    // Вычисляем среднее время на одну операцию (Tick или TickAsync)
+    double avgSyncTimeMs = (totalSyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
+    double avgAsyncTimeMs = (totalAsyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
+
+    // Выводим результаты
+    cout << "Benchmark Results:\n";
+    cout << "Total Sync Time: " << totalSyncTime.count() << " seconds\n";
+    cout << "Total Async Time: " << totalAsyncTime.count() << " seconds\n";
+    cout << "Average Sync Time per operation: " << avgSyncTimeMs << " ms\n";
+    cout << "Average Async Time per operation: " << avgAsyncTimeMs << " ms\n";
+
+    // Выводим коэффициент ускорения, если асинхронный метод быстрее (и делаем проверку на 0)
+    if (avgSyncTimeMs > 0.0) {
+        if (avgAsyncTimeMs > 0.0) {
+            double speedup = avgSyncTimeMs / avgAsyncTimeMs;
+            cout << "Speedup (Sync/Async): " << speedup << "x\n";
+        }
+        else {
+            cout << "Async time is 0, cannot calculate speedup.\n";
+        }
+    }
+    else {
+        cout << "Sync time is 0, cannot calculate speedup.\n";
+    }
+}
+
+int main()
+{
+    using std::cout;
+
+    HeightMap* map = new HeightMap(15, 15, 2, true);
+    
+    cout << *map << std::endl;
+    map->MakeGood();
+    cout << *map << std::endl;
+
+    /*map->SetKoef(2.5f);
+
+    cout << *map << std::endl;
+
+    map->TickMT(3);
+    cout << *map << std::endl;
+
+    map->SetKoef(0.8);
+    map->TickMT(1);
+    cout << *map << std::endl;*/
+
+    delete map;
 }

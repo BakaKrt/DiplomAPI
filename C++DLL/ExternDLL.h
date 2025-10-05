@@ -17,7 +17,7 @@ extern "C" {
     /// <param name="height">Высота (size_t)</param>
     /// <param name="setRandomValue">Заполнить матрицу высот случайными значениями? (true по умолчанию)</param>
     /// <returns>Указатель на матрицу высот</returns>
-    DLL_EXPORT HeightMap* CreateHeightMap(size_t width, size_t height, bool setRandomValue);
+    DLL_EXPORT HeightMap* CreateHeightMap(size_t width, size_t height, bool setRandomValue = true);
 
     /// <summary>
     /// Создать матрицу высот
@@ -26,7 +26,17 @@ extern "C" {
     /// <param name="height">Высота (size_t)</param>
     /// <param name="setRandomValue">Заполнить матрицу высот случайными значениями? (true по умолчанию)</param>
     /// <returns>Указатель на матрицу высот</returns>
-    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, bool setRandomValue);
+    //DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, bool setRandomValue = true);
+    
+    /// <summary>
+    /// Создать карту высот
+    /// </summary>
+    /// <param name="width">Ширина</param>
+    /// <param name="height">Высота</param>
+    /// <param name="threadCount">Количество потоков</param>
+    /// <param name="setRandomValue">Заполнить случайными значениями</param>
+    /// <returns>Указатель на карту высот</returns>
+    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, size_t threadCount = 1, bool setRandomValue = true);
 
     /// <summary>
     /// Установить правила
@@ -90,6 +100,21 @@ extern "C" {
     /// <param name="obj"></param>
     /// <returns></returns>
     DLL_EXPORT size_t HeightMap_GetHeight(HeightMap* obj);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    DLL_EXPORT void HeightMap_Normalize(HeightMap* obj);
+
+    /// <summary>
+    /// Кнопка сделать хорошо
+    /// </summary>
+    /// <param name="obj">Указатель на карту высот</param>
+    /// <param name="type">Тип: 0, 1, 2</param>
+    DLL_EXPORT void HeightMap_MakeGood(HeightMap* obj, int type = 1);
+
     
     /// <summary>
     /// 
@@ -110,6 +135,13 @@ extern "C" {
     /// <param name="height"></param>
     /// <returns></returns>
     DLL_EXPORT Flat2DByte* CreateFlat2DByte(size_t width, size_t height);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name=""></param>
+    /// <returns></returns>
+    DLL_EXPORT Flat2DByte* Flat2DByte_CreateFromPtr(Flat2DByte*);
     
     /// <summary>
     /// 

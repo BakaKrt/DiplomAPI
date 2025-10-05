@@ -50,12 +50,12 @@ void HeightMap::InitMatrixRandomValue() noexcept {
     }
 }
 
-void HeightMap::TickAsyncRealization(const size_t LineFrom, const size_t LineTo) {
+void HeightMap::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
     size_t iterator = LineFrom;
     for (; iterator < LineTo; iterator++) {
         for (size_t y = 0; y < this->Width; y++) {
             byte AVG = GetAVGSum(y, iterator);
-            _SecondMatrix->at(y, iterator) = AVG;
+            _SecondMatrix->at(y, iterator) = AVG * Koef;
         }
     }
 }
@@ -72,7 +72,7 @@ HeightMap::HeightMap(size_t Width, size_t Height, bool SetRandomValue)
     }
 }
 
-HeightMap::HeightMap(size_t Width, size_t Height, int ThreadCount, bool SetRandomValue)
+HeightMap::HeightMap(size_t Width, size_t Height, size_t ThreadCount, bool SetRandomValue)
 {
     this->Width = Width;
     this->Height = Height;
@@ -113,6 +113,61 @@ HeightMap& HeightMap::operator=(const HeightMap& other) {
     return *this;
 }
 
+void HeightMap::MakeGood(int type) {
+    static int koefBackup = Koef;
+    static int constexpr count = 3;
+    if (type >= count) type = 0;
+    switch (type) {
+        case 0:
+            this->TickMT(2);
+            this->Normalize();
+            this->TickMT(1);
+            break;
+        case 1:
+            this->Koef = 2.5f;
+            this->TickMT(4);
+            this->Koef = 0.6f;
+            this->TickMT();
+            this->Normalize();
+            this->Koef = koefBackup;
+            break;
+        case 2:
+            this->TickMT(2);
+            this->Normalize();
+            this->Koef = 1.5f;
+            this->TickMT(1);
+            this->Normalize();
+            this->TickMT(1);
+            this->Normalize();
+            this->Koef = koefBackup;
+            break;
+        default:
+            break;
+    }
+
+}
+
+void HeightMap::SetKoef(const double koef) {
+    this->Koef = koef;
+}
+
+void HeightMap::Normalize() {
+    const byte* start = this->_MainMatrix->Array;
+    const size_t capacity = this->_MainMatrix->Capacity;
+    std::pair<const byte*, const byte*> minmaxPair = std::minmax_element(start, start + capacity);
+    
+    const byte min = *minmaxPair.first;
+    const byte max = *minmaxPair.second;
+
+    for (size_t i = 0; i < capacity; i++) {
+        byte at = this->_MainMatrix->at(i);
+        int top = at - min;
+        int bot = max - min;
+        int res = (top * 255 / bot);
+        this->_MainMatrix->at(i) = byte(res);
+    }
+}
+
 void HeightMap::SetRules(const array<bool, 8> rules) {
     this->_rules = rules;
     this->_rulesLen = 0;
@@ -147,7 +202,7 @@ void HeightMap::Tick(const size_t count) noexcept {
         for (size_t x = 0; x < this->Width; x++) {
             for (size_t y = 0; y < this->Height; y++) {
                 byte AVG = GetAVGSum(x, y);
-                _SecondMatrix->at(x, y) = AVG;
+                _SecondMatrix->at(x, y) = AVG * this->Koef;
             }
         }
     }
@@ -189,7 +244,7 @@ void HeightMap::TickMT(const size_t count) noexcept {
             size_t end = CHUNKS[idx + 1];   // Значение захватывается
 
             THREADS.emplace_back([this, start, end]() { // Захватываем значения start и end по значению
-                this->TickAsyncRealization(start, end);
+                this->TickMTRealization(start, end);
             });
         }
     }
@@ -199,12 +254,12 @@ void HeightMap::TickMT(const size_t count) noexcept {
             th.join();
         }
         THREADS.clear();
-
-        // Меняем местами матрицы
-        Flat2DByte* temp = _MainMatrix;
-        _MainMatrix = _SecondMatrix;
-        _SecondMatrix = temp;
     }
+
+    // Меняем местами матрицы
+    Flat2DByte* temp = _MainMatrix;
+    _MainMatrix = _SecondMatrix;
+    _SecondMatrix = temp;
 }
 
 

@@ -19,23 +19,37 @@ private:
 
     size_t Width, Height;
 
+    double Koef = 1;
 
     byte GetAVGSum(size_t x, size_t y) noexcept;
 
     void InitMatrixRandomValue() noexcept;
 
-    void TickAsyncRealization(size_t LineFrom, size_t LineTo);
+    void TickMTRealization(size_t LineFrom, size_t LineTo);
 public:
 
     HeightMap(size_t Width, size_t Height, bool SetRandomValue = true);
 
-    HeightMap(size_t Width, size_t Height, int ThreadCount = 1, bool SetRandomValue = true);
+    HeightMap(size_t Width, size_t Height, size_t ThreadCount = 1, bool SetRandomValue = true);
 
     // Конструктор копирования
     HeightMap(const HeightMap& other);
 
     // Оператор присваивания
     HeightMap& operator=(const HeightMap& other);
+
+    void MakeGood(int type = 0);
+
+    /// <summary>
+    /// Установить коэффициент, на который перемножается результат
+    /// </summary>
+    /// <param name="Koef"></param>
+    void SetKoef(const double koef);
+
+    /// <summary>
+    /// Нормализует матрицу, то есть переводит максимальное текущее число в 255, а минимальное в 0, премежуточные значения автоскалируются
+    /// </summary>
+    void Normalize();
 
     /// <summary>
     /// Установить матрицу от другого

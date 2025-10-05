@@ -13,23 +13,36 @@ namespace C_Wrapper.Arrays
         public readonly size_t Height;
 
 
-        public unsafe Flat2DByte(size_t Width, size_t Height)
+        public unsafe Flat2DByte(size_t width, size_t height)
         {
-            this.Width = Width;
-            this.Height = Height;
-            Ptr = APIWrapper.CreateFlat2DByte(Width, Height);
+            this.Width = width;
+            this.Height = height;
+            Ptr = APIWrapper.CreateFlat2DByte(width, height);
 
             if (Ptr == IntPtr.Zero)
             {
-                throw new NullReferenceException($"{nameof(Flat2DByte)} creation with dimensions: {Width}, {Height} got a nullptr");
+                throw new NullReferenceException($"{nameof(Flat2DByte)} creation with dimensions: {width}, {height} got a nullptr");
             }
 
             _dataPtr = (byte*)APIWrapper.Flat2DByte_GetDataPtr(Ptr);
         }
 
-        public Flat2DByteSafe ToSafe(bool DeleteThis = false)
+        public unsafe Flat2DByte(IntPtr pointer)
         {
-            if (DeleteThis == false)
+            this.Ptr = pointer;
+            this.Width = APIWrapper.Flat2DByte_GetWidth(pointer);
+            this.Height = APIWrapper.Flat2DByte_GetHeight(pointer);
+            this._dataPtr = (byte*)APIWrapper.Flat2DByte_GetDataPtr(Ptr);
+        }
+
+        public static Flat2DByte FromPointer(IntPtr pointer)
+        {
+            return new Flat2DByte(pointer);
+        }
+
+        public Flat2DByteSafe ToSafe(bool deleteThis = false)
+        {
+            if (deleteThis == false)
             {
                 return new Flat2DByteSafe(this);
             }
@@ -77,13 +90,13 @@ namespace C_Wrapper.Arrays
             }
         }
 
-        private unsafe void CheckForRange(UInt64 x)
+        private unsafe void CheckForRange(size_t x)
         {
             if (_dataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
             if (x >= this.Width * Height || x < 0) { throw new IndexOutOfRangeException(); }
         }
 
-        private unsafe void CheckForRange(UInt64 x, UInt64 y)
+        private unsafe void CheckForRange(size_t x, size_t y)
         {
             if (_dataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
             if (x >= this.Width || x < 0) { throw new IndexOutOfRangeException(); }
@@ -111,9 +124,9 @@ namespace C_Wrapper.Arrays
         {
             StringBuilder sb = new();
 
-            UInt64 Length = this.Width * Height;
+            size_t Length = this.Width * Height;
 
-            for (UInt64 x = 0; x < Length; x++)
+            for (size_t x = 0; x < Length; x++)
             {
                 if (x != 0 && x % Width == 0) sb.AppendLine();
                 sb.Append($"{this[x]} ");
