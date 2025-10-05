@@ -26,7 +26,7 @@ extern "C" {
     /// <param name="height">Высота</param>
     /// <param name="setRandomValue">Заполнить случайными значениями, по умолчанию true</param>
     /// <returns>Указатель на карту высот</returns>
-    HeightMap* HeightMap_Create(size_t width, size_t height, bool setRandomValue)
+    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, bool setRandomValue)
     {
         try {
             return new HeightMap(width, height, setRandomValue);
@@ -87,7 +87,7 @@ extern "C" {
     /// <param name="count">Количество тиков, по умолчанию 1</param>
     DLL_EXPORT void HeightMap_TickMT(HeightMap* obj, int count) {
         if (obj) {
-            obj->TickAsync(count);
+            obj->TickMT(count);
         }
     }
 

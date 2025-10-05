@@ -77,7 +77,7 @@ public:
     /// <summary>
     /// Tick в ThreadsCount потоков
     /// </summary>
-    void TickAsync(const size_t count = 1) noexcept;
+    void TickMT(const size_t count = 1) noexcept;
 
     /// <summary>
     /// Получить количество установленных потоков

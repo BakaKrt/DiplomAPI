@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace C_Wrapper.Arrays
 {
@@ -10,7 +6,7 @@ namespace C_Wrapper.Arrays
     public class Flat2DByte : IDisposable
     {
 
-        public IntPtr _ptr { get; private set; } = IntPtr.Zero;
+        public IntPtr Ptr { get; private set; } = IntPtr.Zero;
         private unsafe byte* _dataPtr = null;
 
         public readonly size_t Width;
@@ -21,14 +17,14 @@ namespace C_Wrapper.Arrays
         {
             this.Width = Width;
             this.Height = Height;
-            _ptr = APIWrapper.CreateFlat2DByte(Width, Height);
+            Ptr = APIWrapper.CreateFlat2DByte(Width, Height);
 
-            if (_ptr == IntPtr.Zero)
+            if (Ptr == IntPtr.Zero)
             {
                 throw new NullReferenceException($"{nameof(Flat2DByte)} creation with dimensions: {Width}, {Height} got a nullptr");
             }
 
-            _dataPtr = (byte*)APIWrapper.Flat2DByte_GetDataPtr(_ptr);
+            _dataPtr = (byte*)APIWrapper.Flat2DByte_GetDataPtr(Ptr);
         }
 
         public Flat2DByteSafe ToSafe(bool DeleteThis = false)
@@ -83,13 +79,13 @@ namespace C_Wrapper.Arrays
 
         private unsafe void CheckForRange(UInt64 x)
         {
-            if (_dataPtr == null || _ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
+            if (_dataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
             if (x >= this.Width * Height || x < 0) { throw new IndexOutOfRangeException(); }
         }
 
         private unsafe void CheckForRange(UInt64 x, UInt64 y)
         {
-            if (_dataPtr == null || _ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
+            if (_dataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
             if (x >= this.Width || x < 0) { throw new IndexOutOfRangeException(); }
             if (y >= this.Height || y < 0) { throw new IndexOutOfRangeException(); }
         }
@@ -103,10 +99,10 @@ namespace C_Wrapper.Arrays
 
         protected virtual unsafe void Dispose(bool disposing)
         {
-            if (disposing && _ptr != IntPtr.Zero)
+            if (disposing && Ptr != IntPtr.Zero)
             {
-                APIWrapper.DestroyFlat2DByte(_ptr);
-                _ptr = IntPtr.Zero;
+                APIWrapper.DestroyFlat2DByte(Ptr);
+                Ptr = IntPtr.Zero;
                 _dataPtr = null;
             }
         }

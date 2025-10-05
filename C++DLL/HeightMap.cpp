@@ -14,8 +14,8 @@ byte HeightMap::GetAVGSum(size_t x, size_t y) noexcept {
     // [3]  X  [4]    (-1, 0)        (1, 0)
     // [5] [6] [7]    (-1, 1) (0, 1) (1, 1)
 
-    constexpr int dx[8] = { -1,  0,  1, -1, 1, -1, 0, 1 };
-    constexpr int dy[8] = { -1, -1, -1,  0, 0,  1, 1, 1 };
+    const int dx[8] = { -1,  0,  1, -1, 1, -1, 0, 1 };
+    const int dy[8] = { -1, -1, -1,  0, 0,  1, 1, 1 };
 
     byte count = 0;
     for (int i = 0; i < 8; i++) {
@@ -160,7 +160,7 @@ void HeightMap::Tick(const size_t count) noexcept {
 /// <summary>
 /// Tick в ThreadsCount потоков, работает быстро при большом размере карты (500*500 и выше)
 /// </summary>
-void HeightMap::TickAsync(const size_t count) noexcept {
+void HeightMap::TickMT(const size_t count) noexcept {
     static const size_t THREADS_COUNT = this->ThreadsCount;
     static const size_t CHUNK_SIZE = (this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
 

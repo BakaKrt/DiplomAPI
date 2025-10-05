@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace C_Wrapper.Arrays
 {
@@ -26,7 +22,7 @@ namespace C_Wrapper.Arrays
 
             this.AllowChangeSize = false;
 
-            IntPtr DataPtr = APIWrapper.Flat2DByte_GetDataPtr(flatArray._ptr);
+            IntPtr DataPtr = APIWrapper.Flat2DByte_GetDataPtr(flatArray.Ptr);
             int Size = (int)(Width * Height);
 
             this.Array = new byte[Size];
@@ -46,6 +42,17 @@ namespace C_Wrapper.Arrays
         }
 
         public byte this[int index] { get => Array[index]; set => Array[index] = value; }
+        public byte this[size_t x, size_t y]
+        {
+            get
+            {
+                return Array[y * Width + x];
+            }
+            set
+            {
+                Array[y * Width + x] = value;
+            }
+        }
 
         public int Count => (int)Length;
 
