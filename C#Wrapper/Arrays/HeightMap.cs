@@ -33,18 +33,31 @@ namespace C_Wrapper.Arrays
             _dataPtr = new Flat2DByte(APIWrapper.HeightMap_GetMatrix(Ptr));
         }
 
+        /// <summary>
+        /// Tick в одном потоке
+        /// </summary>
+        /// <param name="count">Количество итераций, по умолчанию 1</param>
         public void Tick(size_t count = 1)
         {
             APIWrapper.HeightMap_Tick(Ptr, count);
             _dataPtr = new Flat2DByte(APIWrapper.HeightMap_GetMatrix(Ptr));
         }
 
+        /// <summary>
+        /// Tick в несколько потоков
+        /// </summary>
+        /// <param name="count">Количество итераций, по умолчанию 1</param>
         public void TickMT(size_t count = 1)
         {
             APIWrapper.HeightMap_TickMT(Ptr, count);
             _dataPtr = new Flat2DByte(APIWrapper.HeightMap_GetMatrix(Ptr));
         }
 
+        /// <summary>
+        /// Установить правила для Tick
+        /// </summary>
+        /// <param name="array">Массив булевых значений, длиной 8</param>
+        /// <returns></returns>
         public bool SetRules(bool[] array)
         {
             if (array.Length == 8)
@@ -55,16 +68,28 @@ namespace C_Wrapper.Arrays
             return false;
         }
 
+        /// <summary>
+        /// Метод сделать хорошо
+        /// </summary>
+        /// <param name="type">Тип, по умолчанию 0 [их пока 3]</param>
         public void MakeGood(int type = 0)
         {
             APIWrapper.HeightMap_MakeGood(Ptr, type);
         }
 
+        /// <summary>
+        /// Нормализация массива
+        /// </summary>
         public void Normalize()
         {
             APIWrapper.HeightMap_Normalize(Ptr);
         }
 
+        /// <summary>
+        /// Индексация по позиции x
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
         public unsafe byte this[size_t x]
         {
             get => _dataPtr[x];
@@ -74,6 +99,12 @@ namespace C_Wrapper.Arrays
             }
         }
 
+        /// <summary>
+        /// Индексация по позиции X и Y
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public unsafe byte this[size_t x, size_t y]
         {
             get
@@ -85,6 +116,7 @@ namespace C_Wrapper.Arrays
                 _dataPtr[y * Width + x] = value;
             }
         }
+
 
         public void Dispose()
         {
