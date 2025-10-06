@@ -69,7 +69,7 @@ namespace C_Wrapper.Arrays
         }
 
         /// <summary>
-        /// Метод сделать хорошо
+        /// Метод "сделать хорошо"
         /// </summary>
         /// <param name="type">Тип, по умолчанию 0 [их пока 3]</param>
         public void MakeGood(int type = 0)
@@ -83,6 +83,24 @@ namespace C_Wrapper.Arrays
         public void Normalize()
         {
             APIWrapper.HeightMap_Normalize(Ptr);
+        }
+
+        /// <summary>
+        /// Перевести в двумерный массив [0.0f - 1.0f]
+        /// </summary>
+        /// <returns>Двумерный массив</returns>
+        public float[,] ToTwoDimensionArray()
+        {
+            float[,] array = new float[this.Width, this.Height];
+
+            for (size_t x = 0; x < this.Width; x++)
+            {
+                for (size_t y = 0; y < this.Height; y++)
+                {
+                    array[x, y] = this[x, y] / 255.0f;
+                }
+            }
+            return array;
         }
 
         /// <summary>
