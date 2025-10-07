@@ -16,8 +16,6 @@ using std::array;
 using std::thread;
 using std::ostream;
 
-using byte = uint8_t;
-
 class Flat2DFloat {
 private:
     size_t Capacity;

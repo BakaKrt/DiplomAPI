@@ -47,3 +47,18 @@ static byte* RandomByteArray(const size_t size, const byte l, const byte r)
 
 	return ptr;
 }
+
+static bool* RandomBoolArray(const size_t size, int chance = 50)
+{
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist (1, 100);
+
+	bool* ptr = new bool[size];
+	for (size_t pos = 0; pos < size; pos++) {
+		if (dist(gen) >= chance) ptr[pos] = true;
+		else ptr[pos] = false;
+	}
+
+	return ptr;
+}

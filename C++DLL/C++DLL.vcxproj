@@ -192,6 +192,7 @@
   <ItemGroup>
     <ClInclude Include="CaveGenerator.h" />
     <ClInclude Include="ExternDLL.h" />
+    <ClInclude Include="Flat2DBool.h" />
     <ClInclude Include="Flat2DByte.h" />
     <ClInclude Include="Flat2DFloat.h" />
     <ClInclude Include="HeightMap.h" />
@@ -200,6 +201,7 @@
   <ItemGroup>
     <ClCompile Include="CaveGenerator.cpp" />
     <ClCompile Include="ExternDLL.cpp" />
+    <ClCompile Include="Flat2DBool.cpp" />
     <ClCompile Include="Flat2DByte.cpp" />
     <ClCompile Include="Flat2DFloat.cpp" />
     <ClCompile Include="HeightMap.cpp" />

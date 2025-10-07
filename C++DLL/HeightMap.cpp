@@ -57,7 +57,7 @@ void HeightMap::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
     for (; iterator < LineTo; iterator++) {
         for (size_t y = 0; y < this->Width; y++) {
             byte AVG = GetAVGSum(y, iterator);
-            _SecondMatrix->at(y, iterator) = AVG * Koef;
+            _SecondMatrix->at(y, iterator) = (byte)(AVG * Koef);
         }
     }
 }
@@ -123,7 +123,7 @@ HeightMap& HeightMap::operator=(const HeightMap& other) {
 }
 
 void HeightMap::MakeGood(int type) {
-    static int koefBackup = Koef;
+    static double koefBackup = Koef;
     static int constexpr count = 3;
     if (type >= count) type = 0;
     switch (type) {
@@ -211,7 +211,7 @@ void HeightMap::Tick(const size_t count) noexcept {
         for (size_t x = 0; x < this->Width; x++) {
             for (size_t y = 0; y < this->Height; y++) {
                 byte AVG = GetAVGSum(x, y);
-                _SecondMatrix->at(x, y) = AVG * this->Koef;
+                _SecondMatrix->at(x, y) = (byte)(AVG * this->Koef);
             }
         }
     }

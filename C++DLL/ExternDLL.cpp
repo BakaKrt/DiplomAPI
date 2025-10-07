@@ -330,7 +330,10 @@ int main()
     using std::cout;
 
     CaveGenerator* cave = new CaveGenerator(15, 15, 2, true);
-    
+    cave->SetB({ 5, 6, 7, 8 });
+    cave->SetS({ 4, 5, 6, 7, 8});
+    cout << cave << std::endl;
+    cave->Tick();
     cout << cave << std::endl;
     
     delete cave;
