@@ -21,18 +21,9 @@
     <ClCompile Include="HeightMap.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-<<<<<<< Updated upstream
     <ClCompile Include="ExternDLL.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-=======
-    <ClCompile Include="Flat2DFloat.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
->>>>>>> Stashed changes
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Flat2DByte.h">
@@ -44,20 +35,5 @@
     <ClInclude Include="ExternDLL.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-<<<<<<< Updated upstream
-=======
-    <ClInclude Include="ExternDLL.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Flat2DFloat.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="CaveGenerator.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="Useful.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
->>>>>>> Stashed changes
   </ItemGroup>
 </Project>

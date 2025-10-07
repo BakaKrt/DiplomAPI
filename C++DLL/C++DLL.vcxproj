@@ -190,33 +190,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-<<<<<<< Updated upstream
     <ClInclude Include="ExternDLL.h" />
-=======
-    <ClCompile Include="C++DLL.cpp">
-      <FileType>CppCode</FileType>
-    </ClCompile>
-    <ClInclude Include="CaveGenerator.h" />
-    <ClInclude Include="ExternDLL.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="ExternDLL.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClCompile Include="Flat2DByte.cpp">
-      <FileType>CppCode</FileType>
-    </ClCompile>
-    <ClCompile Include="Flat2DFloat.cpp" />
-    <ClCompile Include="HeightMap.cpp" />
-    <ClInclude Include="Useful.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
-  </ItemGroup>
-  <ItemGroup>
->>>>>>> Stashed changes
     <ClInclude Include="Flat2DByte.h" />
-    <ClInclude Include="Flat2DFloat.h" />
     <ClInclude Include="HeightMap.h" />
   </ItemGroup>
   <ItemGroup>
