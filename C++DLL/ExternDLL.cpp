@@ -329,22 +329,9 @@ int main()
 {
     using std::cout;
 
-    HeightMap* map = new HeightMap(15, 15, 2, true);
+    CaveGenerator* cave = new CaveGenerator(15, 15, 2, true);
     
-    cout << *map << std::endl;
-    map->MakeGood();
-    cout << *map << std::endl;
-
-    /*map->SetKoef(2.5f);
-
-    cout << *map << std::endl;
-
-    map->TickMT(3);
-    cout << *map << std::endl;
-
-    map->SetKoef(0.8);
-    map->TickMT(1);
-    cout << *map << std::endl;*/
-
-    delete map;
+    cout << cave << std::endl;
+    
+    delete cave;
 }

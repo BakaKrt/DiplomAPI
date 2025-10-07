@@ -66,12 +66,15 @@ HeightMap::HeightMap(size_t Width, size_t Height, bool SetRandomValue)
 {
     this->Width = Width;
     this->Height = Height;
-    this->_MainMatrix = new Flat2DByte(Width, Height);
-    this->_SecondMatrix = new Flat2DByte(Width, Height);
-
     if (SetRandomValue) {
-        InitMatrixRandomValue();
+        byte* Array = RandomByteArray(this->Width * this->Height, 0, 255);
+        this->_MainMatrix = new Flat2DByte(Array, Width, Height);
     }
+    else {
+        this->_MainMatrix = new Flat2DByte(Width, Height);
+    }
+
+    this->_SecondMatrix = new Flat2DByte(Width, Height);
 }
 
 HeightMap::HeightMap(size_t Width, size_t Height, size_t ThreadCount, bool SetRandomValue)

@@ -8,6 +8,7 @@
 // Уберите включение .cpp файлов, оставьте только заголовки
 #include "Flat2DByte.h"
 #include "HeightMap.h"
+#include "CaveGenerator.h"
 
 extern "C" {
     /// <summary>

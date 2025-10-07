@@ -27,7 +27,8 @@ static float* RandomFloatCanonical(const size_t len)
 
 	float* ptr = new float[len];
 	for (size_t pos = 0; pos < len; pos++) {
-		ptr[pos] = dist(gen);
+		float rand = dist(gen);
+		ptr[pos] = rand;
 	}
 
 	return ptr;
