@@ -15,6 +15,15 @@ Flat2DByte::Flat2DByte(size_t Width, size_t Height) noexcept {
     this->Array = new byte[Capacity]();
 }
 
+
+Flat2DByte::Flat2DByte(byte* array, size_t width, size_t height) noexcept
+{
+    this->Array = array;
+    this->Capacity = width * height;
+    this->Width = width;
+    this->Height = height;
+}
+
 Flat2DByte::Flat2DByte(const Flat2DByte& other) {
     Width = other.Width;
     Height = other.Height;
@@ -22,9 +31,7 @@ Flat2DByte::Flat2DByte(const Flat2DByte& other) {
 
     if (other.Array) {
         Array = new byte[Capacity];
-        for (size_t i = 0; i < Capacity; ++i) {
-            Array[i] = other.Array[i];
-        }
+        std::memcpy(Array, other.Array, Capacity);
     }
     else {
         Array = nullptr;
@@ -41,9 +48,7 @@ Flat2DByte& Flat2DByte::operator=(const Flat2DByte& other) {
 
         if (other.Array) {
             Array = new byte[Capacity];
-            for (size_t i = 0; i < Capacity; ++i) {
-                Array[i] = other.Array[i];
-            }
+            std::memcpy(Array, other.Array, Capacity);
         }
         else {
             Array = nullptr;

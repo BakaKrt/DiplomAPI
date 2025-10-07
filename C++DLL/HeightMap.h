@@ -2,6 +2,8 @@
 
 #include "Flat2DByte.h"
 
+#include "Useful.h"
+
 #include <array>
 
 using std::array;

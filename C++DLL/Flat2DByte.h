@@ -27,7 +27,9 @@ private:
 public:
     Flat2DByte();
 
-    Flat2DByte(size_t Width, size_t Height) noexcept;
+    Flat2DByte(size_t width, size_t height) noexcept;
+    
+    Flat2DByte(byte* array, size_t width, size_t height) noexcept;
 
     Flat2DByte(const Flat2DByte& other);
 

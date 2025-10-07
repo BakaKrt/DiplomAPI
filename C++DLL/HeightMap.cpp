@@ -45,6 +45,8 @@ void HeightMap::InitMatrixRandomValue() noexcept {
 
     size_t Count = this->Width * this->Height;
 
+
+
     for (size_t x = 0; x < Count; x++) {
         _MainMatrix->at(x) = (byte)dis(gen);
     }
@@ -76,13 +78,17 @@ HeightMap::HeightMap(size_t Width, size_t Height, size_t ThreadCount, bool SetRa
 {
     this->Width = Width;
     this->Height = Height;
-    this->_MainMatrix = new Flat2DByte(Width, Height);
+    
+    if (SetRandomValue) {
+        byte* Array = RandomByteArray(this->Width * this->Height, 0, 255);
+        this->_MainMatrix = new Flat2DByte(Array, Width, Height);
+    } 
+    else {
+        this->_MainMatrix = new Flat2DByte(Width, Height);
+    }
+
     this->_SecondMatrix = new Flat2DByte(Width, Height);
     this->ThreadsCount = ThreadCount;
-
-    if (SetRandomValue) {
-        InitMatrixRandomValue();
-    }
 }
 
 // Конструктор копирования
