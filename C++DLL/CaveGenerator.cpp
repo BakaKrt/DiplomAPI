@@ -32,7 +32,21 @@ CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool
 	}
 
 	this->SecondMatrix = new Flat2DBool(this->Width, this->Height);
-	this->ThreadsCount = threadsCount;
+	this->ThreadsCount = GetThreadsCount(threadsCount);
+}
+
+CaveGenerator::CaveGenerator(const CaveGenerator& other) {
+	this->Width = other.Width;
+	this->Height = other.Height;
+	this->Capacity = this->Width * this->Height;
+
+	this->B = other.B;
+	this->S = other.S;
+
+	this->ThreadsCount = other.ThreadsCount;
+
+	this->MainMatrix = new Flat2DBool(*other.MainMatrix);
+	this->SecondMatrix = new Flat2DBool(*other.SecondMatrix);
 }
 
 void CaveGenerator::SetB(std::vector<int> rulesB)
@@ -118,7 +132,7 @@ int CaveGenerator::GetNeighbours(size_t x, size_t y)
 	return neighboursCount;
 }
 
-void CaveGenerator::Tick(int count)
+void CaveGenerator::Tick(int count) noexcept
 {
 	for (size_t x = 0; x < this->Width; x++) {
 		for (size_t y = 0; y < this->Height; y++) {
@@ -147,17 +161,60 @@ void CaveGenerator::Tick(int count)
 	SecondMatrix = temp;
 }
 
-void CaveGenerator::TickMT(int count)
+void CaveGenerator::TickMT(int count) noexcept
 {
+	static const size_t THREADS_COUNT = this->ThreadsCount;
+	static const size_t CHUNK_SIZE = (this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
 
+	static vector<size_t> CHUNKS;
+	CHUNKS.reserve(THREADS_COUNT * 2);
+
+	if (CHUNKS.empty()) {
+		for (size_t i = 0; i < this->Height; i += CHUNK_SIZE) {
+			size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
+
+			if (LineFrom + CHUNK_SIZE > MainMatrix->Width && LineFrom != MainMatrix->Width) {
+				LineTo = MainMatrix->Width;
+			}
+			CHUNKS.push_back(LineFrom);
+			CHUNKS.push_back(LineTo);
+		}
+	}
+
+	vector<thread> THREADS;
+	THREADS.reserve(THREADS_COUNT);
+
+	for (size_t idx = 0; idx < CHUNKS.size(); idx += 2) {
+		// Убедимся, что у нас есть пара (from, to)
+		if (idx + 1 < CHUNKS.size()) {
+			size_t start = CHUNKS[idx];     // Значение захватывается
+			size_t end = CHUNKS[idx + 1];   // Значение захватывается
+
+			THREADS.emplace_back([this, start, end]() { // Захватываем значения start и end по значению
+				this->TickMTRealization(start, end);
+				});
+		}
+	}
+
+	for (int i = 0; i < count; i++) {
+		for (auto& th : THREADS) {
+			th.join();
+		}
+		THREADS.clear();
+	}
+
+	// Меняем местами матрицы
+	Flat2DBool* temp = MainMatrix;
+	MainMatrix = SecondMatrix;
+	SecondMatrix = temp;
 }
 
 void CaveGenerator::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
-	size_t iterator = LineFrom;
-	for (; iterator < LineTo; iterator++) {
+	size_t x = LineFrom;
+	for (; x < LineTo; x++) {
 		for (size_t y = 0; y < this->Width; y++) {
-			/*byte AVG = GetAVGSum(y, iterator);
-			_SecondMatrix->at(y, iterator) = AVG * Koef;*/
+			int count = GetNeighbours(x, y);
+			this->SecondMatrix->at(x, y) = count;
 		}
 	}
 }

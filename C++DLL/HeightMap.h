@@ -32,7 +32,7 @@ public:
 
     HeightMap(size_t Width, size_t Height, bool SetRandomValue = true);
 
-    HeightMap(size_t Width, size_t Height, size_t ThreadCount = 1, bool SetRandomValue = true);
+    HeightMap(size_t Width, size_t Height, int ThreadCount = 1, bool SetRandomValue = true);
 
     // Конструктор копирования
     HeightMap(const HeightMap& other);

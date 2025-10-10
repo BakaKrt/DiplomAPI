@@ -62,3 +62,9 @@ static bool* RandomBoolArray(const size_t size, int chance = 50)
 
 	return ptr;
 }
+
+static int GetThreadsCount(int count) {
+	static auto ThreadsCount = std::thread::hardware_concurrency();
+	if (count == 0) return (int)ThreadsCount;
+	return count;
+}

@@ -52,9 +52,9 @@ void HeightMap::InitMatrixRandomValue() noexcept {
     }
 }
 
-void HeightMap::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
-    size_t iterator = LineFrom;
-    for (; iterator < LineTo; iterator++) {
+void HeightMap::TickMTRealization(const size_t lineFrom, const size_t lineTo) {
+    size_t iterator = lineFrom;
+    for (; iterator < lineTo; iterator++) {
         for (size_t y = 0; y < this->Width; y++) {
             byte AVG = GetAVGSum(y, iterator);
             _SecondMatrix->at(y, iterator) = (byte)(AVG * Koef);
@@ -62,11 +62,11 @@ void HeightMap::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
     }
 }
 
-HeightMap::HeightMap(size_t Width, size_t Height, bool SetRandomValue)
+HeightMap::HeightMap(size_t width, size_t height, bool setRandomValue)
 {
-    this->Width = Width;
-    this->Height = Height;
-    if (SetRandomValue) {
+    this->Width = width;
+    this->Height = height;
+    if (setRandomValue) {
         byte* Array = RandomByteArray(this->Width * this->Height, 0, 255);
         this->_MainMatrix = new Flat2DByte(Array, Width, Height);
     }
@@ -77,12 +77,12 @@ HeightMap::HeightMap(size_t Width, size_t Height, bool SetRandomValue)
     this->_SecondMatrix = new Flat2DByte(Width, Height);
 }
 
-HeightMap::HeightMap(size_t Width, size_t Height, size_t ThreadCount, bool SetRandomValue)
+HeightMap::HeightMap(size_t width, size_t height, int threadsCount, bool setRandomValue)
 {
-    this->Width = Width;
-    this->Height = Height;
+    this->Width = width;
+    this->Height = height;
     
-    if (SetRandomValue) {
+    if (setRandomValue) {
         byte* Array = RandomByteArray(this->Width * this->Height, 0, 255);
         this->_MainMatrix = new Flat2DByte(Array, Width, Height);
     } 
@@ -91,7 +91,7 @@ HeightMap::HeightMap(size_t Width, size_t Height, size_t ThreadCount, bool SetRa
     }
 
     this->_SecondMatrix = new Flat2DByte(Width, Height);
-    this->ThreadsCount = ThreadCount;
+    this->ThreadsCount = ::GetThreadsCount(threadsCount);
 }
 
 // Конструктор копирования
@@ -100,6 +100,8 @@ HeightMap::HeightMap(const HeightMap& other) {
     this->Height = other.Height;
     this->_rules = other._rules;
     this->_rulesLen = other._rulesLen;
+
+    this->ThreadsCount = other.ThreadsCount;
 
     this->_MainMatrix = new Flat2DByte(*other._MainMatrix);
     this->_SecondMatrix = new Flat2DByte(*other._SecondMatrix);
@@ -115,6 +117,8 @@ HeightMap& HeightMap::operator=(const HeightMap& other) {
         this->Height = other.Height;
         this->_rules = other._rules;
         this->_rulesLen = other._rulesLen;
+
+        this->ThreadsCount = other.ThreadsCount;
 
         this->_MainMatrix = new Flat2DByte(*other._MainMatrix);
         this->_SecondMatrix = new Flat2DByte(*other._SecondMatrix);

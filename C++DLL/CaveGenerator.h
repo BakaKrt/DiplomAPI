@@ -24,6 +24,7 @@ public:
 
 	CaveGenerator(size_t width, size_t height, bool randInit = true);
 	CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit = true);
+	CaveGenerator(const CaveGenerator& other);
 	
 	void SetB(std::vector<int> rulesB);
 	void SetB(std::initializer_list<int> rulesB);
@@ -34,8 +35,8 @@ public:
 	void SetS(int rulesSfrom, int ruleSto);
 
 
-	void Tick(int count = 1);
-	void TickMT(int count = 1);
+	void Tick(int count = 1) noexcept;
+	void TickMT(int count = 1) noexcept;
 
 	friend ostream& operator<<(ostream& stream, CaveGenerator* gen);
 };
