@@ -44,7 +44,7 @@ extern "C" {
     /// <param name="threadCount">Количество потоков</param>
     /// <param name="setRandomValue">Заполнить случайными значениями</param>
     /// <returns>Указатель на карту высот</returns>
-    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, size_t threadCount, bool setRandomValue) {
+    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, int threadCount, bool setRandomValue) {
         try {
             return new HeightMap(width, height, threadCount, setRandomValue);
         }
@@ -336,8 +336,8 @@ static void BenchmarkCaveOTMT(size_t benchmarkIterations, size_t operationsPerIt
     cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
         << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCount << '\n';
 
-    duration<double> totalSyncTime = duration<double>(0.0);
-    duration<double> totalAsyncTime = duration<double>(0.0);
+    duration<double> totalSyncTime = duration<double>(0.0f);
+    duration<double> totalAsyncTime = duration<double>(0.0f);
 
     steady_clock::time_point start;
     steady_clock::time_point end;
@@ -389,11 +389,63 @@ static void BenchmarkCaveOTMT(size_t benchmarkIterations, size_t operationsPerIt
     }
 }
 
+static void BenchmarkCaveThreadsSpeedUp(int benchmarkIterations, int operationsPerIteration, size_t width, size_t height, int threadCountFrom = 2, int threadCountTo = 0) {
+    using namespace std::chrono;
+    using std::cout;
+    if (operationsPerIteration == 0) {
+        cout << "Error: operationsPerIteration must be greater than 0.\n";
+        return;
+    }
+
+    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
+        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCountFrom << '\n';
+    
+    threadCountTo = GetThreadsCount(threadCountTo);
+
+    std::vector<duration<double>> times = {};
+    times.reserve(threadCountTo);
+
+    steady_clock::time_point start;
+    steady_clock::time_point end;
+
+    for (int threads = threadCountFrom; threads <= threadCountTo; threads++) {
+
+        duration<double> thisTime = duration<double>(0.0f);
+
+        for (auto iterations = 0; iterations < benchmarkIterations; iterations++) {
+            CaveGenerator* cave = new CaveGenerator(width, height, threads, true);
+            start = steady_clock::now();
+            cave->TickMT(operationsPerIteration);
+            end = steady_clock::now();
+
+            thisTime += end - start;
+
+            delete cave;
+        }
+        times.push_back(thisTime);
+        cout << "threads: " << threads << " time:" << thisTime.count() << std::endl;
+        thisTime = duration<double>(0.0f);
+    }
+
+    for (const auto& time : times) {
+        cout << "Threads: " << threadCountFrom << "\t";
+        cout << "Time: " << time.count() << std::endl;
+        threadCountFrom++;
+    }
+}
+
+
 int main()
 {
     using std::cout;
 
-    BenchmarkCaveOTMT(10, 8, 4097, 4097, 2);
+    BenchmarkCaveOTMT(10, 8, 2049, 2049, 2);
+    BenchmarkCaveOTMT(10, 8, 2049, 2049, 3);
+    BenchmarkCaveOTMT(10, 8, 2049, 2049, 4);
+    BenchmarkCaveOTMT(10, 8, 2049, 2049, 5);
+    BenchmarkCaveOTMT(10, 8, 2049, 2049, 6);
+
+    //BenchmarkCaveThreadsSpeedUp(10, 4, 2049, 2049, 1, 4);
 
     /*CaveGenerator* cave = new CaveGenerator(15, 15, 2, true);
     cave->SetB({ 5, 6, 7, 8 });

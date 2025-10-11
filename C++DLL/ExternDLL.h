@@ -37,7 +37,7 @@ extern "C" {
     /// <param name="threadCount">Количество потоков</param>
     /// <param name="setRandomValue">Заполнить случайными значениями</param>
     /// <returns>Указатель на карту высот</returns>
-    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, size_t threadCount = 1, bool setRandomValue = true);
+    DLL_EXPORT HeightMap* HeightMap_Create(size_t width, size_t height, int threadCount = 1, bool setRandomValue = true);
 
     /// <summary>
     /// Установить правила
