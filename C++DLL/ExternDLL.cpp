@@ -261,6 +261,80 @@ extern "C" {
         delete obj;
     }
 #pragma endregion
+
+#pragma region Flat2DFloat
+
+    DLL_EXPORT Flat2DFloat* CreateFlat2DFloat(size_t width, size_t height) {
+        try {
+            return new Flat2DFloat(width, height);
+        }
+        catch (...) {
+            return nullptr;
+        }
+    }
+
+
+    DLL_EXPORT void Flat2DFloat_SetData(Flat2DFloat* obj, size_t x, size_t y, byte value) {
+        if (obj) {
+            try {
+                obj->at(x, y) = value;
+            }
+            catch (const std::out_of_range&) {
+
+            }
+        }
+    }
+
+
+    DLL_EXPORT float Flat2DFloat_GetData(Flat2DFloat* obj, size_t x, size_t y) {
+        if (obj) {
+            try {
+                return obj->at(x, y);
+            }
+            catch (const std::out_of_range&) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+
+    DLL_EXPORT float* Flat2DFloat_GetDataPtr(Flat2DFloat* obj) {
+        if (obj) {
+            return obj->data();
+        }
+        return nullptr;
+    }
+
+
+    DLL_EXPORT size_t Flat2DFloat_GetDataSize(Flat2DFloat* obj) {
+        if (obj) {
+            return obj->capacity();
+        }
+        return 0;
+    }
+
+
+    DLL_EXPORT size_t Flat2DFloat_GetWidth(Flat2DFloat* obj) {
+        if (obj) {
+            return obj->width();
+        }
+        return 0;
+    }
+
+
+    DLL_EXPORT size_t Flat2DFloat_GetHeight(Flat2DFloat* obj) {
+        if (obj) {
+            return obj->height();
+        }
+        return 0;
+    }
+
+
+    DLL_EXPORT void DestroyFlat2DFloat(Flat2DFloat* obj) {
+        delete obj;
+    }
+#pragma endregion
 }
 
 static void BenchmarkHeightMapOTMT(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {

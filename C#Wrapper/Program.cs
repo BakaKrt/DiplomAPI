@@ -25,6 +25,10 @@ namespace C_Wrapper
             map.Normalize();
             map[0, 0] = 0; // Можно, идёт обращение напрямую к памяти
             Console.WriteLine(map[0, 0]); // Аналогично
+
+            var t = map.ToTwoDimensionArray();
+            Console.WriteLine(t);
+
             map.Dispose();
         }
     }

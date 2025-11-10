@@ -10,18 +10,18 @@ using std::array;
 
 class HeightMap {
 private:
-    Flat2DByte* _MainMatrix;
-    Flat2DByte* _SecondMatrix;
-
-    array<bool, 8> _rules = { 1, 1, 1, 1, 1, 1, 1, 1 };
+    Flat2DByte* _mainMatrix;
+    Flat2DByte* _secondMatrix;
 
     byte _rulesLen = 8;
 
-    size_t ThreadsCount = 1;
+    double _koef = 1;
 
-    size_t Width, Height;
+    size_t _threadsCount = 1;
 
-    double Koef = 1;
+    size_t _width, _height;
+
+    array<bool, 8> _rules = { 1, 1, 1, 1, 1, 1, 1, 1 };
 
     byte GetAVGSum(size_t x, size_t y) noexcept;
 

@@ -8,12 +8,12 @@ using std::unordered_set;
 
 class CaveGenerator {
 private:
-	Flat2DBool* MainMatrix   = nullptr;
-	Flat2DBool* SecondMatrix = nullptr;
-	size_t Width = 0, Height = 0;
-	size_t Capacity = 0;
+	Flat2DBool* _mainMatrix   = nullptr;
+	Flat2DBool* _secondMatrix = nullptr;
+	size_t _width = 0, _height = 0;
+	size_t _capacity = 0;
 
-	size_t ThreadsCount = 1;
+	size_t _threadsCount = 1;
 
 	unordered_set<int> B = {};
 	unordered_set<int> S = {};
@@ -28,11 +28,11 @@ public:
 	
 	void SetB(std::vector<int> rulesB);
 	void SetB(std::initializer_list<int> rulesB);
-	void SetB(int rulesBfrom, int ruleBto);
+	void SetB(int rulesBfrom, int rulesBto);
 
 	void SetS(std::vector<int> rulesS);
 	void SetS(std::initializer_list<int> rulesS);
-	void SetS(int rulesSfrom, int ruleSto);
+	void SetS(int rulesSfrom, int rulesSto);
 
 
 	void Tick(int count = 1) noexcept;

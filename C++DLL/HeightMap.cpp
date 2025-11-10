@@ -28,8 +28,8 @@ byte HeightMap::GetAVGSum(size_t x, size_t y) noexcept {
         size_t ny = y + dy[i];
 
         // Проверяем границы массива
-        if (nx >= 0 && nx < Width && ny >= 0 && ny < Height) {
-            byte value = _MainMatrix->at(nx, ny);
+        if (nx >= 0 && nx < _width && ny >= 0 && ny < _height) {
+            byte value = _mainMatrix->at(nx, ny);
             res += value;
             count++;
         }
@@ -43,91 +43,91 @@ void HeightMap::InitMatrixRandomValue() noexcept {
     static std::mt19937 gen(rd());
     static std::uniform_int_distribution<int> dis(0, 255);
 
-    size_t Count = this->Width * this->Height;
+    size_t Count = this->_width * this->_height;
 
 
 
     for (size_t x = 0; x < Count; x++) {
-        _MainMatrix->at(x) = (byte)dis(gen);
+        _mainMatrix->at(x) = (byte)dis(gen);
     }
 }
 
 void HeightMap::TickMTRealization(const size_t lineFrom, const size_t lineTo) {
     size_t iterator = lineFrom;
     for (; iterator < lineTo; iterator++) {
-        for (size_t y = 0; y < this->Width; y++) {
+        for (size_t y = 0; y < this->_width; y++) {
             byte AVG = GetAVGSum(y, iterator);
-            _SecondMatrix->at(y, iterator) = (byte)(AVG * Koef);
+            _secondMatrix->at(y, iterator) = (byte)(AVG * _koef);
         }
     }
 }
 
 HeightMap::HeightMap(size_t width, size_t height, bool setRandomValue)
 {
-    this->Width = width;
-    this->Height = height;
+    this->_width = width;
+    this->_height = height;
     if (setRandomValue) {
-        byte* Array = RandomByteArray(this->Width * this->Height, 0, 255);
-        this->_MainMatrix = new Flat2DByte(Array, Width, Height);
+        byte* Array = RandomByteArray(this->_width * this->_height, 0, 255);
+        this->_mainMatrix = new Flat2DByte(Array, _width, _height);
     }
     else {
-        this->_MainMatrix = new Flat2DByte(Width, Height);
+        this->_mainMatrix = new Flat2DByte(_width, _height);
     }
 
-    this->_SecondMatrix = new Flat2DByte(Width, Height);
+    this->_secondMatrix = new Flat2DByte(_width, _height);
 }
 
 HeightMap::HeightMap(size_t width, size_t height, int threadsCount, bool setRandomValue)
 {
-    this->Width = width;
-    this->Height = height;
+    this->_width = width;
+    this->_height = height;
     
     if (setRandomValue) {
-        byte* Array = RandomByteArray(this->Width * this->Height, 0, 255);
-        this->_MainMatrix = new Flat2DByte(Array, Width, Height);
+        byte* Array = RandomByteArray(this->_width * this->_height, 0, 255);
+        this->_mainMatrix = new Flat2DByte(Array, _width, _height);
     } 
     else {
-        this->_MainMatrix = new Flat2DByte(Width, Height);
+        this->_mainMatrix = new Flat2DByte(_width, _height);
     }
 
-    this->_SecondMatrix = new Flat2DByte(Width, Height);
-    this->ThreadsCount = ::GetThreadsCount(threadsCount);
+    this->_secondMatrix = new Flat2DByte(_width, _height);
+    this->_threadsCount = ::GetThreadsCount(threadsCount);
 }
 
 // Конструктор копирования
 HeightMap::HeightMap(const HeightMap& other) {
-    this->Width = other.Width;
-    this->Height = other.Height;
+    this->_width = other._width;
+    this->_height = other._height;
     this->_rules = other._rules;
     this->_rulesLen = other._rulesLen;
 
-    this->ThreadsCount = other.ThreadsCount;
+    this->_threadsCount = other._threadsCount;
 
-    this->_MainMatrix = new Flat2DByte(*other._MainMatrix);
-    this->_SecondMatrix = new Flat2DByte(*other._SecondMatrix);
+    this->_mainMatrix = new Flat2DByte(*other._mainMatrix);
+    this->_secondMatrix = new Flat2DByte(*other._secondMatrix);
 }
 
 // Оператор присваивания
 HeightMap& HeightMap::operator=(const HeightMap& other) {
     if (this != &other) {
-        delete _MainMatrix;
-        delete _SecondMatrix;
+        delete _mainMatrix;
+        delete _secondMatrix;
 
-        this->Width = other.Width;
-        this->Height = other.Height;
+        this->_width = other._width;
+        this->_height = other._height;
         this->_rules = other._rules;
         this->_rulesLen = other._rulesLen;
 
-        this->ThreadsCount = other.ThreadsCount;
+        this->_threadsCount = other._threadsCount;
 
-        this->_MainMatrix = new Flat2DByte(*other._MainMatrix);
-        this->_SecondMatrix = new Flat2DByte(*other._SecondMatrix);
+        this->_mainMatrix = new Flat2DByte(*other._mainMatrix);
+        this->_secondMatrix = new Flat2DByte(*other._secondMatrix);
     }
     return *this;
 }
 
 void HeightMap::MakeGood(int type) {
-    static double koefBackup = Koef;
+    static double koefBackup = _koef;
     static int constexpr count = 3;
     if (type >= count) type = 0;
     switch (type) {
@@ -137,22 +137,22 @@ void HeightMap::MakeGood(int type) {
             this->TickMT(1);
             break;
         case 1:
-            this->Koef = 2.5f;
+            this->_koef = 2.5f;
             this->TickMT(4);
-            this->Koef = 0.6f;
+            this->_koef = 0.6f;
             this->TickMT();
             this->Normalize();
-            this->Koef = koefBackup;
+            this->_koef = koefBackup;
             break;
         case 2:
             this->TickMT(2);
             this->Normalize();
-            this->Koef = 1.5f;
+            this->_koef = 1.5f;
             this->TickMT(1);
             this->Normalize();
             this->TickMT(1);
             this->Normalize();
-            this->Koef = koefBackup;
+            this->_koef = koefBackup;
             break;
         default:
             break;
@@ -161,23 +161,23 @@ void HeightMap::MakeGood(int type) {
 }
 
 void HeightMap::SetKoef(const double koef) {
-    this->Koef = koef;
+    this->_koef = koef;
 }
 
 void HeightMap::Normalize() {
-    const byte* start = this->_MainMatrix->Array;
-    const size_t capacity = this->_MainMatrix->Capacity;
+    const byte* start = this->_mainMatrix->Array;
+    const size_t capacity = this->_mainMatrix->Capacity;
     std::pair<const byte*, const byte*> minmaxPair = std::minmax_element(start, start + capacity);
     
     const byte min = *minmaxPair.first;
     const byte max = *minmaxPair.second;
 
     for (size_t i = 0; i < capacity; i++) {
-        byte at = this->_MainMatrix->at(i);
+        byte at = this->_mainMatrix->at(i);
         int top = at - min;
         int bot = max - min;
         int res = (top * 255 / bot);
-        this->_MainMatrix->at(i) = byte(res);
+        this->_mainMatrix->at(i) = byte(res);
     }
 }
 
@@ -212,35 +212,35 @@ void HeightMap::SetRules(cbool r1, cbool r2, cbool r3, cbool r4, cbool r5, cbool
 /// </summary>
 void HeightMap::Tick(const size_t count) noexcept {
     for (size_t i = 0; i < count; i++) {
-        for (size_t x = 0; x < this->Width; x++) {
-            for (size_t y = 0; y < this->Height; y++) {
+        for (size_t x = 0; x < this->_width; x++) {
+            for (size_t y = 0; y < this->_height; y++) {
                 byte AVG = GetAVGSum(x, y);
-                _SecondMatrix->at(x, y) = (byte)(AVG * this->Koef);
+                _secondMatrix->at(x, y) = (byte)(AVG * this->_koef);
             }
         }
     }
     // Обмениваем указатели вместо копирования данных для лучшей производительности
-    Flat2DByte* temp = _MainMatrix;
-    _MainMatrix = _SecondMatrix;
-    _SecondMatrix = temp;
+    Flat2DByte* temp = _mainMatrix;
+    _mainMatrix = _secondMatrix;
+    _secondMatrix = temp;
 }
 
 /// <summary>
 /// Tick в ThreadsCount потоков, работает быстро при большом размере карты (500*500 и выше)
 /// </summary>
 void HeightMap::TickMT(const size_t count) noexcept {
-    static const size_t THREADS_COUNT = this->ThreadsCount;
-    static const size_t CHUNK_SIZE = (this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
+    static const size_t THREADS_COUNT = this->_threadsCount;
+    static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
 
     static vector<size_t> CHUNKS;
     CHUNKS.reserve(THREADS_COUNT * 2);
 
     if (CHUNKS.empty()) {
-        for (size_t i = 0; i < this->Height; i += CHUNK_SIZE) {
+        for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
             size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
 
-            if (LineFrom + CHUNK_SIZE > _MainMatrix->Width && LineFrom != _MainMatrix->Width) {
-                LineTo = _MainMatrix->Width;
+            if (LineFrom + CHUNK_SIZE > _mainMatrix->Width && LineFrom != _mainMatrix->Width) {
+                LineTo = _mainMatrix->Width;
             }
             CHUNKS.push_back(LineFrom);
             CHUNKS.push_back(LineTo);
@@ -270,36 +270,36 @@ void HeightMap::TickMT(const size_t count) noexcept {
     }
 
     // Меняем местами матрицы
-    Flat2DByte* temp = _MainMatrix;
-    _MainMatrix = _SecondMatrix;
-    _SecondMatrix = temp;
+    Flat2DByte* temp = _mainMatrix;
+    _mainMatrix = _secondMatrix;
+    _secondMatrix = temp;
 }
 
 
 size_t HeightMap::GetThreadsCount() const {
-    return this->ThreadsCount;
+    return this->_threadsCount;
 }
 
 size_t HeightMap::GetWidth() {
-    return _MainMatrix->Width;
+    return _mainMatrix->Width;
 }
 
 size_t HeightMap::GetHeight() {
-    return _MainMatrix->Height;
+    return _mainMatrix->Height;
 }
 
 Flat2DByte* HeightMap::GetMatrix() {
-    return _MainMatrix;
+    return _mainMatrix;
 }
 
 
 std::ostream& HeightMap::operator<<(std::ostream& stream)
 {
-    for (size_t i = 0; i < _MainMatrix->capacity();)
+    for (size_t i = 0; i < _mainMatrix->capacity();)
     {
-        stream << (int)_MainMatrix->at(i) << "\t";
+        stream << (int)_mainMatrix->at(i) << "\t";
         i++;
-        if (i % Width == 0 && i != 0) stream << '\n';
+        if (i % _width == 0 && i != 0) stream << '\n';
         else stream << ' ';
     }
     return stream;
@@ -307,16 +307,16 @@ std::ostream& HeightMap::operator<<(std::ostream& stream)
 
 void HeightMap::SetMatrix(Flat2DByte* matrix)
 {
-    this->_MainMatrix = matrix;
+    this->_mainMatrix = matrix;
 }
 
 std::ostream& operator<<(std::ostream& stream, HeightMap& map)
 {
-    for (size_t i = 0; i < map._MainMatrix->capacity();)
+    for (size_t i = 0; i < map._mainMatrix->capacity();)
     {
-        stream << (int)map._MainMatrix->at(i) << "\t";
+        stream << (int)map._mainMatrix->at(i) << "\t";
         i++;
-        if (i % map.Width == 0 && i != 0) stream << '\n';
+        if (i % map._width == 0 && i != 0) stream << '\n';
         else stream << ' ';
     }
     return stream;
@@ -324,6 +324,6 @@ std::ostream& operator<<(std::ostream& stream, HeightMap& map)
 
 
 HeightMap::~HeightMap() {
-    delete _MainMatrix;
-    delete _SecondMatrix;
+    delete _mainMatrix;
+    delete _secondMatrix;
 }

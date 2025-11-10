@@ -6,7 +6,7 @@ namespace C_Wrapper.Arrays
     public class HeightMap : IDisposable
     {
         public IntPtr Ptr { get; private set; } = IntPtr.Zero;
-        private Flat2DByte _dataPtr;
+        private Flat2DFloat _dataPtr;
 
         public readonly size_t Width;
         public readonly size_t Height;
@@ -27,10 +27,10 @@ namespace C_Wrapper.Arrays
             Ptr = APIWrapper.HeightMap_Create(width, height, threadCount, setRandom);
             if (Ptr == IntPtr.Zero)
             {
-                throw new NullReferenceException($"{nameof(Flat2DByte)} creation with dimensions: {width}, {height} got a nullptr");
+                throw new NullReferenceException($"{nameof(Flat2DFloat)} creation with dimensions: {width}, {height} got a nullptr");
             }
 
-            _dataPtr = new Flat2DByte(APIWrapper.HeightMap_GetMatrix(Ptr));
+            _dataPtr = new Flat2DFloat(APIWrapper.HeightMap_GetMatrix(Ptr));
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace C_Wrapper.Arrays
         public void Tick(size_t count = 1)
         {
             APIWrapper.HeightMap_Tick(Ptr, count);
-            _dataPtr = new Flat2DByte(APIWrapper.HeightMap_GetMatrix(Ptr));
+            _dataPtr = new Flat2DFloat(APIWrapper.HeightMap_GetMatrix(Ptr));
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace C_Wrapper.Arrays
         public void TickMT(size_t count = 1)
         {
             APIWrapper.HeightMap_TickMT(Ptr, count);
-            _dataPtr = new Flat2DByte(APIWrapper.HeightMap_GetMatrix(Ptr));
+            _dataPtr = new Flat2DFloat(APIWrapper.HeightMap_GetMatrix(Ptr));
         }
 
         /// <summary>
@@ -86,19 +86,35 @@ namespace C_Wrapper.Arrays
         }
 
         /// <summary>
-        /// Перевести в двумерный массив [0.0f - 1.0f]
+        /// Перевести в двумерный массив [,]
         /// </summary>
         /// <returns>Двумерный массив</returns>
-        public float[,] ToTwoDimensionArray()
+        public unsafe float[,] ToTwoDimensionArray()
         {
+            // Предположим, у вас есть поле или свойство, возвращающее Capacity буфера _dataPtr.DataPtr в байтах
+            // long availableCapacityInBytes = this.AvailableCapacityInBytes; // Замените на реальное имя поля/свойства
+
+            // Пример проверки (замените AvailableCapacityInBytes на реальное значение из вашего класса)
+            // if (byteCountToCopy > availableCapacityInBytes)
+            // {
+            //     throw new InvalidOperationException($"Запрашиваемый размер ({byteCountToCopy} байт) превышает доступный размер буфера ({availableCapacityInBytes} байт).");
+            // }
+
             float[,] array = new float[this.Width, this.Height];
 
-            for (size_t x = 0; x < this.Width; x++)
+            fixed (float* targetPtr = array)
             {
-                for (size_t y = 0; y < this.Height; y++)
+                long capacity = (long)(this.Width * this.Height);
+                long byteCountToCopy = capacity * sizeof(float);
+                Console.WriteLine($"{capacity}, {byteCountToCopy}");
+
+                // Проверьте, что _dataPtr.DataPtr не равен null
+                if (_dataPtr.DataPtr == null)
                 {
-                    array[x, y] = this[x, y] / 255.0f;
+                    throw new InvalidOperationException("Указатель _dataPtr.DataPtr равен null.");
                 }
+
+                Buffer.MemoryCopy(_dataPtr.DataPtr, targetPtr, byteCountToCopy, byteCountToCopy);
             }
             return array;
         }

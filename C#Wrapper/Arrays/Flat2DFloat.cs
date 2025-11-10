@@ -3,55 +3,55 @@
 namespace C_Wrapper.Arrays
 {
     using size_t = UInt64;
-    public class Flat2DByte : IDisposable
+    public class Flat2DFloat : IDisposable
     {
         public IntPtr Ptr { get; private set; } = IntPtr.Zero;
-        private unsafe byte* _dataPtr = null;
+        public unsafe byte* DataPtr { get; private set; } = null;
 
         public readonly size_t Width;
         public readonly size_t Height;
 
 
-        public unsafe Flat2DByte(size_t width, size_t height)
+        public unsafe Flat2DFloat(size_t width, size_t height)
         {
             this.Width = width;
             this.Height = height;
-            Ptr = APIWrapper.CreateFlat2DByte(width, height);
+            Ptr = APIWrapper.CreateFlat2DFloat(width, height);
 
             if (Ptr == IntPtr.Zero)
             {
-                throw new NullReferenceException($"{nameof(Flat2DByte)} creation with dimensions: {width}, {height} got a nullptr");
+                throw new NullReferenceException($"{nameof(Flat2DFloat)} creation with dimensions: {width}, {height} got a nullptr");
             }
 
-            _dataPtr = (byte*)APIWrapper.Flat2DByte_GetDataPtr(Ptr);
+            DataPtr = (byte*)APIWrapper.Flat2DFloat_GetDataPtr(Ptr);
         }
 
-        public unsafe Flat2DByte(IntPtr pointer)
+        public unsafe Flat2DFloat(IntPtr pointer)
         {
             this.Ptr = pointer;
-            this.Width = APIWrapper.Flat2DByte_GetWidth(pointer);
-            this.Height = APIWrapper.Flat2DByte_GetHeight(pointer);
-            this._dataPtr = (byte*)APIWrapper.Flat2DByte_GetDataPtr(Ptr);
+            this.Width = APIWrapper.Flat2DFloat_GetWidth(pointer);
+            this.Height = APIWrapper.Flat2DFloat_GetHeight(pointer);
+            this.DataPtr = (byte*)APIWrapper.Flat2DFloat_GetDataPtr(Ptr);
         }
 
-        public static Flat2DByte FromPointer(IntPtr pointer)
+        public static Flat2DFloat FromPointer(IntPtr pointer)
         {
-            return new Flat2DByte(pointer);
+            return new Flat2DFloat(pointer);
         }
 
-        public Flat2DByteSafe ToSafe(bool deleteThis = false)
-        {
-            if (deleteThis == false)
-            {
-                return new Flat2DByteSafe(this);
-            }
-            else
-            {
-                Flat2DByteSafe SafeBytes = new(this);
-                this.Dispose();
-                return SafeBytes;
-            }
-        }
+        //public Flat2DFloatSafe ToSafe(bool deleteThis = false)
+        //{
+        //    if (deleteThis == false)
+        //    {
+        //        return new Flat2DFloatSafe(this);
+        //    }
+        //    else
+        //    {
+        //        Flat2DFloatSafe SafeBytes = new(this);
+        //        this.Dispose();
+        //        return SafeBytes;
+        //    }
+        //}
 
         public unsafe byte this[size_t x]
         {
@@ -60,14 +60,14 @@ namespace C_Wrapper.Arrays
 #if DEBUG
                 CheckForRange(x); // Проверка только в Debug
 #endif
-                return _dataPtr[x];
+                return DataPtr[x];
             }
             set
             {
 #if DEBUG
                 CheckForRange(x); // Проверка только в Debug
 #endif
-                _dataPtr[x] = value;
+                DataPtr[x] = value;
             }
         }
 
@@ -78,26 +78,26 @@ namespace C_Wrapper.Arrays
 #if DEBUG
                 CheckForRange(x, y); // Проверка только в Debug
 #endif
-                return _dataPtr[y * Width + x];
+                return DataPtr[y * Width + x];
             }
             set
             {
 #if DEBUG
                 CheckForRange(x, y); // Проверка только в Debug
 #endif
-                _dataPtr[y * Width + x] = value;
+                DataPtr[y * Width + x] = value;
             }
         }
 
         private unsafe void CheckForRange(size_t x)
         {
-            if (_dataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
+            if (DataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DFloat)); }
             if (x >= this.Width * Height || x < 0) { throw new IndexOutOfRangeException(); }
         }
 
         private unsafe void CheckForRange(size_t x, size_t y)
         {
-            if (_dataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DByte)); }
+            if (DataPtr == null || Ptr == IntPtr.Zero) { throw new ObjectDisposedException(nameof(Flat2DFloat)); }
             if (x >= this.Width || x < 0) { throw new IndexOutOfRangeException(); }
             if (y >= this.Height || y < 0) { throw new IndexOutOfRangeException(); }
         }
@@ -106,16 +106,16 @@ namespace C_Wrapper.Arrays
         {
             Dispose(true);
             GC.SuppressFinalize(this);
-            Console.WriteLine($"{nameof(Flat2DByte)}:Dispose");
+            Console.WriteLine($"{nameof(Flat2DFloat)}:Dispose");
         }
 
         protected virtual unsafe void Dispose(bool disposing)
         {
             if (disposing && Ptr != IntPtr.Zero)
             {
-                APIWrapper.DestroyFlat2DByte(Ptr);
+                APIWrapper.DestroyFlat2DFloat(Ptr);
                 Ptr = IntPtr.Zero;
-                _dataPtr = null;
+                DataPtr = null;
             }
         }
 

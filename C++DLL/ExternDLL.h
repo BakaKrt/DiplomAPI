@@ -7,6 +7,7 @@
 
 // Уберите включение .cpp файлов, оставьте только заголовки
 #include "Flat2DByte.h"
+#include "Flat2DFloat.h"
 #include "HeightMap.h"
 #include "CaveGenerator.h"
 
@@ -195,4 +196,29 @@ extern "C" {
     /// </summary>
     /// <param name="obj"></param>
     DLL_EXPORT void DestroyFlat2DByte(Flat2DByte* obj);
+
+
+
+    DLL_EXPORT Flat2DFloat* CreateFlat2DFloat(size_t width, size_t height);
+
+
+    DLL_EXPORT void Flat2DFloat_SetData(Flat2DFloat* obj, size_t x, size_t y, byte value);
+
+
+    DLL_EXPORT float Flat2DFloat_GetData(Flat2DFloat* obj, size_t x, size_t y);
+
+
+    DLL_EXPORT float* Flat2DFloat_GetDataPtr(Flat2DFloat* obj);
+
+
+    DLL_EXPORT size_t Flat2DFloat_GetDataSize(Flat2DFloat* obj);
+
+
+    DLL_EXPORT size_t Flat2DFloat_GetWidth(Flat2DFloat* obj);
+
+
+    DLL_EXPORT size_t Flat2DFloat_GetHeight(Flat2DFloat* obj);
+
+
+    DLL_EXPORT void DestroyFlat2DFloat(Flat2DFloat* obj);
 }

@@ -2,51 +2,51 @@
 
 CaveGenerator::CaveGenerator(size_t width, size_t height, bool randInit)
 {
-	this->Width = width;
-	this->Height = height;
-	this->Capacity = this->Width * this->Height;
+	this->_width = width;
+	this->_height = height;
+	this->_capacity = this->_width * this->_height;
 	
 	if (randInit) {
-		bool* array = RandomBoolArray(this->Capacity);
-		this->MainMatrix = new Flat2DBool(array, this->Width, this->Height);
+		bool* array = RandomBoolArray(this->_capacity);
+		this->_mainMatrix = new Flat2DBool(array, this->_width, this->_height);
 	}
 	else {
-		this->MainMatrix = new Flat2DBool(this->Width, this->Height);
+		this->_mainMatrix = new Flat2DBool(this->_width, this->_height);
 	}
 
-	this->SecondMatrix = new Flat2DBool(this->Width, this->Height);
+	this->_secondMatrix = new Flat2DBool(this->_width, this->_height);
 }
 
 CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit)
 {
-	this->Width = width;
-	this->Height = height;
-	this->Capacity = this->Width * this->Height;
+	this->_width = width;
+	this->_height = height;
+	this->_capacity = this->_width * this->_height;
 
 	if (randInit) {
-		bool* array = RandomBoolArray(this->Capacity);
-		this->MainMatrix = new Flat2DBool(array, this->Width, this->Height);
+		bool* array = RandomBoolArray(this->_capacity);
+		this->_mainMatrix = new Flat2DBool(array, this->_width, this->_height);
 	}
 	else {
-		this->MainMatrix = new Flat2DBool(this->Width, this->Height);
+		this->_mainMatrix = new Flat2DBool(this->_width, this->_height);
 	}
 
-	this->SecondMatrix = new Flat2DBool(this->Width, this->Height);
-	this->ThreadsCount = GetThreadsCount(threadsCount);
+	this->_secondMatrix = new Flat2DBool(this->_width, this->_height);
+	this->_threadsCount = GetThreadsCount(threadsCount);
 }
 
 CaveGenerator::CaveGenerator(const CaveGenerator& other) {
-	this->Width = other.Width;
-	this->Height = other.Height;
-	this->Capacity = this->Width * this->Height;
+	this->_width = other._width;
+	this->_height = other._height;
+	this->_capacity = this->_width * this->_height;
 
 	this->B = other.B;
 	this->S = other.S;
 
-	this->ThreadsCount = other.ThreadsCount;
+	this->_threadsCount = other._threadsCount;
 
-	this->MainMatrix = new Flat2DBool(*other.MainMatrix);
-	this->SecondMatrix = new Flat2DBool(*other.SecondMatrix);
+	this->_mainMatrix = new Flat2DBool(*other._mainMatrix);
+	this->_secondMatrix = new Flat2DBool(*other._secondMatrix);
 }
 
 void CaveGenerator::SetB(std::vector<int> rulesB)
@@ -113,19 +113,19 @@ int CaveGenerator::GetNeighbours(size_t x, size_t y)
 	else y_m = y - 1;
 
 	for (size_t iter_x = x_m; iter_x <= x + 1; iter_x++) {
-		if (iter_x >= this->Width) {
+		if (iter_x >= this->_width) {
 			//cout << "iter_x " << iter_x << " >= " << this->Width << ", continue\n";
 			continue;
 		}
 		for (size_t iter_y = y_m; iter_y <= y + 1; iter_y++) {
-			if (iter_y >= this->Height) {
+			if (iter_y >= this->_height) {
 				//cout << "iter_y " << iter_y << " >= " << this->Height << ", continue\n";
 				continue;
 			}
 
 			if (iter_x == x && iter_y == y) continue;
 
-			if (this->MainMatrix->at(iter_x, iter_y) == true)
+			if (this->_mainMatrix->at(iter_x, iter_y) == true)
 				neighboursCount++;
 		}
 	}
@@ -134,47 +134,47 @@ int CaveGenerator::GetNeighbours(size_t x, size_t y)
 
 void CaveGenerator::Tick(int count) noexcept
 {
-	for (size_t x = 0; x < this->Width; x++) {
-		for (size_t y = 0; y < this->Height; y++) {
+	for (size_t x = 0; x < this->_width; x++) {
+		for (size_t y = 0; y < this->_height; y++) {
 			int neighbours = GetNeighbours(x , y);
 
-			if (this->MainMatrix->at(x, y)) {
+			if (this->_mainMatrix->at(x, y)) {
 				if (this->S.count(neighbours)) {
-					this->SecondMatrix->at(x, y) = true;
+					this->_secondMatrix->at(x, y) = true;
 				}
 				else {
-					this->SecondMatrix->at(x, y) = false;
+					this->_secondMatrix->at(x, y) = false;
 				}
 			}
 			else {
 				if (this->B.count(neighbours)) {
-					this->SecondMatrix->at(x, y) = true;
+					this->_secondMatrix->at(x, y) = true;
 				}
 				else {
-					this->SecondMatrix->at(x, y) = false;
+					this->_secondMatrix->at(x, y) = false;
 				}
 			}
 		}
 	}
-	Flat2DBool* temp = MainMatrix;
-	MainMatrix = SecondMatrix;
-	SecondMatrix = temp;
+	Flat2DBool* temp = _mainMatrix;
+	_mainMatrix = _secondMatrix;
+	_secondMatrix = temp;
 }
 
 void CaveGenerator::TickMT(int count) noexcept
 {
-	static const size_t THREADS_COUNT = this->ThreadsCount;
-	static const size_t CHUNK_SIZE = (this->Height + THREADS_COUNT - 1) / THREADS_COUNT;
+	static const size_t THREADS_COUNT = this->_threadsCount;
+	static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
 
 	static vector<size_t> CHUNKS;
 	CHUNKS.reserve(THREADS_COUNT * 2);
 
 	if (CHUNKS.empty()) {
-		for (size_t i = 0; i < this->Height; i += CHUNK_SIZE) {
+		for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
 			size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
 
-			if (LineFrom + CHUNK_SIZE > MainMatrix->Width && LineFrom != MainMatrix->Width) {
-				LineTo = MainMatrix->Width;
+			if (LineFrom + CHUNK_SIZE > _mainMatrix->Width && LineFrom != _mainMatrix->Width) {
+				LineTo = _mainMatrix->Width;
 			}
 			CHUNKS.push_back(LineFrom);
 			CHUNKS.push_back(LineTo);
@@ -204,29 +204,29 @@ void CaveGenerator::TickMT(int count) noexcept
 	}
 
 	// Меняем местами матрицы
-	Flat2DBool* temp = MainMatrix;
-	MainMatrix = SecondMatrix;
-	SecondMatrix = temp;
+	Flat2DBool* temp = _mainMatrix;
+	_mainMatrix = _secondMatrix;
+	_secondMatrix = temp;
 }
 
 void CaveGenerator::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
 	size_t x = LineFrom;
 	for (; x < LineTo; x++) {
-		for (size_t y = 0; y < this->Width; y++) {
+		for (size_t y = 0; y < this->_width; y++) {
 			int count = GetNeighbours(x, y);
-			this->SecondMatrix->at(x, y) = count;
+			this->_secondMatrix->at(x, y) = count;
 		}
 	}
 }
 
 ostream& operator<<(ostream& stream, CaveGenerator* gen)
 {
-	stream << "Capacity: " << gen->Capacity << std::endl;
-	stream << "Width: " << gen->Width << " Height: " << gen->Height << std::endl;
-	for (size_t x = 0; x < gen->Capacity;) {
-		stream << gen->MainMatrix->at(x) << "\t";
+	stream << "Capacity: " << gen->_capacity << std::endl;
+	stream << "Width: " << gen->_width << " Height: " << gen->_height << std::endl;
+	for (size_t x = 0; x < gen->_capacity;) {
+		stream << gen->_mainMatrix->at(x) << "\t";
 		x++;
-		if (x % gen->Width == 0 && x != 0) stream << '\n';
+		if (x % gen->_width == 0 && x != 0) stream << '\n';
 		else stream << ' ';
 	}
 	return stream;
