@@ -1,11 +1,11 @@
-#include "CaveGenerator.h"
+#include "CV_base.h"
 
-CaveGenerator::CaveGenerator(size_t width, size_t height, bool randInit)
+CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, bool randInit)
 {
 	this->_width = width;
 	this->_height = height;
 	this->_capacity = this->_width * this->_height;
-	
+
 	if (randInit) {
 		bool* array = RandomBoolArray(this->_capacity);
 		this->_mainMatrix = new Flat2DBool(array, this->_width, this->_height);
@@ -17,7 +17,7 @@ CaveGenerator::CaveGenerator(size_t width, size_t height, bool randInit)
 	this->_secondMatrix = new Flat2DBool(this->_width, this->_height);
 }
 
-CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit)
+CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, int threadsCount, bool randInit)
 {
 	this->_width = width;
 	this->_height = height;
@@ -35,7 +35,7 @@ CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool
 	this->_threadsCount = GetThreadsCount(threadsCount);
 }
 
-CaveGenerator::CaveGenerator(const CaveGenerator& other) {
+CaveGenerator_base::CaveGenerator_base(const CaveGenerator_base& other) {
 	this->_width = other._width;
 	this->_height = other._height;
 	this->_capacity = this->_width * this->_height;
@@ -49,7 +49,11 @@ CaveGenerator::CaveGenerator(const CaveGenerator& other) {
 	this->_secondMatrix = new Flat2DBool(*other._secondMatrix);
 }
 
-void CaveGenerator::SetB(std::vector<int> rulesB)
+CaveGenerator_base::CaveGenerator_base() {
+
+}
+
+void CaveGenerator_base::SetB(std::vector<int> rulesB)
 {
 	this->B.clear();
 	for (const auto& rule : rulesB) {
@@ -57,7 +61,7 @@ void CaveGenerator::SetB(std::vector<int> rulesB)
 	}
 }
 
-void CaveGenerator::SetB(std::initializer_list<int> rulesB)
+void CaveGenerator_base::SetB(std::initializer_list<int> rulesB)
 {
 	this->B.clear();
 	for (const auto& rule : rulesB) {
@@ -65,7 +69,7 @@ void CaveGenerator::SetB(std::initializer_list<int> rulesB)
 	}
 }
 
-void CaveGenerator::SetB(int rulesBfrom, int ruleBto)
+void CaveGenerator_base::SetB(int rulesBfrom, int ruleBto)
 {
 	this->B.clear();
 
@@ -74,7 +78,7 @@ void CaveGenerator::SetB(int rulesBfrom, int ruleBto)
 	}
 }
 
-void CaveGenerator::SetS(std::vector<int> rulesS)
+void CaveGenerator_base::SetS(std::vector<int> rulesS)
 {
 	this->S.clear();
 	for (const auto& rule : rulesS) {
@@ -82,7 +86,7 @@ void CaveGenerator::SetS(std::vector<int> rulesS)
 	}
 }
 
-void CaveGenerator::SetS(std::initializer_list<int> rulesS)
+void CaveGenerator_base::SetS(std::initializer_list<int> rulesS)
 {
 	this->S.clear();
 	for (const auto& rule : rulesS) {
@@ -90,7 +94,7 @@ void CaveGenerator::SetS(std::initializer_list<int> rulesS)
 	}
 }
 
-void CaveGenerator::SetS(int rulesSfrom, int ruleSto)
+void CaveGenerator_base::SetS(int rulesSfrom, int ruleSto)
 {
 	this->S.clear();
 
@@ -99,7 +103,7 @@ void CaveGenerator::SetS(int rulesSfrom, int ruleSto)
 	}
 }
 
-int CaveGenerator::GetNeighbours(size_t x, size_t y)
+int CaveGenerator_base::GetNeighbours(size_t x, size_t y)
 {
 	using std::cout;
 	using std::endl;
@@ -114,12 +118,10 @@ int CaveGenerator::GetNeighbours(size_t x, size_t y)
 
 	for (size_t iter_x = x_m; iter_x <= x + 1; iter_x++) {
 		if (iter_x >= this->_width) {
-			//cout << "iter_x " << iter_x << " >= " << this->Width << ", continue\n";
 			continue;
 		}
 		for (size_t iter_y = y_m; iter_y <= y + 1; iter_y++) {
 			if (iter_y >= this->_height) {
-				//cout << "iter_y " << iter_y << " >= " << this->Height << ", continue\n";
 				continue;
 			}
 
@@ -132,11 +134,11 @@ int CaveGenerator::GetNeighbours(size_t x, size_t y)
 	return neighboursCount;
 }
 
-void CaveGenerator::Tick(int count) noexcept
+void CaveGenerator_base::Tick(int count) noexcept
 {
 	for (size_t x = 0; x < this->_width; x++) {
 		for (size_t y = 0; y < this->_height; y++) {
-			int neighbours = GetNeighbours(x , y);
+			int neighbours = GetNeighbours(x, y);
 
 			if (this->_mainMatrix->at(x, y)) {
 				if (this->S.count(neighbours)) {
@@ -161,7 +163,7 @@ void CaveGenerator::Tick(int count) noexcept
 	_secondMatrix = temp;
 }
 
-void CaveGenerator::TickMT(int count) noexcept
+void CaveGenerator_base::TickMT(int count) noexcept
 {
 	static const size_t THREADS_COUNT = this->_threadsCount;
 	static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
@@ -169,16 +171,14 @@ void CaveGenerator::TickMT(int count) noexcept
 	static vector<size_t> CHUNKS;
 	CHUNKS.reserve(THREADS_COUNT * 2);
 
-	if (CHUNKS.empty()) {
-		for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
-			size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
+	for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
+		size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
 
-			if (LineFrom + CHUNK_SIZE > _mainMatrix->Width && LineFrom != _mainMatrix->Width) {
-				LineTo = _mainMatrix->Width;
-			}
-			CHUNKS.push_back(LineFrom);
-			CHUNKS.push_back(LineTo);
+		if (LineFrom + CHUNK_SIZE > _mainMatrix->width() && LineFrom != _mainMatrix->width()) {
+			LineTo = _mainMatrix->width();
 		}
+		CHUNKS.push_back(LineFrom);
+		CHUNKS.push_back(LineTo);
 	}
 
 	vector<thread> THREADS;
@@ -192,7 +192,7 @@ void CaveGenerator::TickMT(int count) noexcept
 
 			THREADS.emplace_back([this, start, end]() { // Захватываем значения start и end по значению
 				this->TickMTRealization(start, end);
-				});
+			});
 		}
 	}
 
@@ -200,8 +200,8 @@ void CaveGenerator::TickMT(int count) noexcept
 		for (auto& th : THREADS) {
 			th.join();
 		}
-		THREADS.clear();
 	}
+	THREADS.clear();
 
 	// Меняем местами матрицы
 	Flat2DBool* temp = _mainMatrix;
@@ -209,7 +209,7 @@ void CaveGenerator::TickMT(int count) noexcept
 	_secondMatrix = temp;
 }
 
-void CaveGenerator::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
+void CaveGenerator_base::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
 	size_t x = LineFrom;
 	for (; x < LineTo; x++) {
 		for (size_t y = 0; y < this->_width; y++) {
@@ -220,7 +220,7 @@ void CaveGenerator::TickMTRealization(const size_t LineFrom, const size_t LineTo
 	}
 }
 
-ostream& operator<<(ostream& stream, CaveGenerator* gen)
+ostream& operator<<(ostream& stream, CaveGenerator_base* gen)
 {
 	stream << "Capacity: " << gen->_capacity << std::endl;
 	stream << "Width: " << gen->_width << " Height: " << gen->_height << std::endl;

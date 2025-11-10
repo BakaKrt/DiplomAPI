@@ -513,11 +513,13 @@ int main()
 {
     using std::cout;
 
-    BenchmarkCaveOTMT(10, 8, 2049, 2049, 2);
-    BenchmarkCaveOTMT(10, 8, 2049, 2049, 3);
-    BenchmarkCaveOTMT(10, 8, 2049, 2049, 4);
-    BenchmarkCaveOTMT(10, 8, 2049, 2049, 5);
-    BenchmarkCaveOTMT(10, 8, 2049, 2049, 6);
+    BenchmarkCaveOTMT(100, 5, 2049, 2049, 3);
+
+    //BenchmarkCaveOTMT(10, 8, 2049, 2049, 2);
+    //BenchmarkCaveOTMT(10, 8, 2049, 2049, 3);
+    //BenchmarkCaveOTMT(10, 8, 2049, 2049, 4);
+    //BenchmarkCaveOTMT(10, 8, 2049, 2049, 5);
+    //BenchmarkCaveOTMT(10, 8, 2049, 2049, 6);
 
     //BenchmarkCaveThreadsSpeedUp(10, 4, 2049, 2049, 1, 4);
 

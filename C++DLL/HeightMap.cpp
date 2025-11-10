@@ -1,11 +1,6 @@
 #include "HeightMap.h"
 
 byte HeightMap::GetAVGSum(size_t x, size_t y) noexcept {
-#ifdef _DEBUG
-    if (x >= Width || y >= Height) {
-        throw std::out_of_range("");
-    }
-#endif
 
     size_t res = 0;
 
