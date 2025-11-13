@@ -65,10 +65,8 @@ void CaveGenerator_mt_woMTcalc::TickMT(int count) noexcept {
 		}
 	}
 
-	for (int i = 0; i < count; i++) {
-		for (auto& th : THREADS) {
-			th.join();
-		}
+	for (auto& th : THREADS) {
+		th.join();
 	}
 	THREADS.clear();
 

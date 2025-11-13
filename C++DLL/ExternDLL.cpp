@@ -1,4 +1,17 @@
-﻿#include "ExternDLL.h"
+﻿#include <iomanip>
+
+
+#include "ExternDLL.h"
+
+#include "ForBenchmarks/CV_base.h"
+#include "ForBenchmarks/CV_mt_wMTc.h"
+#include "ForBenchmarks/CV_mt_woMTc.h"
+#include "ForBenchmarks/CV_mt_wMTc_alt_sum.h"
+
+using namespace std::chrono;
+using std::unique_ptr;
+using std::make_unique;
+using std::cout;
 
 extern "C" {
 #pragma region HeightMap
@@ -338,8 +351,6 @@ extern "C" {
 }
 
 static void BenchmarkHeightMapOTMT(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {
-    using namespace std::chrono;
-    using std::cout;
     if (operationsPerIteration == 0) {
         cout << "Error: operationsPerIteration must be greater than 0.\n";
         return;
@@ -400,8 +411,6 @@ static void BenchmarkHeightMapOTMT(size_t benchmarkIterations, size_t operations
 }
 
 static void BenchmarkCaveOTMT(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {
-    using namespace std::chrono;
-    using std::cout;
     if (operationsPerIteration == 0) {
         cout << "Error: operationsPerIteration must be greater than 0.\n";
         return;
@@ -464,8 +473,6 @@ static void BenchmarkCaveOTMT(size_t benchmarkIterations, size_t operationsPerIt
 }
 
 static void BenchmarkCaveThreadsSpeedUp(int benchmarkIterations, int operationsPerIteration, size_t width, size_t height, int threadCountFrom = 2, int threadCountTo = 0) {
-    using namespace std::chrono;
-    using std::cout;
     if (operationsPerIteration == 0) {
         cout << "Error: operationsPerIteration must be greater than 0.\n";
         return;
@@ -508,12 +515,152 @@ static void BenchmarkCaveThreadsSpeedUp(int benchmarkIterations, int operationsP
     }
 }
 
+struct BenchmarkResult {
+    duration<double> elapsed_time;
+    std::string implementation_name;
+    std::string test_type; // "Single-threaded" или "Multi-threaded"
+    int iterations;
+};
+
+// Функция для запуска однопоточного теста (только для base)
+static BenchmarkResult RunSingleThreadedBenchmark(const CaveGenerator_base& original_cave, int iterations, int ops_per_iteration) {
+    //auto cave_copy = std::make_unique<CaveGenerator_base>(original_cave);
+
+    steady_clock::duration totalTime {};
+
+    for (int i = 0; i < iterations; ++i) {
+        auto cave_copy = new CaveGenerator_base(original_cave);
+
+        auto start = steady_clock::now();
+            cave_copy->Tick(ops_per_iteration);
+        auto end = steady_clock::now();
+        totalTime += end - start;
+    }
+
+    return {  totalTime, "CaveGenerator_base", "Single-threaded (Tick)", iterations };
+}
+
+// Функция для запуска многопоточного теста
+template<typename T>
+BenchmarkResult RunMultiThreadedBenchmark(const T& original_cave, int iterations, int ops_per_iteration) {
+    //auto cave_copy = std::make_unique<CaveGenerator_base>(original_cave);
+
+    steady_clock::duration totalTime{};
+
+    for (int i = 0; i < iterations; ++i) {
+        auto cave_copy = new T (original_cave);
+
+        auto start = steady_clock::now();
+            cave_copy->TickMT(ops_per_iteration);
+        auto end = steady_clock::now();
+        totalTime += end - start;
+    }
+
+    std::string readable_name;
+    if (std::is_same_v<T, CaveGenerator_base>) {
+        readable_name = "CaveGenerator_base_MT";
+    }
+    else if (std::is_same_v<T, CaveGenerator_mt_wMTcalc>) {
+        readable_name = "CaveGenerator_mt_wMTcalc";
+    }
+    else if (std::is_same_v<T, CaveGenerator_mt_woMTcalc>) {
+        readable_name = "CaveGenerator_mt_woMTcalc";
+    }
+    else if (std::is_same_v<T, CaveGenerator_mt_wMTcalc_alt_sum>) {
+        readable_name = "CaveGenerator_mt_woMTcalc_alt_sum";
+    }
+    else {
+        readable_name = "Unknown_MT_Impl";
+    }
+
+    return { totalTime, readable_name, "Multi-threaded (TickMT)", iterations };
+}
+
+static void test(int benchmarkIterations, int operationsPerIteration, size_t width, size_t height, int threadsCount) {
+    std::cout << "\n--- Running Comprehensive Benchmark ---\n";
+    std::cout << "Parameters: Width=" << width << ", Height=" << height
+        << ", Threads=" << threadsCount << ", Iterations=" << benchmarkIterations
+        << ", OpsPerIter=" << operationsPerIteration << "\n";
+
+    auto original_base = std::make_unique<CaveGenerator_base>(width, height, threadsCount, true);
+    auto original_wMT = std::make_unique<CaveGenerator_mt_wMTcalc>(*original_base);
+    auto original_woMT = std::make_unique<CaveGenerator_mt_woMTcalc>(*original_base);
+    auto original_woMT_alt = std::make_unique<CaveGenerator_mt_wMTcalc_alt_sum>(*original_base);
+
+    std::vector<BenchmarkResult> results;
+
+    // 1. Тестирование CaveGenerator_base: однопоточный (Tick)
+    std::cout << "Running single-threaded test for CaveGenerator_base...\n";
+    results.push_back(RunSingleThreadedBenchmark(*original_base, benchmarkIterations, operationsPerIteration));
+
+    // 2. Тестирование CaveGenerator_base: многопоточный (TickMT)
+    //std::cout << "Running multi-threaded test for CaveGenerator_base...\n";
+    //results.push_back(RunMultiThreadedBenchmark<CaveGenerator_base>(*original_base, benchmarkIterations, operationsPerIteration));
+
+    // 3. Тестирование CaveGenerator_mt_wMTcalc: многопоточный (TickMT)
+    std::cout << "Running multi-threaded test for CaveGenerator_mt_wMTcalc...\n";
+    results.push_back(RunMultiThreadedBenchmark<CaveGenerator_mt_wMTcalc>(*original_wMT, benchmarkIterations, operationsPerIteration));
+
+    // 4. Тестирование CaveGenerator_mt_woMTcalc: многопоточный (TickMT)
+    std::cout << "Running multi-threaded test for CaveGenerator_mt_woMTcalc...\n";
+    results.push_back(RunMultiThreadedBenchmark<CaveGenerator_mt_woMTcalc>(*original_woMT, benchmarkIterations, operationsPerIteration));
+
+    // 5. Тестирование CaveGenerator_mt_woMTcalc_alt: многопоточный (TickMT)
+    std::cout << "Running multi-threaded test for CaveGenerator_mt_woMTcalc_sum_alt...\n";
+    results.push_back(RunMultiThreadedBenchmark<CaveGenerator_mt_wMTcalc_alt_sum>(*original_woMT_alt, benchmarkIterations, operationsPerIteration));
+
+    // Вывод результатов
+    std::cout << "\n--- Benchmark Results ---\n";
+    for (const auto& res : results) {
+        double total_time = res.elapsed_time.count();
+        double time_per_iteration = total_time / static_cast<double>(res.iterations);
+
+        std::cout << std::fixed << std::setprecision(8);
+        std::cout << res.implementation_name << " (" << res.test_type << "):\n";
+        std::cout << "\tTotal Time: " << total_time << " seconds\n";
+        std::cout << "\tTime Per Iteration: " << time_per_iteration << " seconds\n";
+    }
+
+    // Сравнение
+    if (results.size() >= 2) {
+        const auto& base_st = results[0]; // Однопоточная base - эталон
+
+        std::cout << std::fixed << std::setprecision(8);
+
+        // Сравнение Base_MT с Base_ST
+        if (base_st.elapsed_time.count() > 0.0) {
+            double speedup = base_st.elapsed_time.count() / results[1].elapsed_time.count();
+            std::cout << "\nSpeedup (Base_ST / Base_MT): " << speedup << "x\n";
+        }
+        else {
+            std::cout << "\nSpeedup calculation (Base_ST / Base_MT) skipped (ST time is 0).\n";
+        }
+
+        // Сравнение всех остальных реализаций (начиная с индекса 1) с Base_ST
+        for (size_t i = 1; i < results.size(); ++i) { // Начинаем с 1, т.к. 0 - это Base_ST
+            const auto& other_result = results[i];
+            //if (base_st.elapsed_time.count() > 0.0) {
+                double speedup = base_st.elapsed_time.count() / other_result.elapsed_time.count();
+                std::cout << "Speedup (Base_ST / " << other_result.implementation_name << "): " << speedup << "x\n";
+            //}
+            //else {
+                //std::cout << "Speedup calculation (Base_ST / " << other_result.implementation_name << ") skipped (ST time is 0).\n";
+            //}
+        }
+    }
+
+    std::cout << "------------------------\n";
+}
+
+
 
 int main()
 {
     using std::cout;
 
-    BenchmarkCaveOTMT(100, 5, 2049, 2049, 3);
+    //BenchmarkCaveOTMT(100, 5, 2049, 2049, 3);
+
+    test(500, 5, 1025, 1025, 4);
 
     //BenchmarkCaveOTMT(10, 8, 2049, 2049, 2);
     //BenchmarkCaveOTMT(10, 8, 2049, 2049, 3);
@@ -532,3 +679,31 @@ int main()
     
     delete cave;*/
 }
+
+/*
+--- Running Comprehensive Benchmark ---
+Parameters: Width=1025, Height=1025, Threads=4, Iterations=500, OpsPerIter=5
+Running single-threaded test for CaveGenerator_base...
+Running multi-threaded test for CaveGenerator_mt_wMTcalc...
+Running multi-threaded test for CaveGenerator_mt_woMTcalc...
+Running multi-threaded test for CaveGenerator_mt_woMTcalc_sum_alt...
+
+--- Benchmark Results ---
+CaveGenerator_base (Single-threaded (Tick)):
+        Total Time: 18.23794700 seconds
+        Time Per Iteration: 0.03647589 seconds
+CaveGenerator_mt_wMTcalc (Multi-threaded (TickMT)):
+        Total Time: 0.00022030 seconds
+        Time Per Iteration: 0.00000044 seconds
+CaveGenerator_mt_woMTcalc (Multi-threaded (TickMT)):
+        Total Time: 5.67369650 seconds
+        Time Per Iteration: 0.01134739 seconds
+CaveGenerator_mt_woMTcalc_alt_sum (Multi-threaded (TickMT)):
+        Total Time: 0.00021380 seconds
+        Time Per Iteration: 0.00000043 seconds
+
+Speedup (Base_ST / Base_MT): 82786.86790740x
+Speedup (Base_ST / CaveGenerator_mt_wMTcalc): 82786.86790740x
+Speedup (Base_ST / CaveGenerator_mt_woMTcalc): 3.21447349x
+Speedup (Base_ST / CaveGenerator_mt_woMTcalc_alt_sum): 85303.77455566x
+*/

@@ -49,9 +49,6 @@ CaveGenerator_base::CaveGenerator_base(const CaveGenerator_base& other) {
 	this->_secondMatrix = new Flat2DBool(*other._secondMatrix);
 }
 
-CaveGenerator_base::CaveGenerator_base() {
-
-}
 
 void CaveGenerator_base::SetB(std::vector<int> rulesB)
 {
@@ -105,9 +102,6 @@ void CaveGenerator_base::SetS(int rulesSfrom, int ruleSto)
 
 int CaveGenerator_base::GetNeighbours(size_t x, size_t y)
 {
-	using std::cout;
-	using std::endl;
-
 	int neighboursCount = 0;
 	size_t x_m = 0, y_m = 0;
 	if (x == 0) x_m = 0;
@@ -140,22 +134,8 @@ void CaveGenerator_base::Tick(int count) noexcept
 		for (size_t y = 0; y < this->_height; y++) {
 			int neighbours = GetNeighbours(x, y);
 
-			if (this->_mainMatrix->at(x, y)) {
-				if (this->S.count(neighbours)) {
-					this->_secondMatrix->at(x, y) = true;
-				}
-				else {
-					this->_secondMatrix->at(x, y) = false;
-				}
-			}
-			else {
-				if (this->B.count(neighbours)) {
-					this->_secondMatrix->at(x, y) = true;
-				}
-				else {
-					this->_secondMatrix->at(x, y) = false;
-				}
-			}
+			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
+				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
 		}
 	}
 	Flat2DBool* temp = _mainMatrix;
@@ -196,10 +176,8 @@ void CaveGenerator_base::TickMT(int count) noexcept
 		}
 	}
 
-	for (int i = 0; i < count; i++) {
-		for (auto& th : THREADS) {
-			th.join();
-		}
+	for (auto& th : THREADS) {
+		th.join();
 	}
 	THREADS.clear();
 

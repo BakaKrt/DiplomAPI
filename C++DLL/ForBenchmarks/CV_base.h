@@ -25,7 +25,7 @@ public:
 	CaveGenerator_base(size_t width, size_t height, bool randInit = true);
 	CaveGenerator_base(size_t width, size_t height, int threadsCount, bool randInit = true);
 	CaveGenerator_base(const CaveGenerator_base& other);
-	CaveGenerator_base();
+	CaveGenerator_base() = delete;
 
 	void SetB(std::vector<int> rulesB);
 	void SetB(std::initializer_list<int> rulesB);
@@ -41,3 +41,10 @@ public:
 
 	friend ostream& operator<<(ostream& stream, CaveGenerator_base* gen);
 };
+
+/*
+	CV_base - базовое, но с плоским массивом
+	CV_mt_woMTC - многопоток, но с высчитыванием размеров в рантайме при первом обращении MT
+	cv_mt_wMT - многопоток, но с высчитыванием размеров в конструкторе
+
+*/

@@ -163,7 +163,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
       <Command>call copyDLL.bat $(OutDir)$(TargetFileName) $(ProjectDir)..\C#Wrapper</Command>
@@ -197,6 +197,7 @@
     <ClInclude Include="Flat2DFloat.h" />
     <ClInclude Include="ForBenchmarks\CV_base.h" />
     <ClInclude Include="ForBenchmarks\CV_mt_wMTc.h" />
+    <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.h" />
     <ClInclude Include="ForBenchmarks\CV_mt_woMTC.h" />
     <ClInclude Include="HeightMap.h" />
     <ClInclude Include="Useful.h" />
@@ -209,6 +210,7 @@
     <ClCompile Include="Flat2DFloat.cpp" />
     <ClCompile Include="ForBenchmarks\CV_base.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc.cpp" />
+    <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_woMTC.cpp" />
     <ClCompile Include="HeightMap.cpp" />
   </ItemGroup>
