@@ -1,13 +1,13 @@
 #include "CV_base.h"
 
-CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, bool randInit)
+CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, byte chance)
 {
 	this->_width = width;
 	this->_height = height;
 	this->_capacity = this->_width * this->_height;
 
-	if (randInit) {
-		bool* array = RandomBoolArray(this->_capacity);
+	if (chance > 0) {
+		bool* array = RandomBoolArray(this->_capacity, (int)chance);
 		this->_mainMatrix = new Flat2DBool(array, this->_width, this->_height);
 	}
 	else {
@@ -17,14 +17,14 @@ CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, bool randIni
 	this->_secondMatrix = new Flat2DBool(this->_width, this->_height);
 }
 
-CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, int threadsCount, bool randInit)
+CaveGenerator_base::CaveGenerator_base(size_t width, size_t height, int threadsCount, byte chance)
 {
 	this->_width = width;
 	this->_height = height;
 	this->_capacity = this->_width * this->_height;
 
-	if (randInit) {
-		bool* array = RandomBoolArray(this->_capacity);
+	if (chance > 0) {
+		bool* array = RandomBoolArray(this->_capacity, (int)chance);
 		this->_mainMatrix = new Flat2DBool(array, this->_width, this->_height);
 	}
 	else {
@@ -134,8 +134,22 @@ void CaveGenerator_base::Tick(int count) noexcept
 		for (size_t y = 0; y < this->_height; y++) {
 			int neighbours = GetNeighbours(x, y);
 
-			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
-				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
+			if (this->_mainMatrix->at(x, y)) {
+				if (this->S.count(neighbours)) {
+					this->_secondMatrix->at(x, y) = true;
+				}
+				else {
+					this->_secondMatrix->at(x, y) = false;
+				}
+			}
+			else {
+				if (this->B.count(neighbours)) {
+					this->_secondMatrix->at(x, y) = true;
+				}
+				else {
+					this->_secondMatrix->at(x, y) = false;
+				}
+			}
 		}
 	}
 	Flat2DBool* temp = _mainMatrix;
@@ -145,10 +159,10 @@ void CaveGenerator_base::Tick(int count) noexcept
 
 void CaveGenerator_base::TickMT(int count) noexcept
 {
-	static const size_t THREADS_COUNT = this->_threadsCount;
-	static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
+	const size_t THREADS_COUNT = this->_threadsCount;
+	const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
 
-	static vector<size_t> CHUNKS;
+	vector<size_t> CHUNKS;
 	CHUNKS.reserve(THREADS_COUNT * 2);
 
 	for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
@@ -188,10 +202,9 @@ void CaveGenerator_base::TickMT(int count) noexcept
 }
 
 void CaveGenerator_base::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
-	size_t x = LineFrom;
-	for (; x < LineTo; x++) {
-		for (size_t y = 0; y < this->_width; y++) {
-			int neighbours = GetNeighbours(x, y);
+	for (size_t y = LineFrom; y < LineTo; y++) { // y - индекс строки
+		for (size_t x = 0; x < this->_width; x++) { // x - индекс столбца
+			int neighbours = GetNeighbours(x, y); // x - столбец, y - строка - правильно
 			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
 				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
 		}

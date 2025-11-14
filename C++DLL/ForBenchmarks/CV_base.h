@@ -22,8 +22,8 @@ protected:
 	virtual int GetNeighbours(size_t x, size_t y);
 public:
 
-	CaveGenerator_base(size_t width, size_t height, bool randInit = true);
-	CaveGenerator_base(size_t width, size_t height, int threadsCount, bool randInit = true);
+	CaveGenerator_base(size_t width, size_t height, byte chance);
+	CaveGenerator_base(size_t width, size_t height, int threadsCount, byte chance);
 	CaveGenerator_base(const CaveGenerator_base& other);
 	CaveGenerator_base() = delete;
 

@@ -1,26 +1,17 @@
 #include "CV_mt_wMTc_alt_sum.h"
 
 
-void CaveGenerator_mt_wMTcalc_alt_sum::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
-	size_t x = LineFrom;
-	for (; x < LineTo; x++) {
-		for (size_t y = 0; y < this->_width; y++) {
-			int neighbours = GetNeighbours(x, y);
-			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
-				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
-		}
-	}
-}
+//void CaveGenerator_mt_wMTcalc_alt_sum::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
+//	size_t x = LineFrom;
+//	for (; x < LineTo; x++) {
+//		for (size_t y = 0; y < this->_width; y++) {
+//			int neighbours = GetNeighbours(x, y);
+//			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
+//				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
+//		}
+//	}
+//}
 
-/*  y - >
-	0 1 2  x
-	3 4 5  |
-	6 7 8 \/
-
-	3 1 0
-	4 2 0
-	0 0 0
-*/
 int CaveGenerator_mt_wMTcalc_alt_sum::GetNeighbours(size_t x, size_t y)
 {
 	int sum = 0;
@@ -69,22 +60,20 @@ int CaveGenerator_mt_wMTcalc_alt_sum::GetNeighbours(size_t x, size_t y)
 
 CaveGenerator_mt_wMTcalc_alt_sum::CaveGenerator_mt_wMTcalc_alt_sum(const CaveGenerator_base& other) : CaveGenerator_base(other)
 {
-	static const size_t CHUNK_SIZE = (this->_height + _threadsCount - 1) / _threadsCount;
+	const size_t CHUNK_SIZE = (this->_height + _threadsCount - 1) / _threadsCount;
 
-	static vector<size_t> CHUNKS;
-	CHUNKS.reserve(_threadsCount * 2);
+	_CHUNKS.reserve(_threadsCount * 2);
 
-	if (CHUNKS.empty()) {
-		for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
-			size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
+	for (size_t i = 0; i < this->_height; i += CHUNK_SIZE) {
+		size_t LineFrom = i, LineTo = LineFrom + CHUNK_SIZE;
 
-			if (LineFrom + CHUNK_SIZE > _mainMatrix->width() && LineFrom != _mainMatrix->width()) {
-				LineTo = _mainMatrix->width();
-			}
-			CHUNKS.push_back(LineFrom);
-			CHUNKS.push_back(LineTo);
+		if (LineFrom + CHUNK_SIZE > _mainMatrix->width() && LineFrom != _mainMatrix->width()) {
+			LineTo = _mainMatrix->width();
 		}
+		_CHUNKS.push_back(LineFrom);
+		_CHUNKS.push_back(LineTo);
 	}
+	
 }
 
 void CaveGenerator_mt_wMTcalc_alt_sum::Tick(int count) noexcept
@@ -103,7 +92,7 @@ void CaveGenerator_mt_wMTcalc_alt_sum::Tick(int count) noexcept
 }
 
 void CaveGenerator_mt_wMTcalc_alt_sum::TickMT(int count) noexcept {
-	static const size_t THREADS_COUNT = this->_threadsCount;
+	const size_t THREADS_COUNT = this->_threadsCount;
 
 	vector<thread> THREADS;
 	THREADS.reserve(THREADS_COUNT);

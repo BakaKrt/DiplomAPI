@@ -45,6 +45,9 @@
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Flat2DByte.h">
@@ -78,6 +81,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\CV_base_alt_sum.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

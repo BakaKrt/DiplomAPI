@@ -196,6 +196,7 @@
     <ClInclude Include="Flat2DByte.h" />
     <ClInclude Include="Flat2DFloat.h" />
     <ClInclude Include="ForBenchmarks\CV_base.h" />
+    <ClInclude Include="ForBenchmarks\CV_base_alt_sum.h" />
     <ClInclude Include="ForBenchmarks\CV_mt_wMTc.h" />
     <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.h" />
     <ClInclude Include="ForBenchmarks\CV_mt_woMTC.h" />
@@ -209,6 +210,7 @@
     <ClCompile Include="Flat2DByte.cpp" />
     <ClCompile Include="Flat2DFloat.cpp" />
     <ClCompile Include="ForBenchmarks\CV_base.cpp" />
+    <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_woMTC.cpp" />

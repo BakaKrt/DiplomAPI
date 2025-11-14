@@ -1,16 +1,16 @@
 #include "CV_mt_woMTC.h"
 
 
-void CaveGenerator_mt_woMTcalc::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
-	size_t x = LineFrom;
-	for (; x < LineTo; x++) {
-		for (size_t y = 0; y < this->_width; y++) {
-			int neighbours = GetNeighbours(x, y);
-			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
-				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
-		}
-	}
-}
+//void CaveGenerator_mt_woMTcalc::TickMTRealization(const size_t LineFrom, const size_t LineTo) {
+//	size_t x = LineFrom;
+//	for (; x < LineTo; x++) {
+//		for (size_t y = 0; y < this->_width; y++) {
+//			int neighbours = GetNeighbours(x, y);
+//			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
+//				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
+//		}
+//	}
+//}
 
 CaveGenerator_mt_woMTcalc::CaveGenerator_mt_woMTcalc(const CaveGenerator_base& other) : CaveGenerator_base(other)
 {
@@ -32,8 +32,8 @@ void CaveGenerator_mt_woMTcalc::Tick(int count) noexcept
 }
 
 void CaveGenerator_mt_woMTcalc::TickMT(int count) noexcept {
-	static const size_t THREADS_COUNT = this->_threadsCount;
-	static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
+	const size_t THREADS_COUNT = this->_threadsCount;
+	const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
 
 	static vector<size_t> CHUNKS;
 	CHUNKS.reserve(THREADS_COUNT * 2);
