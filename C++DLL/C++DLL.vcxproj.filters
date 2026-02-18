@@ -13,78 +13,56 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Файлы заголовков\FlatArray">
+      <UniqueIdentifier>{136f3a72-cfa8-4308-9236-1d800d295554}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\FlatArray">
+      <UniqueIdentifier>{453588f2-28bb-4da5-9749-7d80c0ff81f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\CaveGenerator">
+      <UniqueIdentifier>{aa631813-d8e5-49d4-8788-bd2011320f80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\CaveGenerator">
+      <UniqueIdentifier>{30c4af90-e8e9-4220-8b75-b9644318ac2e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Flat2DByte.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="HeightMap.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="ExternDLL.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="CaveGenerator.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Flat2DFloat.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Flat2DBool.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="ForBenchmarks\CV_mt_woMTC.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="ForBenchmarks\CV_base.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="ForBenchmarks\CV_mt_wMTc.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\cave_generator\CaveGenerator.cpp">
+      <Filter>Исходные файлы\CaveGenerator</Filter>
     </ClCompile>
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp">
-      <Filter>Исходные файлы</Filter>
+      <Filter>Исходные файлы\FlatArray</Filter>
     </ClCompile>
     <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp">
-      <Filter>Исходные файлы</Filter>
+      <Filter>Исходные файлы\FlatArray</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Flat2DByte.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="HeightMap.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="ExternDLL.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="CaveGenerator.h">
+    <ClInclude Include="resource.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Flat2DFloat.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\flat_array\FlatArray.hpp">
+      <Filter>Файлы заголовков\FlatArray</Filter>
     </ClInclude>
-    <ClInclude Include="Useful.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\cave_generator\CaveGenerator.hpp">
+      <Filter>Файлы заголовков\CaveGenerator</Filter>
     </ClInclude>
-    <ClInclude Include="Flat2DBool.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="ForBenchmarks\CV_base_alt_sum.hpp">
+      <Filter>Файлы заголовков\FlatArray</Filter>
     </ClInclude>
-    <ClInclude Include="ForBenchmarks\CV_mt_woMTC.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.hpp">
+      <Filter>Файлы заголовков\FlatArray</Filter>
     </ClInclude>
-    <ClInclude Include="ForBenchmarks\CV_base.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="ForBenchmarks\CV_mt_wMTc.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="ForBenchmarks\CV_base_alt_sum.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="C++DLL.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

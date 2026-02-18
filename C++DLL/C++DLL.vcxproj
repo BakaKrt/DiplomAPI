@@ -37,39 +37,39 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -129,7 +129,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdclatest</LanguageStandard_C>
+      <BuildStlModules>true</BuildStlModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -157,16 +159,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>call copyDLL.bat $(OutDir)$(TargetFileName) $(ProjectDir)..\C#Wrapper</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -190,31 +193,21 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CaveGenerator.h" />
     <ClInclude Include="ExternDLL.h" />
-    <ClInclude Include="Flat2DBool.h" />
-    <ClInclude Include="Flat2DByte.h" />
-    <ClInclude Include="Flat2DFloat.h" />
-    <ClInclude Include="ForBenchmarks\CV_base.h" />
-    <ClInclude Include="ForBenchmarks\CV_base_alt_sum.h" />
-    <ClInclude Include="ForBenchmarks\CV_mt_wMTc.h" />
-    <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.h" />
-    <ClInclude Include="ForBenchmarks\CV_mt_woMTC.h" />
-    <ClInclude Include="HeightMap.h" />
-    <ClInclude Include="Useful.h" />
+    <ClInclude Include="ForBenchmarks\CV_base_alt_sum.hpp" />
+    <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.hpp" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="src\cave_generator\CaveGenerator.hpp" />
+    <ClInclude Include="src\flat_array\FlatArray.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CaveGenerator.cpp" />
     <ClCompile Include="ExternDLL.cpp" />
-    <ClCompile Include="Flat2DBool.cpp" />
-    <ClCompile Include="Flat2DByte.cpp" />
-    <ClCompile Include="Flat2DFloat.cpp" />
-    <ClCompile Include="ForBenchmarks\CV_base.cpp" />
     <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp" />
-    <ClCompile Include="ForBenchmarks\CV_mt_wMTc.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp" />
-    <ClCompile Include="ForBenchmarks\CV_mt_woMTC.cpp" />
-    <ClCompile Include="HeightMap.cpp" />
+    <ClCompile Include="src\cave_generator\CaveGenerator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="C++DLL.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
