@@ -3,6 +3,7 @@
 #include <cstdint>
 
 import std;
+import SharedMemoryHelper;
 
 using std::ostream;
 

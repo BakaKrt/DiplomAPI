@@ -25,6 +25,9 @@
     <Filter Include="Файлы заголовков\CaveGenerator">
       <UniqueIdentifier>{30c4af90-e8e9-4220-8b75-b9644318ac2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Исходные файлы\modules">
+      <UniqueIdentifier>{321143ca-be17-4fc4-88ae-5d28ef26925a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ExternDLL.cpp">
@@ -38,6 +41,9 @@
     </ClCompile>
     <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp">
       <Filter>Исходные файлы\FlatArray</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modules\SharedMemoryHelper.ixx">
+      <Filter>Исходные файлы\modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

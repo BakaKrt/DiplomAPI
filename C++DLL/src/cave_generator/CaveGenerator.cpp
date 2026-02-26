@@ -188,29 +188,30 @@ void CaveGenerator::TickMT(int count) noexcept
 	static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
 
 	vector<thread> THREADS;
-	THREADS.reserve(THREADS_COUNT);
-
-	for (size_t idx = 0; idx < this->_CHUNKS.size() - 1; idx++) {
-		// пары идут в порядке [x, x+1] , [x+1, x+2], [x+2, x+3]
-		if (idx + 1 < _CHUNKS.size()) {
-			size_t start = _CHUNKS[idx];
-			size_t end = _CHUNKS[idx + 1];
-
-			THREADS.emplace_back([this, start, end]() {
-				this->TickMTRealization(start, end);
-			});
-		}
-	}
-
+	
 	for (int i = 0; i < count; i++) {
+		THREADS.reserve(THREADS_COUNT);
+
+		for (size_t idx = 0; idx < this->_CHUNKS.size() - 1; idx++) {
+			// пары идут в порядке [x, x+1] , [x+1, x+2], [x+2, x+3]
+			if (idx + 1 < _CHUNKS.size()) {
+				size_t start = _CHUNKS[idx];
+				size_t end = _CHUNKS[idx + 1];
+
+				THREADS.emplace_back([this, start, end]() {
+					this->TickMTRealization(start, end);
+				});
+			}
+		}
+
 		for (auto& th : THREADS) {
 			th.join();
 		}
 		THREADS.clear();
-	}
 
-	// Меняем местами матрицы
-	std::swap(_mainMatrix, _secondMatrix);
+		// Меняем местами матрицы
+		std::swap(_mainMatrix, _secondMatrix);
+	}
 }
 
 void CaveGenerator::TickMTRealization(const size_t LineFrom, const size_t LineTo) {

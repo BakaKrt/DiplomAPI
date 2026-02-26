@@ -352,120 +352,120 @@ extern "C" {
 //#pragma endregion
 }
 
-
-static void BenchmarkCaveOTMT(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {
-    if (operationsPerIteration == 0) {
-        cout << "Error: operationsPerIteration must be greater than 0.\n";
-        return;
-    }
-
-    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
-        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCount << '\n';
-
-    duration<double> totalSyncTime = duration<double>(0.0f);
-    duration<double> totalAsyncTime = duration<double>(0.0f);
-
-    steady_clock::time_point start;
-    steady_clock::time_point end;
-
-    for (size_t x = 0; x < benchmarkIterations; x++) {
-        // Создаём исходное состояние для этой итерации бенчмарка
-        CaveGenerator* base_cave = new CaveGenerator(width, height, threadCount, true);
-        base_cave->SetB(3, 3);
-        base_cave->SetB({2, 3});
-
-
-        // --- Измеряем асинхронную версию ---
-        {
-            CaveGenerator* async_cave = new CaveGenerator(*base_cave); // Создаём копию из base_cave
-            start = steady_clock::now();
-            async_cave->TickMT((int)operationsPerIteration);
-            end = steady_clock::now();
-            totalAsyncTime += end - start;
-            delete async_cave; // Удаляем копию сразу после замера
-        } // Конец блока для асинхронной версии
-
-        // --- Измеряем синхронную версию ---
-        {
-            CaveGenerator* sync_cave = new CaveGenerator(*base_cave); // Создаём новую копию из base_cave
-            start = steady_clock::now();
-            sync_cave->Tick((int)operationsPerIteration);
-            end = steady_clock::now();
-            totalSyncTime += end - start;
-            delete sync_cave; // Удаляем копию сразу после замера
-        } // Конец блока для синхронной версии
-
-        delete base_cave; // Удаляем исходное состояние
-    }
-
-    // Вычисляем среднее время на одну операцию (Tick или TickAsync)
-    double avgSyncTimeMs = (totalSyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
-    double avgAsyncTimeMs = (totalAsyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
-
-    // Выводим результаты
-    cout << "Benchmark Results:\n";
-    cout << "Total Sync Time: " << totalSyncTime.count() << " seconds\n";
-    cout << "Total Async Time: " << totalAsyncTime.count() << " seconds\n";
-    cout << "Average Sync Time per operation: " << avgSyncTimeMs << " ms\n";
-    cout << "Average Async Time per operation: " << avgAsyncTimeMs << " ms\n";
-
-    // Выводим коэффициент ускорения, если асинхронный метод быстрее (и делаем проверку на 0)
-    if (avgSyncTimeMs > 0.0) {
-        if (avgAsyncTimeMs > 0.0) {
-            double speedup = avgSyncTimeMs / avgAsyncTimeMs;
-            cout << "Speedup (Sync/Async): " << speedup << "x\n";
-        }
-        else {
-            cout << "Async time is 0, cannot calculate speedup.\n";
-        }
-    }
-    else {
-        cout << "Sync time is 0, cannot calculate speedup.\n";
-    }
-}
-
-static void BenchmarkCaveThreadsSpeedUp(int benchmarkIterations, int operationsPerIteration, size_t width, size_t height, int threadCountFrom = 2, int threadCountTo = 0) {
-    if (operationsPerIteration == 0) {
-        cout << "Error: operationsPerIteration must be greater than 0.\n";
-        return;
-    }
-
-    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
-        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCountFrom << '\n';
-    
-    threadCountTo = GetThreadsCount(threadCountTo);
-
-    std::vector<duration<double>> times = {};
-    times.reserve(threadCountTo);
-
-    steady_clock::time_point start;
-    steady_clock::time_point end;
-
-    for (int threads = threadCountFrom; threads <= threadCountTo; threads++) {
-
-        duration<double> thisTime = duration<double>(0.0f);
-
-        for (auto iterations = 0; iterations < benchmarkIterations; iterations++) {
-            CaveGenerator* cave = new CaveGenerator(width, height, threads, true);
-            start = steady_clock::now();
-            cave->TickMT(operationsPerIteration);
-            end = steady_clock::now();
-
-            thisTime += end - start;
-
-            delete cave;
-        }
-        times.push_back(thisTime);
-        cout << "threads: " << threads << " time:" << thisTime.count() << std::endl;
-        thisTime = duration<double>(0.0f);
-    }
-
-    for (const auto& time : times) {
-        cout << "Threads: " << threadCountFrom << "\t";
-        cout << "Time: " << time.count() << std::endl;
-        threadCountFrom++;
-    }
-}
+//
+//static void BenchmarkCaveOTMT(size_t benchmarkIterations, size_t operationsPerIteration, size_t width, size_t height, int threadCount = 2) {
+//    if (operationsPerIteration == 0) {
+//        cout << "Error: operationsPerIteration must be greater than 0.\n";
+//        return;
+//    }
+//
+//    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
+//        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCount << '\n';
+//
+//    duration<double> totalSyncTime = duration<double>(0.0f);
+//    duration<double> totalAsyncTime = duration<double>(0.0f);
+//
+//    steady_clock::time_point start;
+//    steady_clock::time_point end;
+//
+//    for (size_t x = 0; x < benchmarkIterations; x++) {
+//        // Создаём исходное состояние для этой итерации бенчмарка
+//        CaveGenerator* base_cave = new CaveGenerator(width, height, threadCount, true);
+//        base_cave->SetB(3, 3);
+//        base_cave->SetB({2, 3});
+//
+//
+//        // --- Измеряем асинхронную версию ---
+//        {
+//            CaveGenerator* async_cave = new CaveGenerator(*base_cave); // Создаём копию из base_cave
+//            start = steady_clock::now();
+//            async_cave->TickMT((int)operationsPerIteration);
+//            end = steady_clock::now();
+//            totalAsyncTime += end - start;
+//            delete async_cave; // Удаляем копию сразу после замера
+//        } // Конец блока для асинхронной версии
+//
+//        // --- Измеряем синхронную версию ---
+//        {
+//            CaveGenerator* sync_cave = new CaveGenerator(*base_cave); // Создаём новую копию из base_cave
+//            start = steady_clock::now();
+//            sync_cave->Tick((int)operationsPerIteration);
+//            end = steady_clock::now();
+//            totalSyncTime += end - start;
+//            delete sync_cave; // Удаляем копию сразу после замера
+//        } // Конец блока для синхронной версии
+//
+//        delete base_cave; // Удаляем исходное состояние
+//    }
+//
+//    // Вычисляем среднее время на одну операцию (Tick или TickAsync)
+//    double avgSyncTimeMs = (totalSyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
+//    double avgAsyncTimeMs = (totalAsyncTime.count() / (benchmarkIterations * operationsPerIteration)) * 1000.0;
+//
+//    // Выводим результаты
+//    cout << "Benchmark Results:\n";
+//    cout << "Total Sync Time: " << totalSyncTime.count() << " seconds\n";
+//    cout << "Total Async Time: " << totalAsyncTime.count() << " seconds\n";
+//    cout << "Average Sync Time per operation: " << avgSyncTimeMs << " ms\n";
+//    cout << "Average Async Time per operation: " << avgAsyncTimeMs << " ms\n";
+//
+//    // Выводим коэффициент ускорения, если асинхронный метод быстрее (и делаем проверку на 0)
+//    if (avgSyncTimeMs > 0.0) {
+//        if (avgAsyncTimeMs > 0.0) {
+//            double speedup = avgSyncTimeMs / avgAsyncTimeMs;
+//            cout << "Speedup (Sync/Async): " << speedup << "x\n";
+//        }
+//        else {
+//            cout << "Async time is 0, cannot calculate speedup.\n";
+//        }
+//    }
+//    else {
+//        cout << "Sync time is 0, cannot calculate speedup.\n";
+//    }
+//}
+//
+//static void BenchmarkCaveThreadsSpeedUp(int benchmarkIterations, int operationsPerIteration, size_t width, size_t height, int threadCountFrom = 2, int threadCountTo = 0) {
+//    if (operationsPerIteration == 0) {
+//        cout << "Error: operationsPerIteration must be greater than 0.\n";
+//        return;
+//    }
+//
+//    cout << "benchmarkIterations: " << benchmarkIterations << " operationsPerIteration: "
+//        << operationsPerIteration << "\nwidth: " << width << " height: " << height << " threadCount: " << threadCountFrom << '\n';
+//    
+//    threadCountTo = GetThreadsCount(threadCountTo);
+//
+//    std::vector<duration<double>> times = {};
+//    times.reserve(threadCountTo);
+//
+//    steady_clock::time_point start;
+//    steady_clock::time_point end;
+//
+//    for (int threads = threadCountFrom; threads <= threadCountTo; threads++) {
+//
+//        duration<double> thisTime = duration<double>(0.0f);
+//
+//        for (auto iterations = 0; iterations < benchmarkIterations; iterations++) {
+//            CaveGenerator* cave = new CaveGenerator(width, height, threads, true);
+//            start = steady_clock::now();
+//            cave->TickMT(operationsPerIteration);
+//            end = steady_clock::now();
+//
+//            thisTime += end - start;
+//
+//            delete cave;
+//        }
+//        times.push_back(thisTime);
+//        cout << "threads: " << threads << " time:" << thisTime.count() << std::endl;
+//        thisTime = duration<double>(0.0f);
+//    }
+//
+//    for (const auto& time : times) {
+//        cout << "Threads: " << threadCountFrom << "\t";
+//        cout << "Time: " << time.count() << std::endl;
+//        threadCountFrom++;
+//    }
+//}
 
 //struct BenchmarkResult {
 //    duration<double> elapsed_time;
