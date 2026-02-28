@@ -64,6 +64,20 @@ static bool* RandomBoolArray(const size_t size, int chance = 50)
 	return ptr;
 }
 
+template <typename T>
+static void FillArrayRandomBool(const size_t size, T* array, int chance = 50) {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(1, 100);
+
+	for (size_t pos = 0; pos < size; pos++) {
+		if (dist(gen) >= chance) array[pos] = true;
+		else array[pos] = false;
+	}
+
+	return;
+}
+
 static int GetThreadsCount(int count) {
 	static auto ThreadsCount = std::thread::hardware_concurrency();
 	if (count == 0) return (int)ThreadsCount;

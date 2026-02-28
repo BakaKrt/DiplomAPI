@@ -758,9 +758,13 @@ int main()
     // 
     
     CaveGenerator cave {1025, 1025, 5};
+    //CaveGenerator cave {4097, 4097, 4};
+    
     cave.SetB({3});
     cave.SetS({2, 3});
-    cave.TickMT(20);
+    cave.TickMT(5);
+
+    auto caveCopy = CaveGenerator(cave);
 
     //CaveGenerator_base* base = new CaveGenerator_base(5, 10, 2, 50);
     //base->SetB({3});

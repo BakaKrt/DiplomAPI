@@ -210,7 +210,9 @@
     <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp" />
     <ClCompile Include="src\cave_generator\CaveGenerator.cpp" />
-    <ClCompile Include="src\modules\SharedMemoryHelper.ixx" />
+    <ClCompile Include="src\modules\SharedMemoryHelper.ixx">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCppModule</CompileAs>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="C++DLL.rc" />

@@ -29,9 +29,9 @@ private:
 	int GetNeighbours(size_t x, size_t y);
 public:
 
-	CaveGenerator(size_t width, size_t height, bool randInit = true);
-	CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit = true);
-	CaveGenerator(const CaveGenerator& other);
+	CaveGenerator(size_t width, size_t height, bool randInit = true) noexcept;
+	CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit = true) noexcept;
+	CaveGenerator(const CaveGenerator& other) noexcept;
 	
 
 	void SetB(vector<byte>& rulesB);

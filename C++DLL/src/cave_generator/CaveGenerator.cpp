@@ -2,40 +2,25 @@
 
 using std::thread;
 
-CaveGenerator::CaveGenerator(size_t width, size_t height, bool randInit)
+CaveGenerator::CaveGenerator(size_t width, size_t height, bool randInit) noexcept :
+	_width(width), _height(height), _capacity(width * height), _threadsCount(2)
 {
-	this->_width = width;
-	this->_height = height;
-	this->_capacity = this->_width * this->_height;
-	
+	this->_mainMatrix = new Flat2DArray<bool>(this->_width, this->_height);
+
 	if (randInit) {
-		bool* array = RandomBoolArray(this->_capacity);
-		this->_mainMatrix = new Flat2DArray<bool>(array, this->_width, this->_height);
-	}
-	else {
-		this->_mainMatrix = new Flat2DArray<bool>(this->_width, this->_height);
+		FillArrayRandomBool<bool>(_capacity, _mainMatrix->data());
 	}
 
 	this->_secondMatrix = new Flat2DArray<bool>(this->_width, this->_height);
-	this->_threadsCount = 2;
 }
 
-CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit)
+CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool randInit) noexcept :
+	_width(width), _height(height), _capacity(width* height), _threadsCount(threadsCount)
 {
-	this->_width = width;
-	this->_height = height;
-	this->_capacity = this->_width * this->_height;
-
-	if (randInit) {
-		bool* array = RandomBoolArray(this->_capacity);
-		this->_mainMatrix = new Flat2DArray<bool>(array, this->_width, this->_height);
-	}
-	else {
-		this->_mainMatrix = new Flat2DArray<bool>(this->_width, this->_height);
-	}
-
+	this->_mainMatrix = new Flat2DArray<bool>(this->_width, this->_height);
+	if (randInit) FillArrayRandomBool<bool>(_capacity, _mainMatrix->data());
+	
 	this->_secondMatrix = new Flat2DArray<bool>(this->_width, this->_height);
-	this->_threadsCount = GetThreadsCount(threadsCount);
 
 	const size_t CHUNK_SIZE = (this->_height + _threadsCount - 1) / _threadsCount;
 
@@ -57,16 +42,10 @@ CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool
 	}
 }
 
-CaveGenerator::CaveGenerator(const CaveGenerator& other) {
-	this->_width = other._width;
-	this->_height = other._height;
-	this->_capacity = this->_width * this->_height;
-
-	this->B = other.B;
-	this->S = other.S;
-
-	this->_threadsCount = other._threadsCount;
-
+CaveGenerator::CaveGenerator(const CaveGenerator& other) noexcept:
+	_width(other._width), _height(other._height), _capacity(other._capacity), _threadsCount(other._threadsCount),
+	B(other.B), S(other.S)
+{
 	this->_mainMatrix = new Flat2DArray<bool>(*other._mainMatrix);
 	this->_secondMatrix = new Flat2DArray<bool>(*other._secondMatrix);
 }
@@ -104,11 +83,11 @@ void CaveGenerator::SetS(vector<byte>& rulesS)
 	}
 }
 
-void CaveGenerator::SetS(std::initializer_list<byte> rulesB)
+void CaveGenerator::SetS(std::initializer_list<byte> rulesS)
 {
-	this->B.clear();
-	for (const auto& rule : rulesB) {
-		this->B.insert(rule);
+	this->S.clear();
+	for (const auto& rule : rulesS) {
+		this->S.insert(rule);
 	}
 }
 
@@ -219,8 +198,9 @@ void CaveGenerator::TickMTRealization(const size_t LineFrom, const size_t LineTo
 	for (; x < LineTo; x++) {
 		for (size_t y = 0; y < this->_width; y++) {
 			int neighbours = GetNeighbours(x, y);
-			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
-				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
+			bool& at = this->_secondMatrix->at(x, y);
+			at = (at && this->S.count(neighbours)) ||
+				(!at && this->B.count(neighbours));
 		}
 	}
 }
