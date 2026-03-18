@@ -45,6 +45,15 @@
     <ClCompile Include="src\modules\SharedMemoryHelper.ixx">
       <Filter>Исходные файлы\modules</Filter>
     </ClCompile>
+    <ClCompile Include="src\modules\ModuledMatrix.ixx">
+      <Filter>Исходные файлы\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modules\FlatArray.ixx">
+      <Filter>Исходные файлы\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modules\ProcessorInfo.ixx">
+      <Filter>Исходные файлы\modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ExternDLL.h">
@@ -52,9 +61,6 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="src\flat_array\FlatArray.hpp">
-      <Filter>Файлы заголовков\FlatArray</Filter>
     </ClInclude>
     <ClInclude Include="src\cave_generator\CaveGenerator.hpp">
       <Filter>Файлы заголовков\CaveGenerator</Filter>

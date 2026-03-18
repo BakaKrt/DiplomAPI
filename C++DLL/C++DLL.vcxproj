@@ -50,7 +50,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseDynamicDebugging>true</UseDynamicDebugging>
     <EnableFuzzer>true</EnableFuzzer>
@@ -64,7 +64,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -203,13 +203,15 @@
     <ClInclude Include="ForBenchmarks\CV_mt_wMTc_alt_sum.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\cave_generator\CaveGenerator.hpp" />
-    <ClInclude Include="src\flat_array\FlatArray.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ExternDLL.cpp" />
     <ClCompile Include="ForBenchmarks\CV_base_alt_sum.cpp" />
     <ClCompile Include="ForBenchmarks\CV_mt_wMTc_alt_sum.cpp" />
     <ClCompile Include="src\cave_generator\CaveGenerator.cpp" />
+    <ClCompile Include="src\modules\FlatArray.ixx" />
+    <ClCompile Include="src\modules\ModuledMatrix.ixx" />
+    <ClCompile Include="src\modules\ProcessorInfo.ixx" />
     <ClCompile Include="src\modules\SharedMemoryHelper.ixx">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCppModule</CompileAs>
     </ClCompile>

@@ -1,7 +1,7 @@
-#pragma once
-
 #include <cstdint>
 #include <string>
+
+export module FlatArray;
 
 import std;
 import SharedMemoryHelper;
@@ -13,51 +13,52 @@ using byte = std::uint8_t;
 using std::make_unique, std::unique_ptr;
 
 // Список разрешённых типов
-template<typename T>
+export template<typename T>
 struct is_allowed_type : std::integral_constant<bool,
-    std::is_same_v<T, int> ||
-    std::is_same_v<T, float> ||
-    std::is_same_v<T, bool>
+	std::is_same_v<T, int> ||
+	std::is_same_v<T, float> ||
+	std::is_same_v<T, bool>
 > {
 };
 
 
+export 
 template<typename T, typename = std::enable_if_t<is_allowed_type<T>::value>>
 class Flat2DArray {
 private:
 	unique_ptr<SharedMemoryObject> _object;
-    size_t _width, _height;
+	size_t _width, _height;
 	T* _array = nullptr;
-    friend class HeightMap;
+	friend class HeightMap;
 public:
-    Flat2DArray();
+	Flat2DArray();
 
-    Flat2DArray(size_t width, size_t height) noexcept;
+	Flat2DArray(size_t width, size_t height) noexcept;
 
-    //Flat2DArray(T* array, size_t width, size_t height) noexcept;
+	//Flat2DArray(T* array, size_t width, size_t height) noexcept;
 
-    /// <summary>
-    /// Конструктор копирования
-    /// </summary>
-    /// <param name="other"></param>
-    Flat2DArray(const Flat2DArray& other);
+	/// <summary>
+	/// Конструктор копирования
+	/// </summary>
+	/// <param name="other"></param>
+	Flat2DArray(const Flat2DArray& other);
 
-    Flat2DArray& operator=(const Flat2DArray& other);
+	Flat2DArray& operator=(const Flat2DArray& other);
 
-    T& at(size_t x);
+	T& at(size_t x);
 
-    T& at(size_t x, size_t y);
+	T& at(size_t x, size_t y);
 
-    T& operator[] (size_t posX) noexcept;
+	T& operator[] (size_t posX) noexcept;
 
-    T* data() const noexcept;
-    size_t capacity() const;
-    size_t width() const;
-    size_t height() const;
+	T* data() const noexcept;
+	size_t capacity() const;
+	size_t width() const;
+	size_t height() const;
 
-    friend ostream& operator <<(ostream& stream, Flat2DArray& data);
+	friend ostream& operator <<(ostream& stream, Flat2DArray& data);
 
-    ~Flat2DArray() noexcept;
+	~Flat2DArray() noexcept;
 };
 
 
@@ -74,7 +75,7 @@ Flat2DArray<T, Enabled>::Flat2DArray(size_t width, size_t height) noexcept :
 {
 	/*this->_width = width;
 	this->_height = height;*/
-	
+
 	this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
 
 	auto settings = _object->create();
@@ -96,7 +97,7 @@ Flat2DArray<T, Enabled>::Flat2DArray(const Flat2DArray<T, Enabled>& other)
 	_height = other._height;
 	const size_t capacity = _width * _height;
 
-	
+
 	wstring memoryName = other._object->getName();
 
 	this->_object = make_unique<SharedMemoryObject>(memoryName);

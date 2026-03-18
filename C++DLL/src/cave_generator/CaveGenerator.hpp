@@ -1,9 +1,8 @@
 #pragma once
-
-#include "../flat_array/FlatArray.hpp"
 #include "../Useful.h"
 
 import std;
+import FlatArray;
 
 using std::unordered_set;
 using std::vector;
