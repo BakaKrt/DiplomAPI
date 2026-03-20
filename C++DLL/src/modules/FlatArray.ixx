@@ -27,34 +27,32 @@ template<typename T, typename = std::enable_if_t<is_allowed_type<T>::value>>
 class Flat2DArray {
 private:
 	unique_ptr<SharedMemoryObject> _object;
-	size_t _width, _height;
+    size_t _width = 0, _height = 0;
 	T* _array = nullptr;
 	friend class HeightMap;
 public:
-	Flat2DArray();
+    Flat2DArray() noexcept;
 
 	Flat2DArray(size_t width, size_t height) noexcept;
 
-	//Flat2DArray(T* array, size_t width, size_t height) noexcept;
-
-	/// <summary>
-	/// Конструктор копирования
-	/// </summary>
-	/// <param name="other"></param>
-	Flat2DArray(const Flat2DArray& other);
+    /// <summary>
+    /// Конструктор копирования
+    /// </summary>
+    /// <param name="other"></param>
+    Flat2DArray(const Flat2DArray& other) noexcept;
 
 	Flat2DArray& operator=(const Flat2DArray& other);
 
-	T& at(size_t x);
+    inline T& at(size_t x) const noexcept;
 
-	T& at(size_t x, size_t y);
+    inline T& at(size_t x, size_t y) const noexcept;
 
-	T& operator[] (size_t posX) noexcept;
+	inline T& operator[] (size_t posX) const noexcept;
 
-	T* data() const noexcept;
-	size_t capacity() const;
-	size_t width() const;
-	size_t height() const;
+    T* data() const noexcept;
+    size_t capacity() const noexcept;
+    size_t width() const noexcept;
+    size_t height() const noexcept;
 
 	friend ostream& operator <<(ostream& stream, Flat2DArray& data);
 
@@ -63,9 +61,10 @@ public:
 
 
 template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>::Flat2DArray()
+Flat2DArray<T, Enabled>::Flat2DArray() noexcept :
+	_width(0), _height(0)
 {
-	_width = 0; _height = 0;
+
 }
 
 template<typename T, typename Enabled>
@@ -73,25 +72,15 @@ Flat2DArray<T, Enabled>::Flat2DArray(size_t width, size_t height) noexcept :
 	_width(width),
 	_height(height)
 {
-	/*this->_width = width;
-	this->_height = height;*/
-
 	this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
 
 	auto settings = _object->create();
 	this->_array = static_cast<T*>(settings.array);
 }
 
-//template<typename T, typename Enabled>
-//Flat2DArray<T, Enabled>::Flat2DArray(T* array, size_t width, size_t height) noexcept
-//{
-//	this->_width = width;
-//	this->_height = height;
-//	this->_array = array;
-//}
 
 template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>::Flat2DArray(const Flat2DArray<T, Enabled>& other)
+Flat2DArray<T, Enabled>::Flat2DArray(const Flat2DArray<T, Enabled>& other) noexcept
 {
 	_width = other._width;
 	_height = other._height;
@@ -130,19 +119,19 @@ Flat2DArray<T, Enabled>& Flat2DArray<T, Enabled>::operator=(const Flat2DArray& o
 }
 
 template<typename T, typename Enabled>
-T& Flat2DArray<T, Enabled>::at(size_t x)
+inline T& Flat2DArray<T, Enabled>::at(size_t x) const noexcept
 {
 	return _array[x];
 }
 
 template<typename T, typename Enabled>
-T& Flat2DArray<T, Enabled>::at(size_t x, size_t y)
+inline T& Flat2DArray<T, Enabled>::at(size_t x, size_t y) const noexcept
 {
 	return _array[y * _width + x];
 }
 
 template<typename T, typename Enabled>
-T& Flat2DArray<T, Enabled>::operator[](size_t posX) noexcept
+inline T& Flat2DArray<T, Enabled>::operator[](size_t posX) const noexcept
 {
 	return _array[posX];
 }
@@ -154,19 +143,19 @@ T* Flat2DArray<T, Enabled>::data() const noexcept
 }
 
 template<typename T, typename Enabled>
-size_t Flat2DArray<T, Enabled>::capacity() const
+size_t Flat2DArray<T, Enabled>::capacity() const noexcept
 {
 	return this->_width * this->_height;
 }
 
 template<typename T, typename Enabled>
-size_t Flat2DArray<T, Enabled>::width() const
+size_t Flat2DArray<T, Enabled>::width() const noexcept
 {
 	return _width;
 }
 
 template<typename T, typename Enabled>
-size_t Flat2DArray<T, Enabled>::height() const
+size_t Flat2DArray<T, Enabled>::height() const noexcept
 {
 	return _height;
 }
