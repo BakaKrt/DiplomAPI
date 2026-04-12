@@ -46,6 +46,40 @@ static std::vector<std::array<T, N>> generateTestData() {
 template<typename T, size_t N>
 static void inline runTest(vector<unique_ptr<test>>& tests, vector<array<T, N>>& testData, const int iterations) noexcept;
 
+/// <summary>
+/// Проверить, одинаковые ли array<uint8_t, N> поэлементно
+/// </summary>
+/// <typeparam name="N"></typeparam>
+/// <param name="vec"></param>
+/// <returns></returns>
+template<size_t N>
+static bool inline checkArraysDifference(vector<array<uint8_t, N>>& vec) noexcept {
+	if (vec.empty()) return true;
+
+	const size_t size = vec.size();
+	if (size == 1) return true;
+
+	bool res = true;
+
+	for (size_t idx = 0; idx < N; ++idx) {
+		uint8_t reference_value = vec[0][idx];
+
+		for (size_t i = 1; i < size; ++i) {
+			if (vec[i][idx] != reference_value) {
+				printf("findex diff at index %4u:", (unsigned int)idx);
+				for (size_t j = 0; j < size; ++j) {
+					printf("[%u] = %3u ", j, vec[j][idx]);
+				}
+				printf("\n");
+				res = false;
+				break;
+			}
+		}
+	}
+
+	return res;
+}
+
 int main() {
 	auto  testData3 = generateTestData<float, 3>();
 	auto  testData5 = generateTestData<float, 5>();
@@ -56,8 +90,9 @@ int main() {
 
 	auto   uintData8 = generateTestData<uint8_t, 12>();
 	auto uintData256 = generateTestData<uint8_t, 256>();
+	auto uintData112 = generateTestData<uint8_t, 112>();
 
-	constexpr int TEST_ELEM_COUNT = 5;
+	constexpr int TEST_ELEM_COUNT = 3;
 
 	vector<unique_ptr<test>> tests{}; tests.reserve(TEST_ELEM_COUNT);
 
@@ -99,18 +134,15 @@ int main() {
 		for (auto& a : arr) {
 			a = (uint8_t)(c++) % 16;
 		}
+		
+		vector<array<uint8_t, 70>> results{};
+		results.reserve(tests.size());
 
-		auto res = tests.back()->run(arr);
-		auto resNormal = tests[1]->run(arr);
-
-		for (size_t x = 0; x < res.size(); x++) {
-			if (res[x] != resNormal[x]) {
-				printf("difference at index %u! got %u and %u\n", (unsigned int)x, res[x], resNormal[x]);
-
-
-				(void)res;
-			}
+		for (auto& test : tests) {
+			results.push_back(test->run(arr));
 		}
+
+		bool res = checkArraysDifference(results);
 	}
 #pragma endregion
 
@@ -138,6 +170,7 @@ int main() {
 	
 	runTest(tests, uintData8, iterations*2);
 	runTest(tests, uintData256, iterations);
+	runTest(tests, uintData112, iterations);
 
 
 	//runTest(tests, testData15, iterations);

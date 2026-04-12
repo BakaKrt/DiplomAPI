@@ -111,16 +111,23 @@ public:
 
 		short i = 0;
 
-		uint8_t before_row_i = 0;
-		uint8_t cur_row_i = 0;
-		uint8_t after_row_i = 0;
+		uint8_t before_row_i = 0,
+			cur_row_i = 0,
+			after_row_i = 0;
+
+		array<uint8_t, 7> indexes{};
+
+		for (short q = 0; q < 7; q++) {
+			indexes[q] = q * 16;
+		}
+
 
 		for (size_t y = 1; y < 6; y++) {
-			before_row_i = (y - 1) * 16;
-			cur_row_i = (y + 0) * 16;
-			after_row_i = (y + 1) * 16;
+			before_row_i = indexes[y - 1];
+			cur_row_i = indexes[y];
+			after_row_i = indexes[y + 1];
 
-			for (size_t x = 1; x < 14; x++) {
+			for (size_t x = 1; x < 15; x++) {
 				res[i] =
 					object[x - 1 + before_row_i] + object[x + 0 + before_row_i] + object[x + 1 + before_row_i]	\
 					+ object[x - 1 + cur_row_i] + object[x + 1 + cur_row_i]		\

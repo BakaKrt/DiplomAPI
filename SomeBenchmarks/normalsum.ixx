@@ -116,16 +116,39 @@ public:
 	inline array<uint8_t, 70> run(array<uint8_t, 112>& object) const noexcept override {
 		array<uint8_t, 70> res{};
 
+		//int sum = 0;
+		//int row = 0;
+
+		//int neigh_sum = 0;
+
+		//for (int y = 0; y < 7; y++) {
+		//	for (int x = 0; x < 14; x+=2) {
+		//		row = y * 16;
+
+		//		neigh_sum = object[x + 1 + row] + object[x + 2 + row];
+
+		//		sum = object[x + row];
+		//	}
+		//}
+
+
 		short i = 0;
 
-		uint8_t before_row_i = 0;
-		uint8_t cur_row_i= 0;
-		uint8_t after_row_i = 0;
+		uint8_t before_row_i = 0,
+		cur_row_i	= 0,
+		after_row_i = 0;
 
-		for (size_t y = 1; y < 7; y++) {
-			before_row_i	= (y - 1) * 16;
-			cur_row_i		= (y + 0) * 16;
-			after_row_i		= (y + 1) * 16;
+		array<uint8_t, 7> indexes{};
+
+		for (short q = 0; q < 7; q++) {
+			indexes[q] = q * 16;
+		}
+
+
+		for (size_t y = 1; y < 6; y++) {
+			before_row_i = indexes[y - 1];
+			cur_row_i	 = indexes[y];
+			after_row_i  = indexes[y + 1];
 
 			for (size_t x = 1; x < 15; x++) {
 				res[i] = 

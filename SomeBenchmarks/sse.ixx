@@ -348,57 +348,43 @@ public:
 	inline array<uint8_t, 70> run(array<uint8_t, 112>& object) const noexcept override {
 		array<uint8_t, 70> res{};
 
-		const size_t REGS_SIZE = 7;
+		__m128i r0, r1, r2, rres;
 
-		array<__m128i, REGS_SIZE> regs{};
+		int offset = 0;
+
+		array<uint8_t, 7> indexes{};
 
 		for (short i = 0; i < 7; i++) {
-			regs[i] = _mm_load_si128((__m128i*) (object.data() + i * 16));
+			indexes[i] = i * 16;
 		}
 
-		array<__m128i, 5> temp{};
 
 		for (short i = 0; i < 5; i++) {
-			temp[i] = regs[short(i + 1)];
+			r0 = _mm_load_si128((__m128i*)(object.data() + indexes[i    ]));
+			r1 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 1]));
+			r2 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 2]));
+
+			rres = r1;					// rres = r1
+
+			r1 = _mm_add_epi8(r1, r2);
+			r0 = _mm_add_epi8(r0, r1);	// r0 = r2 + r1 + r0
+
+			const __m128i mask0 = _mm_setr_epi8(15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+			const __m128i mask1 = _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0);
+
+			r1 = _mm_shuffle_epi8(r0, mask0);	// r1 = mask0(r0)
+			r2 = _mm_shuffle_epi8(r0, mask1);	// r2 = mask1(r0)
+
+
+			r1 = _mm_add_epi8(r1, r2);
+			r0 = _mm_add_epi8(r0, r1);			// r0 = r2 + r1 + r0
+
+			r0 = _mm_sub_epi8(r0, rres);		// r0 = r0 - rres
+
+			r0 = _mm_shuffle_epi8(r0, mask1);	// r0 = mask1(r0)
+
+			_mm_storeu_si128((__m128i*)(res.data() + (i * 14)), r0);
 		}
-
-		for (short i = 1; i < REGS_SIZE - 2; i++) {
-			regs[i] = _mm_adds_epi8(regs[i], regs[short(i + 1)]);	// r1 = r1 + r2 ...
-		}
-		regs[REGS_SIZE - 1] = regs[REGS_SIZE - 2];					// r6 = r5
-
-		regs[0] = _mm_add_epi8(regs[0], regs[1]);					// r0 = r0 + r1
-		regs[1] = _mm_add_epi8(regs[1], temp[0]);					// r1 = r1 + rt0
-		regs[2] = _mm_add_epi8(regs[2], temp[3]);					// r2 = r2 + rt3
-		regs[3] = _mm_add_epi8(regs[3], temp[4]);					// r3 = r3 + rt4
-		regs[4] = _mm_add_epi8(regs[4], regs[REGS_SIZE-2]);			// r4 = r4 + r5
-
-		const __m128i mask0 = _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 11, 12, 13, 14, 15, 0);
-		const __m128i mask1 = _mm_setr_epi8(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,  0, 1);
-
-		array<__m128i, 4> sums{};
-
-		for (short i = 0; i < 4; i++) {
-			sums[i] = _mm_shuffle_epi8(regs[i], mask0);				// rsx = mask0(rx)
-
-			const __m128i shuffled_center = _mm_shuffle_epi8(temp[i], mask0);
-			sums[i] = _mm_sub_epi8(sums[i], shuffled_center);
-		}
-
-		for (short i = 0; i < 4; i++) { 
-			sums[i] = _mm_add_epi8(sums[i], regs[0]);				// rsx = rsx + rx
-			regs[i] = _mm_shuffle_epi8(regs[i], mask1);				// rx = mask1(rx)
-
-			regs[i] = _mm_add_epi8(regs[i], sums[i]);				// rx = rx + rsx
-
-			/*const __m128i shuffled_center = _mm_shuffle_epi8(temp[i], mask0);
-			regs[i] = _mm_subs_epi8(regs[i], shuffled_center);*/
-		}
-
-		for (short i = 0; i < 4; i++) {
-			_mm_storeu_si128((__m128i*)(res.data() + (14 * i)), regs[i]);
-		}
-
 
 		return res;
 	}
