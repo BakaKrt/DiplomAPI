@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="C++DiplomAPI.vcxproj" Id="0839e1c8-fee1-4e51-9eb7-13bd1cfe1625" />
+</Solution>

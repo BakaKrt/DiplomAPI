@@ -1,25 +1,27 @@
 #pragma once
-#include "../Useful.h"
 
 import std;
 import FlatArray;
+import Useful;
 
 using std::unordered_set;
 using std::vector;
 using std::array;
 using std::ostream;
 
+using namespace Useful;
+
 class CaveGenerator {
 private:
 	Flat2DArray<bool>* _mainMatrix   = nullptr;
 	Flat2DArray<bool>* _secondMatrix = nullptr;
 
-	vector<int> _CHUNKS{};
+	vector<int> _CHUNKS_INDEXES{};
 
 	size_t _width = 0, _height = 0;
 	size_t _capacity = 0;
 
-	size_t _threadsCount = 2;
+	int _threadsCount = 2;
 
 	unordered_set<int> B = {};
 	unordered_set<int> S = {};

@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков\Benchmark">
+      <UniqueIdentifier>{34dc04d3-a80a-47e5-ad71-a19116527c48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\CaveGenerator">
+      <UniqueIdentifier>{f48401fb-3c93-43bc-8a7b-12337b877bdc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\FlatArray">
+      <UniqueIdentifier>{808ebf61-130a-424e-89a5-85af50cc161b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Benchmark">
+      <UniqueIdentifier>{196f2572-83c6-4f3f-85d1-65148c2bbe28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Modules">
+      <UniqueIdentifier>{33d068f8-0076-4382-89cc-eee728732b3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Tests">
+      <UniqueIdentifier>{4cdac534-084c-4697-bd94-8f1a51ce5ff0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\modules\FlatArray.ixx">
+      <Filter>Файлы заголовков\FlatArray</Filter>
+    </ClCompile>
+    <ClCompile Include="ForBenchmarks\CG_base.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="ForBenchmarks\CG_std_vector.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modules\SharedMemoryHelper.ixx">
+      <Filter>Файлы заголовков\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modules\Useful.ixx">
+      <Filter>Файлы заголовков\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ForBenchmarks\CG_std_vector_for.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="ForBenchmarks\CG_std_vector_sse.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="ForBenchmarks\Flat\CG_flat_sse.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="ForBenchmarks\Flat\CG_flat_sum.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="switchToDiplom.cpp">
+      <Filter>Исходные файлы\Benchmark</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ForBenchmarks\nanobench.h">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\Benchmark.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\CG_base.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\CG_std_vector.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\CG_std_vector_for.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\CG_std_vector_sse.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\Flat\CG_flat_sse.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="ForBenchmarks\Flat\CG_flat_sum.hpp">
+      <Filter>Файлы заголовков\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Tests.hpp">
+      <Filter>Файлы заголовков\Tests</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

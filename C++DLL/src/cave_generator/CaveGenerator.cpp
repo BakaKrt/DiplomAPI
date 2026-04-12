@@ -24,7 +24,7 @@ CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool
 
 	const size_t CHUNK_SIZE = (this->_height + _threadsCount - 1) / _threadsCount;
 
-	_CHUNKS.reserve(_threadsCount + 1);
+	_CHUNKS_INDEXES.reserve(_threadsCount + 1);
 
 	const size_t mainMatrixWidth = _mainMatrix->width();
 
@@ -35,10 +35,10 @@ CaveGenerator::CaveGenerator(size_t width, size_t height, int threadsCount, bool
 			LineTo = mainMatrixWidth;
 		}
 
-		if (_CHUNKS.size() == 0)
-			_CHUNKS.push_back((int)LineFrom);
+		if (_CHUNKS_INDEXES.size() == 0)
+			_CHUNKS_INDEXES.push_back((int)LineFrom);
 
-		_CHUNKS.push_back((int)LineTo);
+		_CHUNKS_INDEXES.push_back((int)LineTo);
 	}
 }
 
@@ -66,11 +66,11 @@ void CaveGenerator::SetB(std::initializer_list<byte> rulesB)
 	}
 }
 
-void CaveGenerator::SetB(byte rulesBfrom, byte ruleBto)
+void CaveGenerator::SetB(byte rulesBfrom, byte ruleaBto)
 {
 	this->B.clear();
 
-	for (int i = rulesBfrom; i < ruleBto; i++) {
+	for (int i = rulesBfrom; i < ruleaBto; i++) {
 		this->B.insert(i);
 	}
 }
@@ -149,16 +149,19 @@ int CaveGenerator::GetNeighbours(size_t x, size_t y)
 
 void CaveGenerator::Tick(int count) noexcept
 {
-	for (size_t x = 0; x < this->_width; x++) {
-		for (size_t y = 0; y < this->_height; y++) {
-			int neighbours = GetNeighbours(x, y);
+	for (int i = 0; i < count; i++) {
 
-			this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
-				(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
+		for (size_t x = 0; x < this->_width; x++) {
+			for (size_t y = 0; y < this->_height; y++) {
+				int neighbours = GetNeighbours(x, y);
+
+				this->_secondMatrix->at(x, y) = (this->_mainMatrix->at(x, y) && this->S.count(neighbours)) ||
+					(!this->_mainMatrix->at(x, y) && this->B.count(neighbours));
+			}
 		}
-	}
 
-	std::swap(_mainMatrix, _secondMatrix);
+		std::swap(_mainMatrix, _secondMatrix);
+	}
 }
 
 void CaveGenerator::TickMT(int count) noexcept
@@ -171,11 +174,11 @@ void CaveGenerator::TickMT(int count) noexcept
 	for (int i = 0; i < count; i++) {
 		THREADS.reserve(THREADS_COUNT);
 
-		for (size_t idx = 0; idx < this->_CHUNKS.size() - 1; idx++) {
+		for (size_t idx = 0; idx < this->_CHUNKS_INDEXES.size() - 1; idx++) {
 			// пары идут в порядке [x, x+1] , [x+1, x+2], [x+2, x+3]
-			if (idx + 1 < _CHUNKS.size()) {
-				size_t start = _CHUNKS[idx];
-				size_t end = _CHUNKS[idx + 1];
+			if (idx + 1 < _CHUNKS_INDEXES.size()) {
+				size_t start = (size_t)_CHUNKS_INDEXES[idx];
+				size_t end = (size_t)_CHUNKS_INDEXES[idx + 1];
 
 				THREADS.emplace_back([this, start, end]() {
 					this->TickMTRealization(start, end);

@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="SomeBenchmarks.vcxproj" Id="384aafe0-f125-49c9-95d5-06f85ed7b958">
+    <Build Solution="*|x86" Project="false" />
+  </Project>
+</Solution>

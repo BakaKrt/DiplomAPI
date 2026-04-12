@@ -33,12 +33,16 @@ export namespace SharedMemory {
         SharedMemoryObject(size_t size, size_t oneObjectSize, wstring postfix = L"") {
             _settings = { size, oneObjectSize, nullptr };
             _name = _SHARED_MEMORY_NAME + postfix + L"_" + to_wstring(_counter);
+#ifdef DEBUG
             wcout << L"CREATED " << _name << L"\n";
+#endif // DEBUG
             this->_counter++;
         }
         SharedMemoryObject(const wstring& existMemory) {
             _name = existMemory;
+#ifdef DEBUG
             wcout << L"CREATED EXIST " << _name << L"\n";
+#endif // DEBUG
         }
 
         SharedMemoryObject() = delete;
@@ -149,10 +153,16 @@ export namespace SharedMemory {
         wstring getName() const { return _name; }
 
         ~SharedMemoryObject() {
+#ifdef DEBUG
             wcout << L"TRY CLOSE " << _name << L"\n";
+#endif // DEBUG
+
             if (_is_owner == false) return;
-            
+
+#ifdef DEBUG
             wcout << L"CLOSE " << _name << L"\n";
+#endif // DEBUG
+                        
             // Освобождаем ресурсы
             UnmapViewOfFile(this->_sharedMemoryPtr);
             CloseHandle(_mapFileHandler);
