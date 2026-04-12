@@ -79,3 +79,6 @@ namespace C_Wrapper
 }
 
 ```
+
+
+Этот проект использует библиотеку [nanobench](https://github.com/martinus/nanobench) (автор Martin Ankerl), лицензированную под [MIT License](https://opensource.org/licenses/MIT).
