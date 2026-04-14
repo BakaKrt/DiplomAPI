@@ -116,6 +116,17 @@ void CaveGenerator_vector_sse::Tick(const int count) noexcept
 {
 	for (int i = 0; i < (int)count; i++) {
 
+		for (size_t y = 0; y < _height; y++) {
+			for (size_t x = 0; x < _width; x++) {
+				int neighbours = GetNeighbours(x, y);
+
+				bool mainAt = _mainMatrix[x][y];
+
+				_secondMatrix[x][y] = (mainAt == 0) ? B.contains(neighbours) : S.contains(neighbours);
+			}
+		}
+
+		std::swap(_mainMatrix, _secondMatrix);
 	}
 }
 

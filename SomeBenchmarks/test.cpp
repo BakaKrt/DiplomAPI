@@ -11,7 +11,6 @@ import test;
 import normalsum;
 import iter;
 import sse;
-import avx;
 
 using std::array;
 using std::string;
@@ -44,7 +43,7 @@ static std::vector<std::array<T, N>> generateTestData() {
 
 
 template<typename T, size_t N>
-static void inline runTest(vector<unique_ptr<test>>& tests, vector<array<T, N>>& testData, const int iterations) noexcept;
+static void inline runBenchmark(vector<unique_ptr<test>>& tests, vector<array<T, N>>& testData, const int iterations) noexcept;
 
 /// <summary>
 /// Проверить, одинаковые ли array<uint8_t, N> поэлементно
@@ -52,8 +51,8 @@ static void inline runTest(vector<unique_ptr<test>>& tests, vector<array<T, N>>&
 /// <typeparam name="N"></typeparam>
 /// <param name="vec"></param>
 /// <returns></returns>
-template<size_t N>
-static bool inline checkArraysDifference(vector<array<uint8_t, N>>& vec) noexcept {
+template<typename T, size_t N>
+static bool inline checkArraysDifference(vector<array<T, N>>& vec) noexcept {
 	if (vec.empty()) return true;
 
 	const size_t size = vec.size();
@@ -80,17 +79,29 @@ static bool inline checkArraysDifference(vector<array<uint8_t, N>>& vec) noexcep
 	return res;
 }
 
+template<typename T, size_t testSize, size_t resultSize>
+static void inline runTest(vector<unique_ptr<test>>& tests, array<T, testSize> testData) {
+	vector<array<T, resultSize>> results{}; results.reserve(tests.size());
+
+	for (auto& test : tests) {
+		results.push_back(test->run(testData));
+	}
+
+	checkArraysDifference(results);
+}
+
 int main() {
-	auto  testData3 = generateTestData<float, 3>();
-	auto  testData5 = generateTestData<float, 5>();
-	auto  testData8 = generateTestData<float, 8>();
+	//auto  testData3 = generateTestData<float, 3>();
+	//auto  testData5 = generateTestData<float, 5>();
+	//auto  testData8 = generateTestData<float, 8>();
 	//auto testData12 = generateTestData<float, 12>();
 	//auto testData15 = generateTestData<float, 15>();
-	//auto testData24 = generateTestData<float, 24>();
+	auto testData24 = generateTestData<float, 24>();
 
-	auto   uintData8 = generateTestData<uint8_t, 12>();
-	auto uintData256 = generateTestData<uint8_t, 256>();
+	//auto   uintData8 = generateTestData<uint8_t, 12>();
 	auto uintData112 = generateTestData<uint8_t, 112>();
+	auto uintData256 = generateTestData<uint8_t, 256>();
+	
 
 	constexpr int TEST_ELEM_COUNT = 3;
 
@@ -100,55 +111,12 @@ int main() {
 	tests.push_back(make_unique<NormalSum>());
 	tests.push_back(make_unique<IterSum>());
 	tests.push_back(make_unique<SSEv1Sum>());
-	//tests.push_back(make_unique<AVXSum>()); 
 
-#ifdef _DEBUG 
-
-#pragma region Check256
-	{
-		array<uint8_t, 256> arr{};
-
-		short c = 0;
-		for (auto& a : arr) {
-			a = (uint8_t)(c++) % 16;
-		}
-
-		auto res = tests.back()->run(arr);
-		auto resNormal = tests[1]->run(arr);
-
-		for (size_t x = 0; x < res.size(); x++) {
-			if (res[x] != resNormal[x]) {
-				printf("difference at index %u! got %u and %u\n", (unsigned int)x, res[x], resNormal[x]);
+	runTest<  float,  24,   9>(tests,  testData24[0]);
+	runTest<uint8_t, 112,  70>(tests, uintData112[0]);
+	runTest<uint8_t, 256, 126>(tests, uintData256[0]);
 
 
-				(void)res;
-			}
-		}
-	}
-#pragma endregion
-
-#pragma region Check112
-	{
-		array<uint8_t, 112> arr{};
-		short c = 0;
-		for (auto& a : arr) {
-			a = (uint8_t)(c++) % 16;
-		}
-		
-		vector<array<uint8_t, 70>> results{};
-		results.reserve(tests.size());
-
-		for (auto& test : tests) {
-			results.push_back(test->run(arr));
-		}
-
-		bool res = checkArraysDifference(results);
-	}
-#pragma endregion
-
-
-
-#endif // DEBUG
 	
 	//#define TIMEBASED
 	#define NANOBENCH
@@ -163,24 +131,31 @@ int main() {
 #define TIMEBASED
 #endif
 
-	runTest(tests, testData3, iterations*10);
-	runTest(tests, testData5, iterations*5);
-	runTest(tests, testData8, iterations*2);
-	//runTest(tests, testData12, iterations*2);
+	//runBenchmark(tests, testData3, iterations*10);
+	//runBenchmark(tests, testData5, iterations*5);
+	//runBenchmark(tests, testData8, iterations*2);
 	
-	runTest(tests, uintData8, iterations*2);
-	runTest(tests, uintData256, iterations);
-	runTest(tests, uintData112, iterations);
+	//runBenchmark(tests, uintData8, iterations*2);
+
+	runBenchmark(tests, uintData112, iterations);
+	runBenchmark(tests, uintData256, iterations);
+	
 
 
-	//runTest(tests, testData15, iterations);
-	//runTest(tests, testData24, iterations);
+	//runBenchmark(tests, testData15, iterations);
+	//runBenchmark(tests, testData24, iterations);
+
+#ifdef NDEBUG
+	std::printf("end");
+	std::cin.get();
+#endif // RELEASE
+
 
 }
 
 
 template<typename T, size_t N>
-static void inline runTest(vector<unique_ptr<test>>& tests, vector<array<T, N>>& testData, const int iterations) noexcept {
+static void inline runBenchmark(vector<unique_ptr<test>>& tests, vector<array<T, N>>& testData, const int iterations) noexcept {
 	printf("test for size %d\n", (int)N);
 	for (auto& test : tests) {
 #ifdef NANOBENCH

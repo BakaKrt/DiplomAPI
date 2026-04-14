@@ -108,9 +108,9 @@ public:
 		return res;
 	}
 
-	/// 0  1   2  9 10 11
-	/// 3  4   5 12 13 14
-	/// 6  7   8 15 16 17
+	/// 0   1  2  9 10 11
+	/// 3   4  5 12 13 14
+	/// 6   7  8 15 16 17
 	/// 18 19 20 21 22 23
 	inline array<float, 8> run(array<float, 24>& object) const noexcept override {
 		array<float, 8> res{};
@@ -159,26 +159,6 @@ public:
 	inline array<uint8_t, 4> run(array<uint8_t, 12>& object) const noexcept override {
 		array<uint8_t, 4> res{};
 
-#pragma region epi16
-		//__m128i acc = _mm_set_epi16(
-		//	object[0] +  object[1], object[2],
-		//	object[3] +  object[4], object[5],
-		//	object[6] +  object[7], object[8],
-		//	object[9] + object[10], object[11]
-		//);
-
-		//__m128i temp = _mm_shufflelo_epi16(acc, _MM_SHUFFLE(2,3,0,1));
-		//temp = _mm_shufflehi_epi16(temp, _MM_SHUFFLE(2,3,0,1));
-
-		//acc = _mm_add_epi16(acc, temp);
-
-		//res[0] = _mm_extract_epi16(acc, 0);
-		//res[1] = _mm_extract_epi16(acc, 2);
-		//res[2] = _mm_extract_epi16(acc, 4);
-		//res[3] = _mm_extract_epi16(acc, 6);
-#pragma endregion
-
-#pragma region epi8_2
 		__m128i acc = _mm_set_epi8(
 			object[0], object[1], object[2], object[3],
 			object[4], object[5], object[6], object[7],
@@ -213,50 +193,6 @@ public:
 		res[1] = (packed >> 8) & 0xFF;
 		res[2] = (packed >> 16) & 0xFF;
 		res[3] = (packed >> 24) & 0xFF;
-#pragma endregion
-
-#pragma region epi8
-		//__m128i acc = _mm_set_epi8(
-		//	object[0], object[1], object[2], 0,
-		//	object[3], object[4], object[5], 0,
-		//	object[6], object[7], object[8], 0,
-		//	object[9], object[10], object[11], 0
-		//);
-
-		//__m128i mask1 = _mm_set_epi8(
-		//	14, 0, 0, 0,
-		//	10, 0, 0, 0,
-		//	6, 0, 0, 0,
-		//	2, 0, 0, 0
-		//);
-
-
-
-		//__m128i temp = _mm_shuffle_epi8(acc, mask1);
-		//__m128i add = _mm_add_epi8(acc, temp);
-
-		//__m128i mask2 = _mm_set_epi8(
-		//	13, 0, 0, 0,
-		//	9, 0, 0, 0,
-		//	5, 0, 0, 0,
-		//	1, 0, 0, 0
-		//);
-
-		//acc = _mm_shuffle_epi8(acc, mask2);
-		//add = _mm_add_epi8(add, acc);
-
-		//uint32_t packed = _mm_cvtsi128_si32(add);
-
-		//res[0] = (packed >> 0) & 0xFF;
-		//res[1] = (packed >> 8) & 0xFF;
-		//res[2] = (packed >> 16) & 0xFF;
-		//res[3] = (packed >> 24) & 0xFF;
-
-		//res[0] = _mm_extract_epi8(add, 15);
-		//res[1] = _mm_extract_epi8(add, 11);
-		//res[2] = _mm_extract_epi8(add, 7);
-		//res[3] = _mm_extract_epi8(add, 3);
-#pragma endregion
 
 		return res;
 	}
@@ -270,78 +206,95 @@ public:
 	inline array<uint8_t, 126> run(array<uint8_t, 256>& object) const noexcept override {
 		array<uint8_t, 126> res{};
 		
-		const size_t size = 8;
-
+		const size_t mid_index = object.size() / 2;
+		const size_t blocks_count = mid_index / 16;
 		
-		array<__m128i, size> top{};
-		array<__m128i, size> low{};
+		const size_t window_size = 2;
 
-		for (short i = 0; i < size; i++) {
-			int smesh = 16 * i;
-			top[i] = _mm_load_si128((__m128i*)(object.data() + smesh));
+		array<__m128i, window_size> top {};
+		array<__m128i, window_size> low {};
+		array<__m128i, window_size> rr {};	// сохраняю сумму top + low
 
-			low[i] = _mm_load_si128((__m128i*)(object.data() + 128 + smesh));
+		array<__m128i, window_size> r2 {};
+		array<__m128i, window_size> r3 {};
+
+
+		const __m128i mask0 = _mm_setr_epi8(15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+		const __m128i mask1 = _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0);
+
+		int offset = 0;
+		uint8_t __left = 0, __right = 0;
+
+		for (size_t block_id = 0; block_id < blocks_count - 1; block_id++) {
+
+			if (block_id == 0) {
+				for (short i = 0; i < window_size; i++) {
+					top[i] = _mm_load_si128((__m128i*)(object.data() + offset));
+					low[i] = _mm_load_si128((__m128i*)(object.data() + offset + mid_index));
+
+					rr[i] = _mm_add_epi8(low[i], top[i]);
+
+					offset += 16;
+				}
+
+				__left = _mm_extract_epi8(rr[0], 15);
+			}
+			else { [[likely]]
+				top[0] = top[1];
+				rr[0]  = rr[1];
+
+				 
+				top[1] = _mm_load_si128((__m128i*)(object.data() + offset));
+				low[1] = _mm_load_si128((__m128i*)(object.data() + mid_index + offset));
+
+				rr[1] = _mm_add_epi8(low[1], top[1]);
+
+				offset += 16;
+			}
+
+			for (short i = 0; i < window_size; i++) {
+				r2[i] = _mm_shuffle_epi8(rr[i], mask0);	// r2 = mask0(rr)
+				r3[i] = _mm_shuffle_epi8(rr[i], mask1);	// r3 = mask1(rr)
+			}
+
+
+			if (block_id != 0) [[likely]] {
+				r2[0] = _mm_insert_epi8(r2[0], __left, 0);
+				__left = _mm_extract_epi8(rr[0], 15);
+			}
+			
+			__right = _mm_extract_epi8(rr[1], 0);
+			r3[0] = _mm_insert_epi8(r3[0], __right, 15);
+
+
+			r2[0] = _mm_add_epi8(r2[0], r3[0]);		// r2 = r2 + r3
+
+			low[0] = _mm_add_epi8(r2[0], rr[0]);	// r1 = r2 + rr
+
+			low[0] = _mm_sub_epi8(low[0], top[0]);	// r1 = r1 - r0
+
+			if (block_id == 0) { [[unlikely]]
+				// если это первый блок, то перемешиваем (нулевой результат не нужен, там невалидные данные)
+				low[0] = _mm_shuffle_epi8(low[0], mask1);
+				_mm_store_si128((__m128i*)res.data(), low[0]);
+			}
+			else if (block_id == blocks_count - 2) { [[unlikely]]
+				// если последний блок, то сохраняем предпоследний блок
+				_mm_store_si128((__m128i*)(res.data() + 15 + (block_id - 1) * 16), low[0]);
+
+				// вставляем в последний блок на нулевую позицию сумму соседей слева
+				r2[1] = _mm_insert_epi8(r2[1], __left, 0);
+
+				r2[1] = _mm_add_epi8(r2[1], r3[1]);
+				low[1] = _mm_add_epi8(r2[1], rr[1]);
+				low[1] = _mm_sub_epi8(low[1], top[1]);
+
+				_mm_store_si128((__m128i*)(res.data() + 15 + block_id * 16), low[1]);
+			}
+			else { [[likely]]
+				_mm_store_si128((__m128i*)(res.data() + 15 + (block_id - 1) * 16), low[0]);
+			}
 		}
-
-		
-		const __m128i mask1 = _mm_setr_epi8( 0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11, 12, 13, 14,  1); // ok
-
-		const __m128i mask2 = _mm_setr_epi8( 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15,  0); // ok
-
-		const __m128i mask3 = _mm_setr_epi8( 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 11, 12, 13, 14, 15,  0); // ok
-		
-		const __m128i mask4 = _mm_setr_epi8(15, 0, 1, 2, 3, 4, 5, 6,  7,  8,  9, 10, 11, 12, 13, 14); // ok
-		
-
-		array<__m128i, size> temp{};
-
-		for (short i = 0; i < size; i++) {
-			top[i] = _mm_add_epi8(top[i], low[i]);		// r0 = r0 + r8
-			temp[i] = _mm_shuffle_epi8(top[i], mask2);	// temp = mask2(r0)
-
-			top[i] = _mm_shuffle_epi8(top[i], mask1);	// r0 = mask1(r0)
-					
-
-			low[i] = _mm_shuffle_epi8(low[i], mask3);	// r8 = mask3(r8) 
-		}
-		
-		uint8_t __righ = _mm_extract_epi8(top[1], 0);
-		temp[0] = _mm_insert_epi8(temp[0], __righ, 14);
-
-		
-		uint8_t __left = 0;
-
-		int what_insert = 0;
-
-		for (short i = 1; i < size - 1; i++) {
-			__left = _mm_extract_epi8(temp[i - 1], 13);	// сосед слева
-			__righ = _mm_extract_epi8(temp[i + 1], 15);	// сосед справа
-
-			what_insert = ((int)(__left) << 8) | __righ;
-
-
-			temp[i] = _mm_insert_epi16(temp[i], what_insert, 7); // temp = extract + insert
-		}
-
-		__left = _mm_extract_epi8(temp[size - 2], 13);
-		temp[size - 1] = _mm_insert_epi8(temp[size - 1], __left, 15);
-
-		for (short i = 0; i < size; i++) {
-			top[i] = _mm_adds_epi8(top[i], temp[i]);
-
-			top[i] = _mm_adds_epi8(top[i], low[i]);
-
-			if (i != 0)
-				top[i] = _mm_shuffle_epi8(top[i], mask4);
-		}
-
-		// левый
-		_mm_storeu_si128((__m128i*)res.data(), top[0]);		// сохраняем результатов (последний невалидный)
-
-		for (short i = 1; i < size; i++) {
-			_mm_storeu_si128((__m128i*)(res.data() + (16 * (i - 1)) + 15), top[i]);
-		}
-
 		return res;
 	}
 
@@ -352,14 +305,16 @@ public:
 
 		int offset = 0;
 
-		array<uint8_t, 7> indexes{};
+		const size_t size = 7;
 
-		for (short i = 0; i < 7; i++) {
+		array<uint8_t, size> indexes{};
+
+		for (short i = 0; i < size; i++) {
 			indexes[i] = i * 16;
 		}
 
 
-		for (short i = 0; i < 5; i++) {
+		for (short i = 0; i < size-2; i++) {
 			r0 = _mm_load_si128((__m128i*)(object.data() + indexes[i    ]));
 			r1 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 1]));
 			r2 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 2]));

@@ -74,12 +74,14 @@ int CaveGenerator_flat_sse::GetNeighbours(size_t x, size_t y) const noexcept
 {
 	const array<int, 8> objects{
 		_mainMatrix->at(x - 1, y - 1), // вл
-		_mainMatrix->at(x - 1, y	), // л
-		_mainMatrix->at(x - 1, y + 1), // нл 
 		_mainMatrix->at(x	 , y - 1), // вв
-		_mainMatrix->at(x	 , y + 1), // нн
 		_mainMatrix->at(x + 1, y - 1), // вп
-		_mainMatrix->at(x + 1, y - 1), // п
+
+		_mainMatrix->at(x - 1, y	), // л
+		_mainMatrix->at(x + 1, y	), // п
+
+		_mainMatrix->at(x - 1, y + 1), // нл
+		_mainMatrix->at(x	 , y + 1), // нн
 		_mainMatrix->at(x + 1, y + 1)  // нп
 	};
 
@@ -135,9 +137,9 @@ inline int CaveGenerator_flat_sse::GetNeighboursLeft(size_t x, size_t y) const n
 {
 	const array<int, 5> objects{
 		_mainMatrix->at(x	 , y - 1), // вв
-		_mainMatrix->at(x	 , y + 1), // нн
 		_mainMatrix->at(x + 1, y - 1), // вп
-		_mainMatrix->at(x + 1, y - 1), // п
+		_mainMatrix->at(x + 1, y),	   // п
+		_mainMatrix->at(x	 , y + 1), // нн
 		_mainMatrix->at(x + 1, y + 1)  // нп
 	};
 
@@ -171,8 +173,41 @@ inline array<int, 4> CaveGenerator_flat_sse::SumCorners() const noexcept {
 
 void CaveGenerator_flat_sse::Tick(const int count) noexcept
 {
-	for (int i = 0; i < (int)count; i++) {
+	const array<size_t, 8> cornerIndexes {
+				 0,			  0,
+		_width - 1,			  0,
+				 0, _height - 1,
+		_width - 1, _height - 1
+	};
 
+	for (int i = 0; i < count; i++) {
+
+		// углы
+		auto corners = SumCorners();
+		size_t index_x = 0, index_y = 0;
+		for (short x = 0; x < 4; x++) {
+			index_x = cornerIndexes[x * 2];
+			index_y = cornerIndexes[x * 2 + 1];
+			this->_secondMatrix->at(index_x, index_y) = \
+				(this->_mainMatrix->at(index_x, index_y) == 0) ? B.contains(corners[x]) : S.contains(corners[x]);
+		}
+
+
+
+
+		for (size_t y = 0; y < _height - 1; y++) {
+			for (size_t x = 0; x < _width - 1; x++) {
+
+				int neighbours = GetNeighbours(x, y);
+
+				bool& secondAt = this->_secondMatrix->at(x, y);
+				bool& mainAt = this->_mainMatrix->at(x, y);
+
+				secondAt = (mainAt == 0) ? B.contains(neighbours) : S.contains(neighbours);
+			}
+		}
+
+		std::swap(_mainMatrix, _secondMatrix);
 	}
 }
 
