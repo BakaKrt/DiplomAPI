@@ -70,8 +70,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cpuinf.ixx" />
+    <ClCompile Include="FlatArray.ixx" />
     <ClCompile Include="iter.ixx" />
     <ClCompile Include="normalsum.ixx" />
+    <ClCompile Include="random.ixx" />
+    <ClCompile Include="SharedMemoryHelper.ixx" />
     <ClCompile Include="sse.ixx" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="test.ixx" />

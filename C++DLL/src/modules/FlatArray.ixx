@@ -17,7 +17,8 @@ export template<typename T>
 struct is_allowed_type : std::integral_constant<bool,
 	std::is_same_v<T, int> ||
 	std::is_same_v<T, float> ||
-	std::is_same_v<T, bool>
+	std::is_same_v<T, bool> ||
+	std::is_same_v<T, std::uint8_t>
 > {
 };
 
@@ -111,7 +112,7 @@ Flat2DArray<T, Enabled>::Flat2DArray(const Flat2DArray<T, Enabled>& other) noexc
 template<typename T, typename Enabled>
 Flat2DArray<T, Enabled>& Flat2DArray<T, Enabled>::operator=(const Flat2DArray& other)
 {
-	exit(-1);
+	//exit(-1);
 	throw std::exception("допилить надо");
 	if (this != &other) { // Проверка на самоприсваивание
 		delete[] _array; // Освобождаем старую память

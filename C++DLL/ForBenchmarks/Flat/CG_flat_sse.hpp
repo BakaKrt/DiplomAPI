@@ -9,6 +9,9 @@ using std::make_unique;
 
 using std::array;
 
+/// <summary>
+/// Реализация генератора пещер с использованием плоского массива и SSE сложением
+/// </summary>
 class CaveGenerator_flat_sse : public CaveGeneratorBench {
 protected:
 	Flat2DArray<bool>* _mainMatrix = nullptr;

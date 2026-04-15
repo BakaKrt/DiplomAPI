@@ -4,7 +4,9 @@
 
 using namespace Benchmark;
 
-
+/// <summary>
+/// Реализация генератора пещер с использованием vector<vector<>> и SSE сложением
+/// </summary>
 class CaveGenerator_vector_sse : public CaveGeneratorBench {
 protected:
 	vector<vector<bool>> _mainMatrix;

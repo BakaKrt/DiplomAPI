@@ -4,7 +4,9 @@
 
 using namespace Benchmark;
 
-
+/// <summary>
+/// Реализация генератора пещер с использованием плоского массива и обычным сложением
+/// </summary>
 class CaveGenerator_flat_sum : public CaveGeneratorBench {
 protected:
 	Flat2DArray<bool>* _mainMatrix = nullptr;

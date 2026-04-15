@@ -9,192 +9,12 @@ using std::string;
 using std::array;
 
 
-export class SSEv1Sum : public test {
+export class SSEv1Sum : public test<SSEv1Sum> {
 public:
 	SSEv1Sum() { name = "sse v1"; }
 
-	inline float run(array<float, 3>& object) const noexcept override {
-		__m128 acc = _mm_set_ps(0.0f, object[2], object[1], object[0]);		// [0,  a1, a2, a3]
-		__m128 temp = _mm_shuffle_ps(acc, acc, _MM_SHUFFLE(2, 3, 0, 1));	// [a2, a3,  0, a1]
-		acc = _mm_add_ps(acc, temp);										// acc = [0+a2, a1+a3, a2+0, a3+a1]
-		temp = _mm_shuffle_ps(acc, acc, _MM_SHUFFLE(1, 1, 1, 1));			// temp = [acc[1], acc[1], acc[1], acc[1]] = [a1+a3, a1+a3, a1+a3, a1+a3]
-		acc = _mm_add_ss(acc, temp);										// acc = [(a0+a2)+(a1+a3), a1+a3, a2+a0, a3+a1]
-		return _mm_cvtss_f32(acc);
-	}
-
-	inline float run(array<float, 5>& object) const noexcept override {
-		object[3] += object[4];                                         // [a0,    a1, a2, a3+a4, a4]
-
-		__m128 acc = _mm_load_ps(object.data());                        // [a0,    a1, a2, a3+a4]
-		__m128 temp = _mm_shuffle_ps(acc, acc, _MM_SHUFFLE(2, 3, 0, 1));// [a2, a3+a4, a0,    a1]
-
-		acc = _mm_add_ps(acc, temp);                                    // [a0+a2, a1+a3+a4, a2+a0, a3+a4+a1]
-
-		temp = _mm_shuffle_ps(acc, acc, _MM_SHUFFLE(3, 3, 3, 3));       // [      a1+a3+a4, a1+a3+a4, a1+a3+a4, a1+a3+a4]
-		acc = _mm_add_ss(acc, temp);                                    // [a0+a1+a2+a3+a4, a1+a3+a4,    a2+a0, a3+a4+a1]
-
-		return _mm_cvtss_f32(acc);                                      // a0+a1+a2+a3+a4
-	}
-
-	inline float run(array<float, 8>& object) const noexcept override {
-		__m128 acc = _mm_load_ps(&object.data()[0]);			// [   a0,    a1,    a2,    a3]
-		__m128 temp = _mm_load_ps(&object.data()[4]);			// [   a4,    a5,    a6,    a7]
-		acc = _mm_add_ps(acc, temp);							// [a0+a4, a1+a5, a2+a6, a3+a7]
-
-		// Горизонтальное сложение в __m128
-		temp = _mm_shuffle_ps(acc, acc, _MM_SHUFFLE(2, 3, 0, 1)); // [a2+a6, a3+a7,a0+a4,a1+a5]
-		acc = _mm_add_ps(acc, temp);							// [a0+a4+a2+a6, a1+a5+a3+a7, ...]
-
-		temp = _mm_movehl_ps(temp, acc);						// [a1+a5+a3+a7, ??, ??, ??]
-		acc = _mm_add_ss(acc, temp);							// [total, ??, ??, ??]
-		float result = _mm_cvtss_f32(acc);						// total
-		return result;
-	}
-
-	inline float calc(__m128 acc, __m128 temp) const noexcept {
-		acc = _mm_add_ps(acc, temp);
-
-		temp = _mm_shuffle_ps(acc, acc, _MM_SHUFFLE(2, 3, 0, 1));
-		acc = _mm_add_ps(acc, temp);
-
-		temp = _mm_movehl_ps(temp, acc);
-		acc = _mm_add_ss(acc, temp);
-		return _mm_cvtss_f32(acc);
-	}
-
-	///  0 1 2  9 10
-	///  3 4 5 11 12
-	///  6 7 8 13 14
-	inline array<float, 3> run(array<float, 15>& object) const noexcept override {
-		array<float, 3> res{};
-
-		__m128 acc1 = _mm_load_ps(&object.data()[0]);
-		__m128 temp1 = _mm_load_ps(&object.data()[5]);
-
-		__m128 acc2 = _mm_set_ps(object[1], object[2], object[4], object[7]);
-		__m128 temp2 = _mm_set_ps(object[8], object[9], object[11], object[13]);
-
-		__m128 acc3 = _mm_set_ps(object[2], object[5], object[8], object[9]);
-		__m128 temp3 = _mm_set_ps(object[10], object[12], object[13], object[14]);
-
-		res[0] = calc(acc1, temp1);
-		res[1] = calc(acc2, temp2);
-		res[2] = calc(acc3, temp3);
-
-		return res;
-	}
-
-	inline array<float, 4> run(array<float, 12>& object) const noexcept override {
-		array<float, 4> res{};
-
-		__m128 acc1 = _mm_set_ps(object[0] + object[1], object[2], object[3] + object[4], object[5]);	// [0+1,   2, 3+4,   5]
-		__m128 temp1 = _mm_shuffle_ps(acc1, acc1, _MM_SHUFFLE(2, 3, 0, 1));							// [  2, 0+1,   5, 3+4]
-		acc1 = _mm_add_ps(acc1, temp1);																// [res0, res0, res1, res1]
-
-
-		__m128 acc2 = _mm_set_ps(object[6] + object[7], object[8], object[9] + object[10], object[11]);	// [6+7,   8, 9+10,   11]
-		__m128 temp2 = _mm_shuffle_ps(acc2, acc2, _MM_SHUFFLE(2, 3, 0, 1));	// [  8, 6+7,   11, 9+10]
-		acc2 = _mm_add_ps(acc2, temp2);										// [res2, res2, res3, res3]
-
-		res[1] = _mm_cvtss_f32(acc1);
-		res[3] = _mm_cvtss_f32(acc2);
-
-		acc1 = _mm_shuffle_ps(acc1, acc1, _MM_SHUFFLE(2, 2, 2, 2));			// [res0, res0, res0, res0]
-		acc2 = _mm_shuffle_ps(acc2, acc2, _MM_SHUFFLE(2, 2, 2, 2));			// [res2, res2, res2, res2]
-
-		res[0] = _mm_cvtss_f32(acc1);
-		res[2] = _mm_cvtss_f32(acc2);
-
-		return res;
-	}
-
-	/// 0   1  2  9 10 11
-	/// 3   4  5 12 13 14
-	/// 6   7  8 15 16 17
-	/// 18 19 20 21 22 23
-	inline array<float, 8> run(array<float, 24>& object) const noexcept override {
-		array<float, 8> res{};
-
-		array<__m128, 16> registers{};
-
-		registers[0] = _mm_load_ps(&object.data()[0]);
-		registers[8] = _mm_load_ps(&object.data()[3]);								// 7  f
-		registers[1] = _mm_load_ps(&object.data()[5]);								// 4
-
-		//__m128 temp1 = _mm_set_ps(0.0f, object[2], object[5], object[8]);
-
-		registers[2] = _mm_set_ps(object[1], object[2], object[4], object[7]);
-		registers[3] = _mm_set_ps(object[8], object[9], object[12], object[15]);	// 5
-		registers[12] = _mm_set_ps(object[5], object[8], object[12], object[13]);	// 15 f
-
-
-		registers[4] = _mm_set_ps(object[2], object[5], object[8], object[9]);
-		registers[6] = _mm_load_ps(&object.data()[9]);								// 13 f
-		registers[5] = _mm_set_ps(object[10], object[13], object[15], object[16]);	// 12
-
-		registers[7] = _mm_load_ps(&object.data()[14]);								// 13 s
-
-		registers[9] = _mm_set_ps(object[8], object[18], object[19], object[20]);	// 7  s
-
-		registers[10] = _mm_set_ps(object[4], object[5], object[7], object[12]);
-		registers[11] = _mm_set_ps(object[15], object[19], object[20], object[21]);	// 8
-
-		registers[13] = _mm_set_ps(object[16], object[20], object[21], object[22]);	// 15 s
-
-		registers[14] = _mm_load_ps(&object.data()[12]);
-		registers[15] = _mm_set_ps(object[17], object[21], object[22], object[23]);	// 16
-
-		res[0] = calc(registers[0], registers[1]);
-		res[1] = calc(registers[2], registers[3]);
-		res[2] = calc(registers[4], registers[5]);
-		res[3] = calc(registers[6], registers[7]);
-		res[4] = calc(registers[8], registers[9]);
-		res[5] = calc(registers[10], registers[11]);
-		res[6] = calc(registers[12], registers[13]);
-		res[7] = calc(registers[14], registers[15]);
-
-		return res;
-	}
-
-	inline array<uint8_t, 4> run(array<uint8_t, 12>& object) const noexcept override {
-		array<uint8_t, 4> res{};
-
-		__m128i acc = _mm_set_epi8(
-			object[0], object[1], object[2], object[3],
-			object[4], object[5], object[6], object[7],
-			object[8], object[9], object[10], object[11],
-			0, 0, 0, 0
-		);
-
-		__m128i mask = _mm_set_epi8(
-			0, 13, 0, 0,
-			10, 0, 0, 8,
-			0, 0, 4, 0,
-			15, 12, 9, 6
-		);
-
-		__m128i temp = _mm_shuffle_epi8(acc, mask);
-		__m128i sum = _mm_adds_epi8(acc, temp);
-
-		__m128i mask2 = _mm_set_epi8(
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			14, 11, 8, 5
-		);
-
-		__m128i sum2 = _mm_shuffle_epi8(sum, mask2);
-
-		__m128i sum3 = _mm_adds_epi16(sum, sum2);
-
-		auto packed = _mm_cvtsi128_si32(sum3);
-
-		res[0] = (packed >> 0) & 0xFF;
-		res[1] = (packed >> 8) & 0xFF;
-		res[2] = (packed >> 16) & 0xFF;
-		res[3] = (packed >> 24) & 0xFF;
-
-		return res;
+	inline const string getName_impl() const {
+		return name;
 	}
 
 	/// <summary>
@@ -203,7 +23,7 @@ public:
 	/// </summary>
 	/// <param name="object"></param>
 	/// <returns></returns>
-	inline array<uint8_t, 126> run(array<uint8_t, 256>& object) const noexcept override {
+	inline array<uint8_t, 126> run_impl(array<uint8_t, 256>& object) const noexcept  {
 		array<uint8_t, 126> res{};
 		
 		const size_t mid_index = object.size() / 2;
@@ -298,7 +118,7 @@ public:
 		return res;
 	}
 
-	inline array<uint8_t, 70> run(array<uint8_t, 112>& object) const noexcept override {
+	inline array<uint8_t, 70> run_impl(array<uint8_t, 112>& object) const noexcept  {
 		array<uint8_t, 70> res{};
 
 		__m128i r0, r1, r2, rres;
@@ -342,5 +162,16 @@ public:
 		}
 
 		return res;
+	}
+
+
+	template<typename T> requires allowed_type<T>
+	inline Flat2DArray<T> run_horizontalSumImpl(Flat2DArray<T>& object) const noexcept {
+		return object;
+	}
+
+	template<typename T> requires allowed_type<T>
+	inline Flat2DArray<T> run_verticalSumImpl(Flat2DArray<T>& object) const noexcept {
+		return object;
 	}
 };
