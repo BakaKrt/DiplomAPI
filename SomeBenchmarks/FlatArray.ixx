@@ -13,6 +13,8 @@ using std::ostream;
 using byte = std::uint8_t;
 using std::make_unique, std::unique_ptr;
 
+using std::ostream;
+
 // Список разрешённых типов
 export template<typename T>
 concept allowed_type =
@@ -44,35 +46,23 @@ private:
 	unique_ptr<SharedMemoryObject> _object;
     size_t _width = 0, _height = 0;
 	T* _array = nullptr;
+	bool _isSharedMemory = true;
 public:
-	Flat2DArray() noexcept :
-		_width(0), _height(0), _object(nullptr) {
+	Flat2DArray() noexcept;
 
-	}
-
-	Flat2DArray(size_t width, size_t height) noexcept :
-		_width(width), _height(height),
-		_array(nullptr)
-	{
-		this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
-
-		auto settings = _object->create();
-		this->_array = static_cast<T*>(settings.array);
-	}
+	/// <summary>
+	/// Конструктор
+	/// </summary>
+	/// <param name="width">Ширина</param>
+	/// <param name="height">Высота</param>
+	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
+	Flat2DArray(size_t width, size_t height, bool useSharedMemory = true) noexcept;
 
     /// <summary>
     /// Конструктор копирования
     /// </summary>
     /// <param name="other"></param>
-	Flat2DArray(const Flat2DArray<T>& other) noexcept :
-		_width(other._width), _height(other._height),
-		_array(nullptr)
-	{
-		wstring memoryName = other._object->getName();
-		this->_object = make_unique<SharedMemoryObject>(memoryName);
-		auto settings = _object->connect();
-		this->_array = static_cast<T*>(settings.array);
-	}
+	Flat2DArray(const Flat2DArray<T>& other) noexcept;
 
     inline T& at(size_t x) const noexcept;
     inline T& at(size_t x, size_t y) const noexcept;
@@ -85,11 +75,49 @@ public:
     size_t width() const noexcept;
     size_t height() const noexcept;
 
-	friend ostream& operator <<(ostream& stream, Flat2DArray& data);
+    template<typename U>
+	friend ostream& operator<<(ostream& stream, const Flat2DArray<U>& data);
 
 	~Flat2DArray() noexcept;
 };
 
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray() noexcept :
+	_width(0), _height(0)
+{
+
+}
+
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray<T>(size_t width, size_t height, bool useSharedMemory) noexcept :
+	_width(width),
+	_height(height)
+{
+	if (useSharedMemory) {
+		this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
+		auto settings = _object->create();
+		this->_array = static_cast<T*>(settings.array);
+	}
+	else {
+		this->_array = new T[this->_width * this->_height];
+		this->_object = nullptr;
+		this->_isSharedMemory = false;
+	}
+}
+
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray<T>(const Flat2DArray<T>& other) noexcept :
+	_width(other._width), _height(other._height)
+{
+	if (other._isSharedMemory) {
+		this->_object = make_unique<SharedMemoryObject>(other._object->getName());
+		auto settings = _object->connect();
+		this->_array = static_cast<T*>(settings.array);
+	}
+	else {
+		this->_array = other._array;
+	}
+}
 
 template<typename T> requires allowed_type<T>
 inline T& Flat2DArray<T>::at(size_t x) const noexcept
@@ -142,20 +170,25 @@ size_t Flat2DArray<T>::height() const noexcept
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::~Flat2DArray() noexcept
 {
+	if (!_object && _array) {
+		delete[] _array;
+	}
+
 	_array = nullptr;
 	_width = 0; _height = 0;
 }
 
+export
 template<typename T> requires allowed_type<T>
-ostream& operator<<(ostream& stream, Flat2DArray<T>& data)
+ostream& operator<<(ostream& stream, const Flat2DArray<T>& data)
 {
-	const size_t capacity = data._width * data._height;
-	for (size_t i = 0; i < capacity;)
-	{
-		stream << (int)data.at(i) << "\t";
-		i++;
-		if (i % data._width == 0 && i != 0) stream << '\n';
-		else stream << ' ';
-	}
-	return stream;
+    const size_t capacity = data._width * data._height;
+    for (size_t i = 0; i < capacity;)
+    {
+        stream << std::setw(2) << (int)data.at(i) << "  ";
+        i++;
+        if (i % data._width == 0 && i != 0) stream << '\n';
+        else stream << ' ';
+    }
+    return stream;
 }

@@ -58,8 +58,17 @@ public:
 	}
 
 	template<typename T> requires allowed_type<T>
-	inline Flat2DArray<T> run_horizontalSumImpl(Flat2DArray<T>& object) const noexcept {
-		return object;
+	Flat2DArray<T> run_horizontalSumImpl(Flat2DArray<T>& object) const noexcept {
+		const size_t mid_index = object.width();
+		const size_t res_width = mid_index - 2;
+
+
+		auto res = Flat2DArray<T>(res_width, 1, false);
+
+		for (int i = 0; i < res_width; i++) {
+			res[i] = object[i] + object[i + 2] + object[mid_index + i] + object[mid_index + i + 1] + object[mid_index + i + 2];
+		}
+		return res;
 	}
 
 	template<typename T> requires allowed_type<T>
