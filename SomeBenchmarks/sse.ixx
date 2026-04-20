@@ -361,6 +361,111 @@ public:
 
 	template<typename T> requires allowed_type<T>
 	inline Flat2DArray<T> run_verticalSumImpl(Flat2DArray<T>& object) const noexcept {
-		return object;
+		const size_t width = object.width();
+		const size_t height = object.height();
+
+		const size_t offset_from_zero = 0;
+
+		auto res = Flat2DArray<T>(14, height - 2, false);
+
+		T* res_ptr = res.data();
+		T* data_ptr = object.data();
+
+		__m128i r0, r1, r2, rres;
+
+		int offset = 0;
+
+		Flat2DArray<int> indexes(height, 1, false);
+
+		for (short i = 0; i < height; i++) {
+			indexes[i] = offset_from_zero + i * width;
+		}
+
+		// для отладки. В релизе эти функции не будут вызываться, так как макрос DEBUG_REGS() будет пустой функцией
+#ifdef _DEBUG
+		auto DEBUG_REGS = [&] (string at_moment) {
+			std::printf("regs %s\n", at_moment.c_str());
+			print_m128i_uint8(r0, "r0");
+			print_m128i_uint8(r1, "r1"); std::printf("\n");
+			print_m128i_uint8(r2, "r2");
+			print_m128i_uint8(rres, "rr"); std::printf("\n");
+		};
+#else
+	#define DEBUG_REGS(at_moment) ((void)0)
+#endif // _DEBUG
+
+		//T* row_0 = data_ptr + indexes[0];
+		//T* row_1 = data_ptr + indexes[1];
+		//T* row_2 = data_ptr + indexes[2];
+
+		//auto lambda = [&] (size_t offset) { 
+		//	r0 = _mm_load_si128((__m128i*)(row_0));
+		//	r1 = _mm_load_si128((__m128i*)(row_1));
+		//	r2 = _mm_load_si128((__m128i*)(row_2));
+
+		//	rres = r1;						// rres = r1
+
+		//	DEBUG_REGS("after load");
+
+		//	r1 = _mm_add_epi8(r1, r2);
+		//	r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
+
+		//	r1 = _mm_srli_si128(r0, 1);		// сдвиг влево на 1 байт (влево по памяти)
+		//	r2 = _mm_slli_si128(r0, 1);		// сдвиг вправо на 1 байт (влево по памяти)
+
+		//	DEBUG_REGS("after shift");
+
+		//	r1 = _mm_add_epi8(r1, r2);
+		//	r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
+		//	DEBUG_REGS("r0 = r2 + r1 + r0");
+
+		//	r0 = _mm_sub_epi8(r0, rres);	// r0 = r0 - rres
+		//	DEBUG_REGS("r0 = r0 - rr");
+
+		//	r0 = _mm_srli_si128(r0, 1);		// r0 = mask1(r0)
+		//	DEBUG_REGS("on save");
+		//	_mm_storeu_si128((__m128i*)(res_ptr + offset), r0);
+		//};
+
+		//lambda(0);
+		
+		for (size_t i = 1; i < height - 2; i++) {
+			/*row_2 = row_1;
+			row_1 = row_0;
+			row_0 = data_ptr + indexes[i + 2];
+			const size_t offset = i * 14;
+			lambda(offset);*/
+
+			r0 = _mm_load_si128((__m128i*)(object.data() + indexes[i]));
+			r1 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 1]));
+			r2 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 2]));
+
+			rres = r1;						// rres = r1
+
+			DEBUG_REGS("after load");
+
+			r1 = _mm_add_epi8(r1, r2);
+			r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
+
+			r1 = _mm_srli_si128(r0, 1);		// сдвиг влево на 1 байт (влево по памяти)
+			r2 = _mm_slli_si128(r0, 1);		// сдвиг вправо на 1 байт (влево по памяти)
+
+			DEBUG_REGS("after shift");
+
+			r1 = _mm_add_epi8(r1, r2);
+			r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
+			DEBUG_REGS("r0 = r2 + r1 + r0");
+
+			r0 = _mm_sub_epi8(r0, rres);	// r0 = r0 - rres
+			DEBUG_REGS("r0 = r0 - rr");
+
+			r0 = _mm_srli_si128(r0, 1);		// r0 = mask1(r0)
+			DEBUG_REGS("on save");
+			_mm_storeu_si128((__m128i*)(res.data() + (i * 14)), r0);
+		}
+
+
+
+		return res;
 	}
 };

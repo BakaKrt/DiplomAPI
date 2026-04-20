@@ -1,8 +1,10 @@
 #include <variant>
 #include <chrono>
+#include <functional>
+#include <type_traits>
 
 
-#define BENCHMARK_MODE 1  // 1 = TIMEBASED, 2 = NANOBENCH, 0 = NONE
+#define BENCHMARK_MODE 2  // 1 = TIMEBASED, 2 = NANOBENCH, 0 = NONE
 
 // В коде:
 #if BENCHMARK_MODE == 2
@@ -93,7 +95,7 @@ struct AnyTest {
 
 template <typename T>
 static shared_ptr<Flat2DArray<T>> generateTestMemory(size_t width, size_t height) {
-	auto obj = make_shared<Flat2DArray<T>>(width, height);
+	auto obj = make_shared<Flat2DArray<T>>(width, height, false);
 	auto ptr = obj->data();
 
 	const size_t size = width * height;
@@ -140,11 +142,92 @@ static std::vector<std::array<T, N>> generateTestData() {
 	return objects;
 }
 
-template<typename T>
-static void inline runBenchHorizontal(vector<AnyTest>& tests, vector<shared_ptr<Flat2DArray<T>>>& testData, const int iterations) noexcept;
 
-template<typename T, size_t N>
-static void inline runBenchmark(vector<AnyTest>& tests, vector<array<T, N>>& testData, const int iterations) noexcept;
+template<typename Fn, typename T>
+void runBenchmark(
+	std::vector<AnyTest>& tests,
+	const std::vector<std::shared_ptr<Flat2DArray<T>>>& testData,
+	const int iterations,
+	Fn&& execute_test,
+	const char* benchName
+) {
+	printf("benchmark %s:\n", benchName);
+
+#ifdef TIMEBASED
+	std::vector<std::pair<std::string, long long>> pairs;
+	pairs.reserve(tests.size());
+#endif
+
+	for (auto& test_variant : tests) {
+		string name = test_variant.getName();
+
+#ifdef NANOBENCH
+		ankerl::nanobench::Bench().minEpochIterations(5).warmup(10).run(name, [&] {
+#endif
+#ifdef TIMEBASED
+			auto start = std::chrono::high_resolution_clock::now();
+#endif // TIMEBASED
+            // Вызов измерения с помощью переданной функции.
+			// Поддерживаем две сигнатуры execute_test:
+			//  - Fn(AnyTest&, Flat2DArray<T>&)
+			//  - Fn(AnyTest&, Flat2DArray<T>&, int)  <-- получает номер итерации
+			for (int iter = 0; iter < iterations; ++iter) {
+				for (auto& vec : testData) {
+					if constexpr (std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&, int>) {
+						std::invoke(execute_test, test_variant, *vec, iter);
+					}
+					else if constexpr (std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&>) {
+						std::invoke(execute_test, test_variant, *vec);
+					}
+					else {
+						static_assert(std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&> ||
+									  std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&, int>,
+									  "execute_test must be callable as (AnyTest&, Flat2DArray<T>&) or (AnyTest&, Flat2DArray<T>&, int)");
+					}
+				}
+			}
+
+#ifdef TIMEBASED
+			auto end = std::chrono::high_resolution_clock::now();
+			auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+			printf("%s took:\t%7lld us  | iter/us %f\n", name.c_str(), time, static_cast<float>((float) iterations / (float) time));
+			pairs.push_back(make_pair(name, time));
+#endif // TIMEBASED
+#ifdef NANOBENCH
+		});
+#endif
+	}
+
+#ifdef TIMEBASED
+	// Анализ и вывод результатов
+	auto min_time = std::min_element(pairs.begin(), pairs.end(),
+		[] (const auto& a, const auto& b) { return a.second < b.second; })->second;
+
+	for (const auto& [name, time] : pairs) {
+		double speedPercent = 0.0;
+		double timePercent = 0.0;
+		if (time != 0) {
+			speedPercent = (double) min_time / (double) time * 100.0;
+			timePercent = (double) time / (double) min_time * 100.0;
+		}
+		printf("%6s - speed: %6.2f%% - time: %5.2f%%\n", name.c_str(), speedPercent, timePercent);
+	}
+	printf("\n\n");
+#endif
+}
+
+template<typename T>
+void runHorizontalBenchmark(AnyTest& test_variant,
+								Flat2DArray<T>& testData) {
+	test_variant.run_horizontal(testData);
+}
+
+template<typename T>
+void runVerticalBenchmark(AnyTest& test_variant,
+								Flat2DArray<T>& testData) {
+	test_variant.run_vertical(testData);
+}
+
 
 /// <summary>
 /// Проверить, одинаковые ли array<T, N> поэлементно
@@ -204,33 +287,33 @@ int main() {
 	printf("support SSE 4.1? = %s\n", InstructionSet::SSE41() ? "true" : "false");
 
 
-	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 2, 3);
-	auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
+	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(10, 16 * 2, 3);
+	auto testMemFloat = generateVectorOfTestMemory< float >(10, 16 * 2, 3);
 
 	#ifdef _DEBUG
 	{
-		SSEv1Sum sseTest; NormalSum normalTest;
-		size_t width = 36, height = 3, capacity = width * height;
+		SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
+		size_t width = 25, height = 4, capacity = width * height;
 		auto mem = Flat2DArray<uint8_t>(width, height);
 
 		for (size_t i = 0; i < capacity; i++) {
-			mem[i] = (uint8_t)(i) % 13;
+			mem[i] = (uint8_t)(i) % 16;
 		}
 
 		cout << "init mem\n" << mem << "\n";
-		auto res = sseTest.runHorizontalSum(mem);
-		auto normalRes = normalTest.runHorizontalSum(mem);
+		auto res = sseTest.runVerticalSum(mem);
+		auto normalRes = iterTest.runVerticalSum(mem);
 
 		cout << "res:\n" << res << "\n";
 		cout << "normalRes:\n" << normalRes << "\n";
 
 		for (size_t x = 0; x < normalRes.capacity(); x++) {
 			if (normalRes[x] != res[x]) {
-				printf("got diff index[%u]: n %u r %u\n", (unsigned)x, normalRes[x], res[x]);
+				printf("got diff index[%3u]: n %u s %u\n", (unsigned)x, normalRes[x], res[x]);
 			}
 		}
 
- 		__debugbreak();
+ 		//__debugbreak();
 	}
 	#endif // _DEBUG
 
@@ -256,115 +339,17 @@ int main() {
 
 #ifdef NDEBUG
 	// запуск бенчмарков только в релизе
-	runBenchHorizontal(tests, testMemUint8, iterations);
+    runBenchmark(tests, testMemUint8, iterations,
+		&runHorizontalBenchmark<uint8_t>,
+		"horizontal"
+	);
 
-	//runBenchmark(tests, uintData112, iterations);
-	//runBenchmark(tests, uintData256, iterations);
+    runBenchmark(tests, testMemUint8, iterations,
+		&runVerticalBenchmark<uint8_t>,
+		"vertical"
+	);
 
 	std::printf("end");
 	std::cin.get();
 #endif // RELEASE
-}
-
-template<typename T>
-static void inline runBenchHorizontal(vector<AnyTest>& tests, vector<shared_ptr<Flat2DArray<T>>>& testData, const int iterations) noexcept {
-	printf("benchmark for size %d\n", (int) testData.size());
-
-	using std::pair, std::make_pair;
-
-	vector<pair<string, long long>> pairs {}; pairs.reserve(tests.size());
-	for (auto& test_variant : tests) {
-		string name = test_variant.getName();
-
-#ifdef NANOBENCH
-		ankerl::nanobench::Bench().minEpochIterations(5).warmup(10).run(name, [&] {
-#endif // NANOBENCH
-#ifdef TIMEBASED
-			auto start = std::chrono::high_resolution_clock::now();
-#endif // TIMEBASED
-			for (int iter = 0; iter < iterations; ++iter) {
-                for (auto& vec : testData) {
-					// vec is a shared_ptr<Flat2DArray<T>>; run_horizontal expects a Flat2DArray<T>&
-					// pass the referenced object
-					test_variant.run_horizontal(*vec);
-				}
-			}
-#ifdef NANOBENCH
-			});
-#endif // NANOBENCH
-#ifdef TIMEBASED
-		auto end = std::chrono::high_resolution_clock::now();
-		auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		printf("%s took:\t%7lld us  | iter/us %f\n", name.c_str(), time, static_cast<float>((float) iterations / (float) time));
-		pairs.push_back(make_pair(name, time));
-#endif // TIMEBASED
-	}
-#ifdef TIMEBASED
-	auto min_time = std::min_element(pairs.begin(), pairs.end(), [] (const pair<string, long long>& a, const pair<string, long long>& b) {
-		return a.second < b.second;
-	})->second;
-
-	// выводит сводку: минимальное время как 100%, а остальные тесты показывают, сколько процентов от быстрейшего по скорости и времени они занимают
-	for (const auto& pr : pairs) {
-		double speedPercent = 0.0;   // сколько процентов от быстрейшего по скорости
-		double timePercent = 0.0;    // сколько процентов времени по сравнению с быстрейшим (fastest = 100%)
-		if (pr.second != 0) {
-			speedPercent = (double) min_time / (double) pr.second * 100.0;
-			timePercent = (double) pr.second / (double) min_time * 100.0;
-		}
-		printf("%6s - speed: %6.2f%% - time: %5.2f%%\n", pr.first.c_str(), speedPercent, timePercent);
-	}
-	printf("\n\n");
-#endif
-}
-
-
-template<typename T, size_t N>
-static void inline runBenchmark(vector<AnyTest>& tests, vector<array<T, N>>& testData, const int iterations) noexcept {
-	printf("benchmark for size %d\n", (int)N);
-
-	using std::pair, std::make_pair;
-
-	vector<pair<string, long long>> pairs {}; pairs.reserve(tests.size());
-	for (auto& test_variant : tests) {
-		string name = test_variant.getName();
-
-#ifdef NANOBENCH
-		ankerl::nanobench::Bench().minEpochIterations(5).warmup(10).run(name, [&] {
-#endif // NANOBENCH
-#ifdef TIMEBASED
-			auto start = std::chrono::high_resolution_clock::now();
-#endif // TIMEBASED
-			for (int iter = 0; iter < iterations; ++iter) {
-				for (auto& vec : testData) {
-					test_variant.run(vec);
-				}
-			}
-#ifdef NANOBENCH
-			});
-#endif // NANOBENCH
-#ifdef TIMEBASED
-		auto end = std::chrono::high_resolution_clock::now();
-		auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		printf("%s took:\t%7lld us  | iter/us %f\n", name.c_str(), time, static_cast<float>((float)iterations / (float)time));
-		pairs.push_back(make_pair(name, time));
-#endif // TIMEBASED
-	}
-#ifdef TIMEBASED
-	auto min_time = std::min_element(pairs.begin(), pairs.end(), [] (const pair<string, long long>& a, const pair<string, long long>& b) {
-		return a.second < b.second;
-	})->second;
-
-	// выводит сводку: минимальное время как 100%, а остальные тесты показывают, сколько процентов от быстрейшего по скорости и времени они занимают
-	for (const auto& pr : pairs) {
-		double speedPercent = 0.0;   // сколько процентов от быстрейшего по скорости
-		double timePercent = 0.0;    // сколько процентов времени по сравнению с быстрейшим (fastest = 100%)
-		if (pr.second != 0) {
-			speedPercent = (double)min_time / (double)pr.second * 100.0;
-			timePercent = (double)pr.second / (double)min_time * 100.0;
-		}
-		printf("%6s - speed: %6.2f%% - time: %5.2f%%\n", pr.first.c_str(), speedPercent, timePercent);
-	}
-	printf("\n\n");
-#endif
 }

@@ -12,6 +12,7 @@ using std::wstring;
 using std::ostream;
 using byte = std::uint8_t;
 using std::make_unique, std::unique_ptr;
+using std::make_shared, std::shared_ptr;
 
 using std::ostream;
 
@@ -45,7 +46,7 @@ class Flat2DArray {
 private:
 	unique_ptr<SharedMemoryObject> _object;
     size_t _width = 0, _height = 0;
-	T* _array = nullptr;
+	shared_ptr<T[]> _array = nullptr;
 	bool _isSharedMemory = true;
 public:
 	Flat2DArray() noexcept;
@@ -63,6 +64,12 @@ public:
     /// </summary>
     /// <param name="other"></param>
 	Flat2DArray(const Flat2DArray<T>& other) noexcept;
+
+	/// <summary>
+	/// Конструктор перемещения
+	/// </summary>
+	/// <param name="other"></param>
+	Flat2DArray(Flat2DArray<T>&& other) noexcept;
 
     inline T& at(size_t x) const noexcept;
     inline T& at(size_t x, size_t y) const noexcept;
@@ -89,30 +96,31 @@ Flat2DArray<T>::Flat2DArray() noexcept :
 }
 
 template<typename T> requires allowed_type<T>
-Flat2DArray<T>::Flat2DArray<T>(size_t width, size_t height, bool useSharedMemory) noexcept :
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height, bool useSharedMemory) noexcept :
 	_width(width),
-	_height(height)
+	_height(height), _isSharedMemory(useSharedMemory)
 {
 	if (useSharedMemory) {
 		this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
 		auto settings = _object->create();
-		this->_array = static_cast<T*>(settings.array);
+		T* raw_ptr = static_cast<T*>(settings.array);
+		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
 	}
 	else {
-		this->_array = new T[this->_width * this->_height];
+		this->_array = make_shared<T[]>(_width * _height);
 		this->_object = nullptr;
-		this->_isSharedMemory = false;
 	}
 }
 
 template<typename T> requires allowed_type<T>
-Flat2DArray<T>::Flat2DArray<T>(const Flat2DArray<T>& other) noexcept :
+Flat2DArray<T>::Flat2DArray(const Flat2DArray<T>& other) noexcept :
 	_width(other._width), _height(other._height)
 {
 	if (other._isSharedMemory) {
 		this->_object = make_unique<SharedMemoryObject>(other._object->getName());
 		auto settings = _object->connect();
-		this->_array = static_cast<T*>(settings.array);
+		T* raw_ptr = static_cast<T*>(settings.array);
+		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
 	}
 	else {
 		this->_array = other._array;
@@ -120,33 +128,43 @@ Flat2DArray<T>::Flat2DArray<T>(const Flat2DArray<T>& other) noexcept :
 }
 
 template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray(Flat2DArray<T>&& other) noexcept
+	: _width(other._width), _height(other._height), _isSharedMemory(other._isSharedMemory),
+	_array(other._array), _object(std::move(other._object))
+{
+	other._array = nullptr;
+	other._width = 0;
+	other._height = 0;
+}
+
+template<typename T> requires allowed_type<T>
 inline T& Flat2DArray<T>::at(size_t x) const noexcept
 {
-	return _array[x];
+	return _array.get()[x];
 }
 
 template<typename T> requires allowed_type<T>
 inline T& Flat2DArray<T>::at(size_t x, size_t y) const noexcept
 {
-	return _array[x + y * _width];
+	return _array.get()[x + y * _width];
 }
 
 template<typename T> requires allowed_type<T>
 inline T& Flat2DArray<T>::operator[](size_t posX) noexcept
 {
-	return _array[posX];
+	return _array.get()[posX];
 }
 
 template<typename T> requires allowed_type<T>
 inline const T& Flat2DArray<T>::operator[](size_t posX) const noexcept
 {
-	return _array[posX];
+	return _array.get()[posX];
 }
 
 template<typename T> requires allowed_type<T>
 T* Flat2DArray<T>::data() const noexcept
 {
-	return _array;
+	return _array.get();
 }
 
 template<typename T> requires allowed_type<T>
@@ -170,11 +188,6 @@ size_t Flat2DArray<T>::height() const noexcept
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::~Flat2DArray() noexcept
 {
-	if (!_object && _array) {
-		delete[] _array;
-	}
-
-	_array = nullptr;
 	_width = 0; _height = 0;
 }
 

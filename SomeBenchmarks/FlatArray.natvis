@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="Flat2DArray&lt;*&gt;">
+		<DisplayString>[Flat2D] {(_width)}×{(_height)}</DisplayString>
+		<Expand>
+			<Item Name="object">_object</Item>
+			<Item Name="width">_width</Item>
+			<Item Name="height">_height</Item>
+			<Item Name="capacity">((_width) * (_height))</Item>
+			<Item Name="shared_in_memory">(_isSharedMemory)</Item>
+			
+			<Synthetic Name="_array">
+				<Expand>
+					<ArrayItems>
+						<Size>(_width) * (_height)</Size>
+						<ValuePointer>_array._Ptr</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
+</AutoVisualizer>
