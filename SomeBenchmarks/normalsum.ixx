@@ -84,7 +84,8 @@ public:
 			cur_row_i = 0,
 			after_row_i = 0;
 
-		auto indexes = Flat2DArray<int>(height, 1, false);
+		//auto indexes = Flat2DArray<int>(height, 1, false);
+		size_t* indexes = new size_t[height];
 
 		for (short q = 0; q < height; q++) {
 			indexes[q] = offset_from_zero + q * width;
@@ -106,6 +107,13 @@ public:
 				i++;
 			}
 		}
+
+		delete indexes;
 		return res;
+	}
+
+	template<typename T> requires allowed_type<T>
+	Flat2DArray<T> run_horizontalNextLineSum(Flat2DArray<T>& object) const noexcept {
+		return object;
 	}
 };

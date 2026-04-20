@@ -4,7 +4,7 @@
 #include <type_traits>
 
 
-#define BENCHMARK_MODE 2  // 1 = TIMEBASED, 2 = NANOBENCH, 0 = NONE
+#define BENCHMARK_MODE 1  // 1 = TIMEBASED, 2 = NANOBENCH, 0 = NONE
 
 // В коде:
 #if BENCHMARK_MODE == 2
@@ -162,7 +162,7 @@ void runBenchmark(
 		string name = test_variant.getName();
 
 #ifdef NANOBENCH
-		ankerl::nanobench::Bench().minEpochIterations(5).warmup(10).run(name, [&] {
+		ankerl::nanobench::Bench().minEpochIterations(10).warmup(10).run(name, [&] {
 #endif
 #ifdef TIMEBASED
 			auto start = std::chrono::high_resolution_clock::now();
@@ -287,20 +287,21 @@ int main() {
 	printf("support SSE 4.1? = %s\n", InstructionSet::SSE41() ? "true" : "false");
 
 
-	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(10, 16 * 2, 3);
-	auto testMemFloat = generateVectorOfTestMemory< float >(10, 16 * 2, 3);
+	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 5 + 8, 16 * 8);
+	auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
 
 	#ifdef _DEBUG
+		#ifdef testVerical
 	{
 		SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
 		size_t width = 25, height = 4, capacity = width * height;
 		auto mem = Flat2DArray<uint8_t>(width, height);
 
 		for (size_t i = 0; i < capacity; i++) {
-			mem[i] = (uint8_t)(i) % 16;
+			mem[i] = (uint8_t)(i) % 10 + randomUint8(0, 40);
 		}
 
-		cout << "init mem\n" << mem << "\n";
+		cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
 		auto res = sseTest.runVerticalSum(mem);
 		auto normalRes = iterTest.runVerticalSum(mem);
 
@@ -315,6 +316,36 @@ int main() {
 
  		//__debugbreak();
 	}
+		#endif // testVerical
+#define testHorizontalNextLineSum
+#ifdef testHorizontalNextLineSum
+	{
+		SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
+		size_t width = 6, height = 5, capacity = width * height;
+		auto mem = Flat2DArray<uint8_t>(width, height);
+
+		for (size_t i = 0; i < capacity; i++) {
+			mem[i] = (uint8_t) (i);
+		}
+
+		cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
+		auto res = sseTest.runHorizontalNextLineSum(mem);
+		auto normalRes = iterTest.runHorizontalNextLineSum(mem);
+
+		cout << "res:\n" << res << "\n";
+		cout << "normalRes:\n" << normalRes << "\n";
+
+		for (size_t x = 0; x < normalRes.capacity(); x++) {
+			if (normalRes[x] != res[x]) {
+				printf("got diff index[%3u]: n %u s %u\n", (unsigned) x, normalRes[x], res[x]);
+			}
+		}
+
+		__debugbreak();
+	}
+#endif // testHorizontalNextLineSum
+
+
 	#endif // _DEBUG
 
 
@@ -337,7 +368,7 @@ int main() {
 	runTest<uint8_t, 256, 126>(tests, uintData256[0]);
 
 
-#ifdef NDEBUG
+#if defined(BENCHMARK_MODE) && BENCHMARK_MODE != 0 && defined(NDEBUG)
 	// запуск бенчмарков только в релизе
     runBenchmark(tests, testMemUint8, iterations,
 		&runHorizontalBenchmark<uint8_t>,

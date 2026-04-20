@@ -23,3 +23,8 @@ export void fillArrayRandomFloat(const size_t size, float* array, int max_value 
 		array[i] = dist(gen);
 	}
 }
+
+export std::uint8_t randomUint8(uint8_t min = 0, uint8_t max = 255) {
+	std::uniform_int_distribution<unsigned> dist(min, max);
+	return static_cast<uint8_t>(dist(gen));
+}

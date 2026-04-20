@@ -38,6 +38,11 @@ public:
     inline Flat2DArray<T> runVerticalSum(Flat2DArray<T>& object) const noexcept {
         return static_cast<const Derived*>(this)->run_verticalSumImpl(object);
     }
+    
+    template<typename T> requires allowed_type<T>
+    inline Flat2DArray<T> runHorizontalNextLineSum(Flat2DArray<T>& object) const noexcept {
+        return static_cast<const Derived*>(this)->run_horizontalNextLineSum(object);
+    }
 
     virtual ~test() = default; // Если нужно, можно оставить
 };

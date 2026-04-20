@@ -28,10 +28,10 @@ public:
 		for (int i = 0; i < 4; ++i) std::printf(" %f", buf[i]);
 	};
 	static void print_m128i_uint8(__m128i reg, std::string name) {
-		alignas(__m128i)  char buf[16] {};
+		alignas(__m128i)  uint8_t buf[16] {};
 		_mm_store_si128((__m128i*)buf, reg);
 		std::printf("%5s:", name.c_str());
-		for (int i = 0; i < 16; ++i) std::printf("%3u ", (unsigned)buf[i]);
+		for (int i = 0; i < 16; ++i) std::printf("%3u ", (uint8_t)buf[i]);
 	};
 
     static void print_two_m128i_uint(const array<__m128i, 2>& arr, const std::string& name) {
@@ -371,11 +371,9 @@ public:
 		T* res_ptr = res.data();
 		T* data_ptr = object.data();
 
-		__m128i r0, r1, r2, rres;
+		__m128i r0, r1, r2, saver1 {}, saver2 {};
 
-		int offset = 0;
-
-		Flat2DArray<int> indexes(height, 1, false);
+		size_t* indexes = new size_t[height];
 
 		for (short i = 0; i < height; i++) {
 			indexes[i] = offset_from_zero + i * width;
@@ -388,59 +386,15 @@ public:
 			print_m128i_uint8(r0, "r0");
 			print_m128i_uint8(r1, "r1"); std::printf("\n");
 			print_m128i_uint8(r2, "r2");
-			print_m128i_uint8(rres, "rr"); std::printf("\n");
+			print_m128i_uint8(saver1, "rr"); std::printf("\n");
 		};
 #else
 	#define DEBUG_REGS(at_moment) ((void)0)
 #endif // _DEBUG
 
-		//T* row_0 = data_ptr + indexes[0];
-		//T* row_1 = data_ptr + indexes[1];
-		//T* row_2 = data_ptr + indexes[2];
-
-		//auto lambda = [&] (size_t offset) { 
-		//	r0 = _mm_load_si128((__m128i*)(row_0));
-		//	r1 = _mm_load_si128((__m128i*)(row_1));
-		//	r2 = _mm_load_si128((__m128i*)(row_2));
-
-		//	rres = r1;						// rres = r1
-
-		//	DEBUG_REGS("after load");
-
-		//	r1 = _mm_add_epi8(r1, r2);
-		//	r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
-
-		//	r1 = _mm_srli_si128(r0, 1);		// сдвиг влево на 1 байт (влево по памяти)
-		//	r2 = _mm_slli_si128(r0, 1);		// сдвиг вправо на 1 байт (влево по памяти)
-
-		//	DEBUG_REGS("after shift");
-
-		//	r1 = _mm_add_epi8(r1, r2);
-		//	r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
-		//	DEBUG_REGS("r0 = r2 + r1 + r0");
-
-		//	r0 = _mm_sub_epi8(r0, rres);	// r0 = r0 - rres
-		//	DEBUG_REGS("r0 = r0 - rr");
-
-		//	r0 = _mm_srli_si128(r0, 1);		// r0 = mask1(r0)
-		//	DEBUG_REGS("on save");
-		//	_mm_storeu_si128((__m128i*)(res_ptr + offset), r0);
-		//};
-
-		//lambda(0);
-		
-		for (size_t i = 1; i < height - 2; i++) {
-			/*row_2 = row_1;
-			row_1 = row_0;
-			row_0 = data_ptr + indexes[i + 2];
-			const size_t offset = i * 14;
-			lambda(offset);*/
-
-			r0 = _mm_load_si128((__m128i*)(object.data() + indexes[i]));
-			r1 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 1]));
-			r2 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 2]));
-
-			rres = r1;						// rres = r1
+		auto run = [&] (size_t offset) { 
+			saver1 = r1;					// rmid = r1 значения по середине окна сохраняю в saver1, так как они нужны для вычитания в конце
+			saver2 = r2;
 
 			DEBUG_REGS("after load");
 
@@ -456,16 +410,57 @@ public:
 			r0 = _mm_add_epi8(r0, r1);		// r0 = r2 + r1 + r0
 			DEBUG_REGS("r0 = r2 + r1 + r0");
 
-			r0 = _mm_sub_epi8(r0, rres);	// r0 = r0 - rres
+			r0 = _mm_sub_epi8(r0, saver1);	// r0 = r0 - rres
 			DEBUG_REGS("r0 = r0 - rr");
 
 			r0 = _mm_srli_si128(r0, 1);		// r0 = mask1(r0)
 			DEBUG_REGS("on save");
-			_mm_storeu_si128((__m128i*)(res.data() + (i * 14)), r0);
+			_mm_storeu_si128((__m128i*)(res_ptr + offset), r0);
+		};
+
+		r0 = _mm_load_si128((__m128i*)(data_ptr + indexes[0])); 
+		r1 = _mm_load_si128((__m128i*)(data_ptr + indexes[1]));
+		r2 = _mm_load_si128((__m128i*)(data_ptr + indexes[2]));
+		run(0);
+		
+		for (size_t i = 1; i < height - 2; i++) {
+			r0 = saver1;
+			r1 = saver2;
+			r2 = _mm_load_si128((__m128i*)(data_ptr + indexes[i + 2]));
+
+			const size_t offset = i * 14;
+			run(offset);
+		}
+
+		delete[] indexes;
+
+		return res;
+	}
+
+	template<typename T> requires allowed_type<T>
+	Flat2DArray<T> run_horizontalNextLineSum(Flat2DArray<T>& object) const noexcept {
+		const size_t width = object.width();
+		const size_t height = object.height();
+
+		auto res = Flat2DArray<T>(height * 2, 1, false);
+
+		T* data_ptr = object.data();
+		T* res_ptr = res.data();
+
+		//size_t* indexes = new size_t[height * 2];
+		auto indexes = Flat2DArray<int>(height, 1, false);
+
+		for (size_t x = 0; x < height; x++) {
+			indexes[x] = (x + 1) * width - 2;
+		}
+		//indexes[height - 1] = height * width - 4;
+
+		__m128i a = _mm_loadl_epi64((__m128i*)(data_ptr + width * height - 2));
+		for (size_t x = 0; x < height; x++) {
+
 		}
 
 
-
-		return res;
+		return object;
 	}
 };
