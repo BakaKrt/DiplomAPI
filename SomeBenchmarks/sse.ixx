@@ -458,7 +458,7 @@ public:
 #ifdef _DEBUG
 		auto indexes = Flat2DArray<int>(height, 1, false);
 #else
-		size_t* indexes = new size_t[height * 2];
+		size_t* indexes = new size_t[height];
 #endif // _DEBUG
 				
 
@@ -495,18 +495,20 @@ public:
 		T first = row_0[1] + row_1[2] + row_1[3]; res[0] = first;
 		T second = row_1[0] + row_2[0] + row_2[1]; res[1] = second;
 		T third = row_0[0] + row_0[1] + row_1[3] + row_2[2] + row_2[3]; res[2] = third;
+
+		r0 = _mm_loadl_epi64((__m128i*)row_0);
+		r1 = _mm_loadl_epi64((__m128i*)row_1);
+		r2 = _mm_loadl_epi64((__m128i*)row_2);
 #pragma endregion
 #pragma region mid
 		const __m128i mask0 = _mm_setr_epi8(0, 0, 3, 3, 0, 0, 3, 3, 0, 0, 3, 3, 0, 0, 3, 3);
 		const __m128i mask1 = _mm_setr_epi8(0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2);
 
 		for (size_t x = 0, save_at = 3; x < height - 2; x++, save_at += 2) {
-			row_0 = data_ptr + indexes[x];
-			row_1 = data_ptr + indexes[x + 1];
 			row_2 = data_ptr + indexes[x + 2];
 
-			r0 = _mm_loadl_epi64((__m128i*)row_0);
-			r1 = _mm_loadl_epi64((__m128i*)row_1);
+			r0 = r1;
+			r1 = r2;
 			r2 = _mm_loadl_epi64((__m128i*)row_2);
 
 			s1 = _mm_add_epi8(r0, r2);			// s1 = r1 + r2
@@ -521,7 +523,7 @@ public:
 
 			s1 = _mm_add_epi8(s1, s2);			// s1 = s1 + s2
 			s1 = _mm_shuffle_epi8(s1, mask1);	// s1 = mask1(s1)
-
+			 
 			DEBUG_REGS("before save");
 
 			s1 = _mm_srli_si128(s1, 14);
@@ -531,6 +533,7 @@ public:
 		}
 #pragma endregion
 #pragma region last
+		row_1 = data_ptr + indexes[height - 2];
 		T sum = row_1[0] + row_1[1] + row_2[0];
 		res[height * 2 - 1] = sum;
 #pragma endregion
