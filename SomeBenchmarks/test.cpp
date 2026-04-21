@@ -86,6 +86,11 @@ struct AnyTest {
 	}
 
 	template<typename U>
+	inline auto run_horizontalNextLine(Flat2DArray<U>& arg) -> decltype(auto) {
+		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runHorizontalNextLineSum(arg); }, variant);
+	}
+
+	template<typename U>
 	inline auto run_vertical(U& arg) -> decltype(auto) {
 		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runVerticalSum(arg); }, variant);
 	}
@@ -220,6 +225,12 @@ template<typename T>
 void runHorizontalBenchmark(AnyTest& test_variant,
 								Flat2DArray<T>& testData) {
 	test_variant.run_horizontal(testData);
+}
+
+template<typename T>
+void runHorizontalNextLineSum(AnyTest& test_variant,
+								Flat2DArray<T>& testData) {
+	test_variant.run_horizontalNextLine(testData);
 }
 
 template<typename T>
@@ -373,6 +384,11 @@ int main() {
     runBenchmark(tests, testMemUint8, iterations,
 		&runHorizontalBenchmark<uint8_t>,
 		"horizontal"
+	);
+
+    runBenchmark(tests, testMemUint8, iterations,
+		&runHorizontalNextLineSum<uint8_t>,
+		"horizontalNextLine"
 	);
 
     runBenchmark(tests, testMemUint8, iterations,

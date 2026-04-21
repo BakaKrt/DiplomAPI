@@ -34,6 +34,13 @@ public:
 		for (int i = 0; i < 16; ++i) std::printf("%3u ", (uint8_t)buf[i]);
 	};
 
+	static void print_m128i_uint8_half(__m128i reg, std::string name) {
+		alignas(__m128i)  uint8_t buf[16] {};
+		_mm_store_si128((__m128i*)buf, reg);
+		std::printf("%5s:", name.c_str());
+		for (int i = 0; i < 8; ++i) std::printf("%3u ", (uint8_t) buf[i]);
+	};
+
     static void print_two_m128i_uint(const array<__m128i, 2>& arr, const std::string& name) {
 		for (size_t i = 0; i < arr.size(); i++) {
 			// вывод в консоль в формате: name<i>: values
@@ -45,6 +52,7 @@ public:
 #else
 	#define print_m128_float(reg, name) ((void)0)
 	#define print_m128_uint8(reg, name) ((void)0)
+	#define print_m128_uint8_half(reg, name) ((void)0)
 
 	#define print_two_m128i_uint(arr, name) ((void)0)
 #endif // _DEBUG
@@ -447,20 +455,91 @@ public:
 		T* data_ptr = object.data();
 		T* res_ptr = res.data();
 
-		//size_t* indexes = new size_t[height * 2];
+#ifdef _DEBUG
 		auto indexes = Flat2DArray<int>(height, 1, false);
+#else
+		size_t* indexes = new size_t[height * 2];
+#endif // _DEBUG
+				
 
 		for (size_t x = 0; x < height; x++) {
 			indexes[x] = (x + 1) * width - 2;
 		}
-		//indexes[height - 1] = height * width - 4;
 
-		__m128i a = _mm_loadl_epi64((__m128i*)(data_ptr + width * height - 2));
-		for (size_t x = 0; x < height; x++) {
+		__m128i r0, r1, r2, s1, s2;
 
+		T *row_0 = nullptr,
+		  *row_1 = nullptr,
+		  *row_2 = nullptr;
+
+
+#ifdef _DEBUG
+		auto DEBUG_REGS = [&] (string at_moment) {
+			std::printf("regs %s\n", at_moment.c_str());
+			print_m128i_uint8_half(r0, "r0");
+			print_m128i_uint8_half(r1, "r1"); std::printf("\n");
+			print_m128i_uint8_half(r2, "r2"); std::printf("\n");
+			print_m128i_uint8_half(s1, "s1");
+			print_m128i_uint8_half(s2, "s2"); std::printf("\n");
+			};
+#else
+#define DEBUG_REGS(at_moment) ((void)0)
+#endif // _DEBUG
+
+#pragma region first
+		// не имеет смысла использовать SIMD для первых трёх элементов, так как всего 3 соседа дают очень маленькую эффективность
+		row_0 = data_ptr;
+		row_1 = data_ptr + indexes[0];
+		row_2 = data_ptr + indexes[1];
+
+		T first = row_0[1] + row_1[2] + row_1[3]; res[0] = first;
+		T second = row_1[0] + row_2[0] + row_2[1]; res[1] = second;
+		T third = row_0[0] + row_0[1] + row_1[3] + row_2[2] + row_2[3]; res[2] = third;
+#pragma endregion
+#pragma region mid
+		const __m128i mask0 = _mm_setr_epi8(0, 0, 3, 3, 0, 0, 3, 3, 0, 0, 3, 3, 0, 0, 3, 3);
+		const __m128i mask1 = _mm_setr_epi8(0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2);
+
+		for (size_t x = 0, save_at = 3; x < height - 2; x++, save_at += 2) {
+			row_0 = data_ptr + indexes[x];
+			row_1 = data_ptr + indexes[x + 1];
+			row_2 = data_ptr + indexes[x + 2];
+
+			r0 = _mm_loadl_epi64((__m128i*)row_0);
+			r1 = _mm_loadl_epi64((__m128i*)row_1);
+			r2 = _mm_loadl_epi64((__m128i*)row_2);
+
+			s1 = _mm_add_epi8(r0, r2);			// s1 = r1 + r2
+			s2 = _mm_srli_si128(s1, 1);			// s2 = s1 << 1
+
+			DEBUG_REGS("on load");
+
+			s1 = _mm_add_epi8(s1, s2);			// s1 = s1 + s2
+			s2 = _mm_shuffle_epi8(r1, mask0);	// s2 = mask0(r1) 
+
+			DEBUG_REGS("after s1 = s1 + s2 and shuffle s2 = mask0(r1)");
+
+			s1 = _mm_add_epi8(s1, s2);			// s1 = s1 + s2
+			s1 = _mm_shuffle_epi8(s1, mask1);	// s1 = mask1(s1)
+
+			DEBUG_REGS("before save");
+
+			s1 = _mm_srli_si128(s1, 14);
+			DEBUG_REGS("after shift");
+
+			_mm_storel_epi64((__m128i*)(res_ptr + save_at), s1);
 		}
+#pragma endregion
+#pragma region last
+		T sum = row_1[0] + row_1[1] + row_2[0];
+		res[height * 2 - 1] = sum;
+#pragma endregion
+
+#ifdef NDEBUG
+		delete[] indexes;
+#endif // _NDEBUG
 
 
-		return object;
+		return res;
 	}
 };

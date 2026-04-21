@@ -114,6 +114,61 @@ public:
 
 	template<typename T> requires allowed_type<T>
 	Flat2DArray<T> run_horizontalNextLineSum(Flat2DArray<T>& object) const noexcept {
-		return object;
+		const size_t width = object.width();
+		const size_t height = object.height();
+
+		auto res = Flat2DArray<T>(height * 2, 1, false);
+
+		T* data_ptr = object.data();
+		T* res_ptr = res.data();
+
+		size_t* indexes = new size_t[height * 2];
+		//auto indexes = Flat2DArray<int>(height, 1, false);
+
+		for (size_t x = 0; x < height; x++) {
+			indexes[x] = (x + 1) * width - 2;
+		}
+
+		T* row_0 = nullptr;
+		T* row_1 = nullptr;
+		T* row_2 = nullptr;
+
+#pragma region first
+		row_0 = data_ptr;
+		row_1 = data_ptr + indexes[0];
+		row_2 = data_ptr + indexes[1];
+
+		T first = row_0[1] + row_1[2] + row_1[3]; res[0] = first;
+		T second = row_1[0] + row_2[0] + row_2[1]; res[1] = second;
+		T third = row_0[0] + row_0[1] + row_1[3] + row_2[2] + row_2[3]; res[2] = third;
+#pragma endregion
+#pragma region mid
+		for (size_t x = 0, save_at = 3; x < height - 2; x++, save_at += 2) {
+			row_0 = data_ptr + indexes[x];
+			row_1 = data_ptr + indexes[x + 1];
+			row_2 = data_ptr + indexes[x + 2];
+
+			T sum1 = row_0[0] + row_0[1] + \
+				row_1[0] + \
+				row_2[0] + row_2[1];
+
+			res[save_at] = sum1;
+
+			T sum2 = row_0[2] + row_0[3] + \
+				row_1[3] + \
+				row_2[2] + row_2[3];
+
+			res[save_at + 1] = sum2;
+		}
+#pragma endregion
+#pragma region last
+		T sum = row_1[0] + row_1[1] + row_2[0];
+		res[height * 2 - 1] = sum;
+#pragma endregion
+
+
+		delete[] indexes;
+
+		return res;
 	}
 };

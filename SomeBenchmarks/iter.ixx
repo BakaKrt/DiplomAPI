@@ -146,7 +146,7 @@ public:
 		T* row_1 = nullptr;
 		T* row_2 = nullptr;
 
-#pragma region first_two
+#pragma region first
 		row_0 = data_ptr;
 		row_1 = data_ptr + indexes[0];
 		row_2 = data_ptr + indexes[1];
