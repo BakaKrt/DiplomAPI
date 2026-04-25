@@ -111,22 +111,17 @@ public:
 		const size_t width = object.width();
 		const size_t height = object.height();
 
+		// временный массив для хранения временных сумм
+		// в данной реализации от него никуда не деться
 		T* temp_res_ptr = nullptr;
 #ifdef _DEBUG
-		auto offsets = Flat2DArray<int>(height, 1, false);
 		auto temp_array_for_results = Flat2DArray<T>(width, 1, false);
 
 		temp_res_ptr = temp_array_for_results.data();
 #else
-		size_t* offsets = new size_t[height];
 		T* temp_array_for_results = new T[width];
 		temp_res_ptr = temp_array_for_results;
 #endif // _DEBUG
-
-		// инициализирую массив смещений до нулевого элемента каждой строки, т.к. арифметика указателей очень быстрая
-		for (short q = 0; q < height; q++) {
-			offsets[q] = q * width;
-		}
 
 		T* data_ptr = object.data();
 		T* res_ptr = to_save.data();
@@ -135,11 +130,12 @@ public:
 		T* ptr1 = nullptr;
 		T* ptr2 = nullptr;
 
+#pragma region first_lines
 		// обработка первых двух строк, то есть 
 		// ptr0 = 0    1    2    3    4    5
 		// ptr1 = 6    7    8    9   10   11
-		ptr0 = data_ptr + offsets[0];
-		ptr1 = data_ptr + offsets[1];
+		ptr0 = data_ptr;
+		ptr1 = data_ptr + width;
 		for (size_t x = 0; x < width; x++) {
 			// temp_res_ptr = 0 + 6, 1 + 7, 2 + 8 и так далее
 			temp_res_ptr[x] = ptr0[x] + ptr1[x];
@@ -156,15 +152,16 @@ public:
 
 		// верхний правый элемент = сумма (4 + 10) + (5 + 11) - 5
 		res_ptr[width - 1] = temp_res_ptr[width - 2] + temp_res_ptr[width - 1] - ptr0[width - 1];
+#pragma endregion
 
-
+#pragma region mid
 		// обработка средних элементов
 		for (size_t y = 0; y < height - 2; y++) {
-			ptr0 = data_ptr + offsets[y + 0];
-			ptr1 = data_ptr + offsets[y + 1];
-			ptr2 = data_ptr + offsets[y + 2];
+			ptr0 = data_ptr + (width * y);
+			ptr1 = data_ptr + (width * y + width);
+			ptr2 = data_ptr + (width * y + 2 * width);
 
-			const size_t offset_to_result_row = offsets[y + 1];
+			const size_t offset_to_result_row = (width * y + width);
 
 			// в результирующую строку помещаются поэлементные суммы трёх строк
 			// ptr0 указывает на 0, ptr1 на 6, ptr2 на 12. В результирующую строку помещается сумма 0 + 6 + 12, затем 1 + 7 + 13 и так далее
@@ -187,9 +184,10 @@ public:
 			// крайний правый
 			res_ptr[offset_to_result_row + width - 1] = temp_res_ptr[width - 2] + temp_res_ptr[width - 1] - ptr1[width - 1];
 		}
+#pragma endregion
 
 #pragma region last_row
-		size_t last_row_offset = offsets[height - 1];
+		size_t last_row_offset = (height - 1) * width;
 		// обработка последнего ряда
 		for (size_t x = 0; x < width; x++) {
 			// в ptr1 и ptr2 хранятся последние 2 ряда
@@ -208,7 +206,6 @@ public:
 		res_ptr[last_row_offset + width - 1] = temp_res_ptr[width - 1] + temp_res_ptr[width - 2] - ptr2[width - 1];
 #pragma endregion
 #ifdef NDEBUG
-		delete[] offsets;
 		delete[] temp_array_for_results;
 #endif // _NDEBUG
 	}

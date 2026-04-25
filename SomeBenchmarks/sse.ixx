@@ -420,8 +420,6 @@ public:
 			r2;			// хранит нижнюю строку окна
 
 #ifdef _DEBUG
-		// для удобства при отладке используется Flat2DArray, так как можно посмотреть в отладчике все хранимые элементы
-		auto offsets = Flat2DArray<int>(height, 1, false);
 
 		auto _DEBUG_REG = [] ( __m128i reg, string msg) {
 			std::printf("reg: %s\n", msg.c_str());
@@ -432,7 +430,6 @@ public:
 			std::cout << "to_save " << at_moment << "\n" << to_save << "\n";
 		};
 #else
-		size_t* offsets = new size_t[height];
 		#define _DEBUG_REG(reg, at_moment) ((void)0)
 		#define DEBUG_RES(at_moment) ((void)0)
 #endif // _DEBUG
@@ -537,57 +534,52 @@ public:
 		
 #pragma region left
 		// крайние левые ряды
-		for (size_t x = 0; x < height; x++) {
-			offsets[x] = x * width;
-		}
+		r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr));
+		r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + width));
+		r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + width * 2));
 
-		r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[0]));
-		r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[1]));
-		r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[2]));
-
-		calc_for_two_lines(r0, r1, offsets[0]);
+		calc_for_two_lines(r0, r1, 0);
 		//DEBUG_RES("after first row");
 
-		calc_three_lines(r0, r1, r2, offsets[1]);
+		calc_three_lines(r0, r1, r2, width);
 		//DEBUG_RES("after second row");
 
 		for (size_t i = 2; i < height - 1; i++) {
+			const size_t offset = width * i;
+
 			r0 = r1;
 			r1 = r2;
-			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[i + 1]));
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset + width));
 
-			const size_t offset = offsets[i];
 			calc_three_lines(r0, r1, r2, offset);
 		}
-		calc_for_two_lines(r2, r1, offsets[height - 1]);
+		calc_for_two_lines(r2, r1, width * (height - 1));
 #pragma endregion
 
 #pragma region mid
 		// ряды по середине
 		for (size_t offset_from_zero = 1, i = 0; i < TOTAL_FULLY_IN_BLOCKS_COUNT; offset_from_zero += 14, i++) {
-			for (size_t x = 0; x < height; x++) {
-				offsets[x] = offset_from_zero + x * width;
-			}
 
-			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[0]));
-			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[1]));
-			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[2]));
+			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero));
+			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero + width));
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero + 2 * width));
 
-			calc_for_two_lines_with_offset(r0, r1, offsets[0]);
+			calc_for_two_lines_with_offset(r0, r1, offset_from_zero);
 			//DEBUG_RES("after first row");
 
-			calc_three_lines_with_offset(r0, r1, r2, offsets[1]);
+			calc_three_lines_with_offset(r0, r1, r2, offset_from_zero + width);
 			//DEBUG_RES("after second row");
 
 			for (size_t i = 2; i < height - 1; i++) {
+				const size_t offset = offset_from_zero + width * i;
+
 				r0 = r1;
 				r1 = r2;
-				r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[i + 1]));
+				r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset + width));
 
-				const size_t offset = offsets[i];
 				calc_three_lines_with_offset(r0, r1, r2, offset);
 			}
-			calc_for_two_lines_with_offset(r2, r1, offsets[height - 1]);
+			calc_for_two_lines_with_offset(r2, r1, offset_from_zero + width * (height - 1));
 			//DEBUG_RES("after last row");
 		}
 		DEBUG_RES("after main");
@@ -596,33 +588,28 @@ public:
 #pragma region last
 		// блок, который не вошёл полностью, то есть крайние правые строки
 		if (REMAINDER > 0) {
-			for (size_t i = 0; i < height; i++) {
-				offsets[i] = (i + 1) * width - 16;
-			}
 
-			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[0]));
-			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[1]));
-			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[2]));
+			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + width - 16));
+			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + 2 * width - 16));
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + 3 * width - 16));
 
-			calc_two_last_lines(r0, r1, offsets[0]);
+			calc_two_last_lines(r0, r1, width - 16);
 
-			calc_three_last_lines(r0, r1, r2, offsets[1]);
+			calc_three_last_lines(r0, r1, r2, 2 * width - 16);
 			DEBUG_RES("NEED THIS");
 
 			for (size_t i = 2; i < height - 1; i++) {
+				const size_t offset = width * i - 16;
+
 				r0 = r1;
 				r1 = r2;
-				r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[i + 1]));
+				r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset + width));
 
-				calc_three_last_lines(r0, r1, r2, offsets[i]);
+				calc_three_last_lines(r0, r1, r2, offset);
 			}
-			calc_two_last_lines(r2, r1, offsets[height - 1]);
+			calc_two_last_lines(r2, r1, height * width - 16);
 		}
 		DEBUG_RES("after all main");
 #pragma endregion
-
-#ifdef NDEBUG
-		delete[] offsets;
-#endif // _NDEBUG
 	}
 };

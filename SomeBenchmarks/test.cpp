@@ -283,7 +283,7 @@ static bool inline isArraysDifferent(vector<array<T, N>>& vec) noexcept {
 int main() {
 	printf("%s\n", InstructionSet::Brand().c_str());
 	
-	printf("support SSE 4.1? = %s\n", InstructionSet::SSE41() ? "true" : "false");
+	printf("support SSE2? = %s\n", InstructionSet::SSE2() ? "true" : "false");
 
 
 	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 20 + 8, 16 * 5);
@@ -348,11 +348,11 @@ int main() {
 	#ifdef run_test
 	{
 		IterSum iterTest {}; SSEv1Sum sseTest {};
-		size_t width = 35, height = 5, capacity = width * height;
+		size_t width = 35, height = 3, capacity = width * height;
 		auto mem = Flat2DArray<uint8_t>(width, height);
 
 		for (size_t i = 0; i < capacity; i++) {
-			mem[i] = (uint8_t) (i%9);
+			mem[i] = (uint8_t) (i);
 		}
 
 		cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
