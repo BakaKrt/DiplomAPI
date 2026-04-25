@@ -85,7 +85,6 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="FlatArray.natvis">
-      
     </Natvis>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

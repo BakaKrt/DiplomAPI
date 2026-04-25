@@ -98,55 +98,6 @@ struct AnyTest {
 
 
 
-template <typename T>
-static shared_ptr<Flat2DArray<T>> generateTestMemory(size_t width, size_t height) {
-	auto obj = make_shared<Flat2DArray<T>>(width, height, false);
-	auto ptr = obj->data();
-
-	const size_t size = width * height;
-
-	if constexpr (std::is_same_v<T, uint8_t> || std::is_same_v<T, bool>) {
-		fillArrayRandomBool(size, (bool*)ptr, 50);
-	}
-	else if constexpr (std::is_same_v<T, float>) {
-		fillArrayRandomFloat(size, (float*)ptr, 13);
-	}
-	else {
-		fillArrayRandomInt(size, (int*)ptr, 13);
-	}
-	return obj;
-}
-
-template <typename T>
-static vector<shared_ptr<Flat2DArray<T>>> generateVectorOfTestMemory(size_t len, size_t width, size_t height) {
-	vector<shared_ptr<Flat2DArray<T>>> vec {}; vec.reserve(len);
-
-	for (size_t i = 0; i < len; i++) {
-		vec.push_back(generateTestMemory<T>(width, height));
-	}
-
-	return vec;
-}
-
-template<typename T, size_t N>
-static std::vector<std::array<T, N>> generateTestData() {
-	vector<array<T, N>> objects{ SIZE };
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> dis(-1000.0f, 1000.0f);
-
-	array<T, N> arr{};
-
-	for (auto& vec : objects) {
-		for (auto& a : arr) {
-			a = (T)dis(gen);
-		}
-		vec = arr;
-	}
-
-	return objects;
-}
-
 
 template<typename Fn, typename T>
 void runBenchmark(
@@ -245,41 +196,6 @@ void runFullSumBenchmark(AnyTest& test_variant,
 	test_variant.run_sumAll(testData);
 }
 
-
-/// <summary>
-/// Проверить, одинаковые ли array<T, N> поэлементно
-/// </summary>
-/// <typeparam name="N"></typeparam>
-/// <param name="vec"></param>
-/// <returns></returns>
-template<typename T, size_t N>
-static bool inline isArraysDifferent(vector<array<T, N>>& vec) noexcept {
-	if (vec.empty()) return false;
-
-	const size_t size = vec.size();
-	if (size == 1) return false;
-
-	bool res = false;
-
-	for (size_t idx = 0; idx < N; ++idx) {
-		T reference_value = vec[0][idx];
-
-		for (size_t i = 1; i < size; ++i) {
-			if (vec[i][idx] != reference_value) {
-				printf("finded diff at index %4u:", (unsigned int)idx);
-				for (size_t j = 0; j < size; ++j) {
-					printf("[%u] = %3u ", (unsigned int) j, (T) (vec[j][idx]));
-				}
-				printf("\n");
-				res = true;
-				break;
-			}
-		}
-	}
-
-	return res;
-}
-
 int main() {
 	printf("%s\n", InstructionSet::Brand().c_str());
 	
@@ -372,14 +288,7 @@ int main() {
 	#endif // run_test
 
 
-#endif // _DEBUG
-
-
-	auto testData24 = generateTestData<float, 24>();
-
-	auto uintData112 = generateTestData<uint8_t, 112>();
-	auto uintData256 = generateTestData<uint8_t, 256>();
-	
+#endif // _DEBUG	
 
 	constexpr int TEST_ELEM_COUNT = 3;
 	vector<AnyTest> tests {}; tests.reserve(TEST_ELEM_COUNT);
@@ -387,12 +296,6 @@ int main() {
 	tests.emplace_back(NormalSum {});
 	tests.emplace_back(IterSum {});
 	tests.emplace_back(SSEv1Sum {});
-
-	//__debugbreak();
-
-	//runTest<uint8_t, 112,  70>(tests, uintData112[0]);
-	//runTest<uint8_t, 256, 126>(tests, uintData256[0]);
-
 
 #if defined(BENCHMARK_MODE) && BENCHMARK_MODE != 0 && defined(NDEBUG)
 	// запуск бенчмарков только в релизе

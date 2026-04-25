@@ -1,6 +1,10 @@
 export module random;
 
 import std;
+import Flat2DArray;
+
+using std::shared_ptr;
+using std::vector, std::array;
 
 thread_local std::mt19937 gen(std::random_device {}());
 
@@ -27,4 +31,36 @@ export void fillArrayRandomFloat(const size_t size, float* array, int max_value 
 export std::uint8_t randomUint8(uint8_t min = 0, uint8_t max = 255) {
 	std::uniform_int_distribution<unsigned> dist(min, max);
 	return static_cast<uint8_t>(dist(gen));
+}
+
+
+
+export template <typename T>
+shared_ptr<Flat2DArray<T>> generateTestMemory(size_t width, size_t height) {
+	auto obj = make_shared<Flat2DArray<T>>(width, height, false);
+	auto ptr = obj->data();
+
+	const size_t size = width * height;
+
+	if constexpr (std::is_same_v<T, uint8_t> || std::is_same_v<T, bool>) {
+		fillArrayRandomBool(size, (bool*) ptr, 50);
+	}
+	else if constexpr (std::is_same_v<T, float>) {
+		fillArrayRandomFloat(size, (float*) ptr, 13);
+	}
+	else {
+		fillArrayRandomInt(size, (int*) ptr, 13);
+	}
+	return obj;
+}
+
+export template <typename T>
+vector<shared_ptr<Flat2DArray<T>>> generateVectorOfTestMemory(size_t len, size_t width, size_t height) {
+	vector<shared_ptr<Flat2DArray<T>>> vec {}; vec.reserve(len);
+
+	for (size_t i = 0; i < len; i++) {
+		vec.push_back(generateTestMemory<T>(width, height));
+	}
+
+	return vec;
 }
