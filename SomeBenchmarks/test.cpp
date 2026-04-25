@@ -76,11 +76,6 @@ struct AnyTest {
 	}
 
 	template<typename U>
-	inline auto run(U& arg) -> decltype(auto) {
-		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.run(arg); }, variant);
-	}
-
-	template<typename U>
 	inline auto run_horizontal(Flat2DArray<U>& arg) -> decltype(auto) {
 		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runHorizontalSum(arg); }, variant);
 	}
@@ -93,6 +88,11 @@ struct AnyTest {
 	template<typename U>
 	inline auto run_vertical(U& arg) -> decltype(auto) {
 		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runVerticalSum(arg); }, variant);
+	}
+
+	template<typename U>
+	inline auto run_sumAll(U& arg) -> decltype(auto) {
+		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.test_run(arg); }, variant);
 	}
 };
 
@@ -239,6 +239,12 @@ void runVerticalBenchmark(AnyTest& test_variant,
 	test_variant.run_vertical(testData);
 }
 
+template<typename T>
+void runFullSumBenchmark(AnyTest& test_variant,
+								Flat2DArray<T>& testData) {
+	test_variant.run_sumAll(testData);
+}
+
 
 /// <summary>
 /// Проверить, одинаковые ли array<T, N> поэлементно
@@ -274,74 +280,84 @@ static bool inline isArraysDifferent(vector<array<T, N>>& vec) noexcept {
 	return res;
 }
 
-template<typename T, size_t testSize, size_t resultSize>
-static void inline runTest(vector<AnyTest>& tests, array<T, testSize> testData) {
-	vector<array<T, resultSize>> results{}; results.reserve(tests.size());
-
-	for (auto& test : tests) {
-		results.push_back(test.run(testData));
-	}
-
-	bool res = isArraysDifferent(results);
-	if (res) {
-		std::printf("errors for: ");
-		for (auto& test : tests) {
-			std::printf("%s ", test.getName().c_str());
-		}
-		std::printf("and with testSize = %u, testResultSize = %u\n", (unsigned)testSize, (unsigned) resultSize);
-	}
-}
-
 int main() {
 	printf("%s\n", InstructionSet::Brand().c_str());
 	
 	printf("support SSE 4.1? = %s\n", InstructionSet::SSE41() ? "true" : "false");
 
 
-	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 5 + 8, 16 * 8);
+	auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 20 + 8, 16 * 5);
 	auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
 
-	#ifdef _DEBUG
-		#ifdef testVerical
-	{
-		SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
-		size_t width = 25, height = 4, capacity = width * height;
-		auto mem = Flat2DArray<uint8_t>(width, height);
+#ifdef _DEBUG
+	#ifdef testVerical
+{
+	SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
+	size_t width = 25, height = 4, capacity = width * height;
+	auto mem = Flat2DArray<uint8_t>(width, height);
 
-		for (size_t i = 0; i < capacity; i++) {
-			mem[i] = (uint8_t)(i) % 10 + randomUint8(0, 40);
-		}
-
-		cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
-		auto res = sseTest.runVerticalSum(mem);
-		auto normalRes = iterTest.runVerticalSum(mem);
-
-		cout << "res:\n" << res << "\n";
-		cout << "normalRes:\n" << normalRes << "\n";
-
-		for (size_t x = 0; x < normalRes.capacity(); x++) {
-			if (normalRes[x] != res[x]) {
-				printf("got diff index[%3u]: n %u s %u\n", (unsigned)x, normalRes[x], res[x]);
-			}
-		}
-
- 		//__debugbreak();
+	for (size_t i = 0; i < capacity; i++) {
+		mem[i] = (uint8_t)(i) % 10 + randomUint8(0, 40);
 	}
-		#endif // testVerical
-#define testHorizontalNextLineSum
-#ifdef testHorizontalNextLineSum
+
+	cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
+	auto res = sseTest.runVerticalSum(mem);
+	auto normalRes = iterTest.runVerticalSum(mem);
+
+	cout << "res:\n" << res << "\n";
+	cout << "normalRes:\n" << normalRes << "\n";
+
+	for (size_t x = 0; x < normalRes.capacity(); x++) {
+		if (normalRes[x] != res[x]) {
+			printf("got diff index[%3u]: n %u s %u\n", (unsigned)x, normalRes[x], res[x]);
+		}
+	}
+
+ 	//__debugbreak();
+}
+	#endif // testVerical
+	//#define testHorizontalNextLineSum
+	#ifdef testHorizontalNextLineSum
+{
+	SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
+	size_t width = 6, height = 5, capacity = width * height;
+	auto mem = Flat2DArray<uint8_t>(width, height);
+
+	for (size_t i = 0; i < capacity; i++) {
+		mem[i] = (uint8_t) (i);
+	}
+
+	cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
+	auto res = sseTest.runHorizontalNextLineSum(mem);
+	auto normalRes = iterTest.runHorizontalNextLineSum(mem);
+
+	cout << "res:\n" << res << "\n";
+	cout << "normalRes:\n" << normalRes << "\n";
+
+	for (size_t x = 0; x < normalRes.capacity(); x++) {
+		if (normalRes[x] != res[x]) {
+			printf("got diff index[%3u]: n %u s %u\n", (unsigned) x, normalRes[x], res[x]);
+		}
+	}
+
+	__debugbreak();
+}
+	#endif // testHorizontalNextLineSum
+
+	#define run_test
+	#ifdef run_test
 	{
-		SSEv1Sum sseTest {}; NormalSum normalTest {}; IterSum iterTest {};
-		size_t width = 6, height = 5, capacity = width * height;
+		IterSum iterTest {}; SSEv1Sum sseTest {};
+		size_t width = 35, height = 5, capacity = width * height;
 		auto mem = Flat2DArray<uint8_t>(width, height);
 
 		for (size_t i = 0; i < capacity; i++) {
-			mem[i] = (uint8_t) (i);
+			mem[i] = (uint8_t) (i%9);
 		}
 
 		cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
-		auto res = sseTest.runHorizontalNextLineSum(mem);
-		auto normalRes = iterTest.runHorizontalNextLineSum(mem);
+		auto res = sseTest.test_run(mem);
+		auto normalRes = iterTest.test_run(mem);
 
 		cout << "res:\n" << res << "\n";
 		cout << "normalRes:\n" << normalRes << "\n";
@@ -351,13 +367,12 @@ int main() {
 				printf("got diff index[%3u]: n %u s %u\n", (unsigned) x, normalRes[x], res[x]);
 			}
 		}
-
-		__debugbreak();
 	}
-#endif // testHorizontalNextLineSum
+
+	#endif // run_test
 
 
-	#endif // _DEBUG
+#endif // _DEBUG
 
 
 	auto testData24 = generateTestData<float, 24>();
@@ -375,26 +390,31 @@ int main() {
 
 	//__debugbreak();
 
-	runTest<uint8_t, 112,  70>(tests, uintData112[0]);
-	runTest<uint8_t, 256, 126>(tests, uintData256[0]);
+	//runTest<uint8_t, 112,  70>(tests, uintData112[0]);
+	//runTest<uint8_t, 256, 126>(tests, uintData256[0]);
 
 
 #if defined(BENCHMARK_MODE) && BENCHMARK_MODE != 0 && defined(NDEBUG)
 	// запуск бенчмарков только в релизе
     runBenchmark(tests, testMemUint8, iterations,
-		&runHorizontalBenchmark<uint8_t>,
-		"horizontal"
+		&runFullSumBenchmark<uint8_t>,
+		"all object sum"
 	);
 
-    runBenchmark(tests, testMemUint8, iterations,
-		&runHorizontalNextLineSum<uint8_t>,
-		"horizontalNextLine"
-	);
+ //   runBenchmark(tests, testMemUint8, iterations,
+	//	&runHorizontalBenchmark<uint8_t>,
+	//	"horizontal"
+	//);
 
-    runBenchmark(tests, testMemUint8, iterations,
-		&runVerticalBenchmark<uint8_t>,
-		"vertical"
-	);
+ //   runBenchmark(tests, testMemUint8, iterations,
+	//	&runHorizontalNextLineSum<uint8_t>,
+	//	"horizontalNextLine"
+	//);
+
+ //   runBenchmark(tests, testMemUint8, iterations,
+	//	&runVerticalBenchmark<uint8_t>,
+	//	"vertical"
+	//);
 
 	std::printf("end");
 	std::cin.get();

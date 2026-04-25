@@ -20,6 +20,12 @@ public:
 		return name;
 	}
 
+	template<typename T> requires allowed_type<T>
+	inline void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+		run_verticalSumAll(object, to_save);
+
+	}
+
 #ifdef _DEBUG
 	static void print_m128_float(const __m128& reg, std::string name) {
 		alignas(__m128) float buf[4];
@@ -56,162 +62,10 @@ public:
 
 	#define print_two_m128i_uint(arr, name) ((void)0)
 #endif // _DEBUG
-
-
-	
-
-
-	/// <summary>
-	/// Описание работы: 
-	/// https://unidraw.io/app/board/0be060188688ad944421
-	/// </summary>
-	/// <param name="object"></param>
-	/// <returns></returns>
-	inline array<uint8_t, 126> run_impl(array<uint8_t, 256>& object) const noexcept  {
-		array<uint8_t, 126> res{};
-		
-		const size_t mid_index = object.size() / 2;
-		const size_t blocks_count = mid_index / 16;
-		
-		constexpr size_t window_size = 2;
-
-		array<__m128i, window_size> top {};
-		array<__m128i, window_size> low {};
-		array<__m128i, window_size> rr {};	// сохраняю сумму top + low
-
-		array<__m128i, window_size> r2 {};
-		array<__m128i, window_size> r3 {};
-
-
-		const __m128i mask0 = _mm_setr_epi8(15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
-		const __m128i mask1 = _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0);
-
-		int offset = 0;
-		uint8_t __left = 0, __right = 0;
-
-		for (size_t block_id = 0; block_id < blocks_count - 1; block_id++) {
-
-			if (block_id == 0) {
-				for (short i = 0; i < window_size; i++) {
-					top[i] = _mm_load_si128((__m128i*)(object.data() + offset));
-					low[i] = _mm_load_si128((__m128i*)(object.data() + offset + mid_index));
-
-					rr[i] = _mm_add_epi8(low[i], top[i]);
-
-					offset += 16;
-				}
-
-				__left = _mm_extract_epi8(rr[0], 15);
-			}
-			else { [[likely]]
-				top[0] = top[1];
-				rr[0]  = rr[1];
-
-				 
-				top[1] = _mm_load_si128((__m128i*)(object.data() + offset));
-				low[1] = _mm_load_si128((__m128i*)(object.data() + mid_index + offset));
-
-				rr[1] = _mm_add_epi8(low[1], top[1]);
-
-				offset += 16;
-			}
-
-			for (short i = 0; i < window_size; i++) {
-				r2[i] = _mm_shuffle_epi8(rr[i], mask0);	// r2 = mask0(rr)
-				r3[i] = _mm_shuffle_epi8(rr[i], mask1);	// r3 = mask1(rr)
-			}
-
-
-			if (block_id != 0) [[likely]] {
-				r2[0] = _mm_insert_epi8(r2[0], __left, 0);
-				__left = _mm_extract_epi8(rr[0], 15);
-			}
-			
-			__right = _mm_extract_epi8(rr[1], 0);
-			r3[0] = _mm_insert_epi8(r3[0], __right, 15);
-
-
-			r2[0] = _mm_add_epi8(r2[0], r3[0]);		// r2 = r2 + r3
-
-			low[0] = _mm_add_epi8(r2[0], rr[0]);	// r1 = r2 + rr
-
-			low[0] = _mm_sub_epi8(low[0], top[0]);	// r1 = r1 - r0
-
-			if (block_id == 0) { [[unlikely]]
-				// если это первый блок, то перемешиваем (нулевой результат не нужен, там невалидные данные)
-				low[0] = _mm_shuffle_epi8(low[0], mask1);
-				_mm_store_si128((__m128i*)res.data(), low[0]);
-			}
-			else if (block_id == blocks_count - 2) { [[unlikely]]
-				// если последний блок, то сохраняем предпоследний блок
-				_mm_store_si128((__m128i*)(res.data() + 15 + (block_id - 1) * 16), low[0]);
-
-				// вставляем в последний блок на нулевую позицию сумму соседей слева
-				r2[1] = _mm_insert_epi8(r2[1], __left, 0);
-
-				r2[1] = _mm_add_epi8(r2[1], r3[1]);
-				low[1] = _mm_add_epi8(r2[1], rr[1]);
-				low[1] = _mm_sub_epi8(low[1], top[1]);
-
-				_mm_store_si128((__m128i*)(res.data() + 15 + block_id * 16), low[1]);
-			}
-			else { [[likely]]
-				_mm_store_si128((__m128i*)(res.data() + 15 + (block_id - 1) * 16), low[0]);
-			}
-		}
-		return res;
-	}
-
-	inline array<uint8_t, 70> run_impl(array<uint8_t, 112>& object) const noexcept  {
-		array<uint8_t, 70> res{};
-
-		__m128i r0, r1, r2, rres;
-
-		int offset = 0;
-
-		const size_t size = 7;
-
-		array<uint8_t, size> indexes{};
-
-		for (short i = 0; i < size; i++) {
-			indexes[i] = i * 16;
-		}
-
-
-		for (short i = 0; i < size-2; i++) {
-			r0 = _mm_load_si128((__m128i*)(object.data() + indexes[i    ]));
-			r1 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 1]));
-			r2 = _mm_load_si128((__m128i*)(object.data() + indexes[i + 2]));
-
-			rres = r1;					// rres = r1
-
-			r1 = _mm_add_epi8(r1, r2);
-			r0 = _mm_add_epi8(r0, r1);	// r0 = r2 + r1 + r0
-
-			const __m128i mask0 = _mm_setr_epi8(15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
-			const __m128i mask1 = _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0);
-
-			r1 = _mm_shuffle_epi8(r0, mask0);	// r1 = mask0(r0)
-			r2 = _mm_shuffle_epi8(r0, mask1);	// r2 = mask1(r0)
-
-
-			r1 = _mm_add_epi8(r1, r2);
-			r0 = _mm_add_epi8(r0, r1);			// r0 = r2 + r1 + r0
-
-			r0 = _mm_sub_epi8(r0, rres);		// r0 = r0 - rres
-
-			r0 = _mm_shuffle_epi8(r0, mask1);	// r0 = mask1(r0)
-
-			_mm_storeu_si128((__m128i*)(res.data() + (i * 14)), r0);
-		}
-
-		return res;
-	}
-
 	
 
 	template<typename T> requires allowed_type<T>
-	Flat2DArray<T> run_horizontalSumImpl(Flat2DArray<T>& object) const noexcept {
+	inline Flat2DArray<T> run_horizontalSumImpl(Flat2DArray<T>& object) const noexcept {
 		// ширина - это количество элементов в строке
 		const size_t width = object.width();
 
@@ -544,5 +398,231 @@ public:
 
 
 		return res;
+	}
+
+	/// <summary>
+	/// Не самая быстрая реализация, так как идёт итерация по вертикали, а не по горизонтали
+	/// Из-за этого скорее всего страдает кеш-локальность данных, что не даёт получить ещё большую скорость выполнения
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <param name="object"></param>
+	/// <param name="to_save"></param>
+	template<typename T> requires allowed_type<T>
+	inline void run_verticalSumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+		const size_t width = object.width();
+		const size_t height = object.height();
+
+		T* res_ptr = to_save.data();
+		T* data_ptr = object.data();
+
+		__m128i r0,		// хранит верхнюю строку окна
+			r1,			// хранит среднюю строку окна
+			r2;			// хранит нижнюю строку окна
+
+#ifdef _DEBUG
+		// для удобства при отладке используется Flat2DArray, так как можно посмотреть в отладчике все хранимые элементы
+		auto offsets = Flat2DArray<int>(height, 1, false);
+
+		auto _DEBUG_REG = [] ( __m128i reg, string msg) {
+			std::printf("reg: %s\n", msg.c_str());
+			print_m128i_uint8(reg, "reg"); printf("\n");
+		};
+
+		auto DEBUG_RES = [&to_save] (string at_moment) {
+			std::cout << "to_save " << at_moment << "\n" << to_save << "\n";
+		};
+#else
+		size_t* offsets = new size_t[height];
+		#define _DEBUG_REG(reg, at_moment) ((void)0)
+		#define DEBUG_RES(at_moment) ((void)0)
+#endif // _DEBUG
+		
+		// суммирует 3 строки вида:
+		// r0 =   0   1   2   3   4   5 ...
+		// r1 =  15  16  17  18  19  20 ...
+		// r2 =  30  31  32  33  34  35 ...
+		// res[0] = 0 + 1 + 16+ 30 + 31
+		// res[1] = 0 + 1 + 2 + 15 + 17 + 30 + 31 + 32
+		// res[2] = 1 + 2 + 3 + 16 + 18 + 31 + 32 + 33
+		// и ь.д
+		auto sum_three_line = [] (__m128i r0, __m128i r1, __m128i r2) -> __m128i {
+			__m128i mid_row = r1;
+
+			// в r2 будет хранится вся сумма
+			r2 = _mm_add_epi8(r1, r2);
+			r2 = _mm_add_epi8(r0, r2);		// r2 = r0 + r1 + r2
+
+			r1 = _mm_slli_si128(r2, 1);		// сдвиг вправо на 1 байт (сосед справа)
+			r0 = _mm_srli_si128(r2, 1);		// сдвиг влево на 1 байт (сосед слева)
+
+			r2 = _mm_add_epi8(r2, r1);		// r1 = сам + сосед справа
+			r2 = _mm_add_epi8(r2, r0);		// r1 = сам + сосед справа + сосед слева = 9 клеток
+
+			r2 = _mm_sub_epi8(r2, mid_row);	// r1 = сумма всех 8 соседних клеток = 9 клеток - центральная клетка
+			return r2;
+		};
+
+		// когда просто сохраняем сумму соседей
+		auto calc_three_lines = [&res_ptr, &sum_three_line] (__m128i r0, __m128i r1, __m128i r2, size_t offset) {
+			__m128i sum = sum_three_line(r0, r1, r2);
+			_mm_storeu_si128((__m128i*)(res_ptr + offset), sum);
+		};
+		
+		// для случаев, когда нужно сохранить с перекрытием предыдущего ответа
+		auto calc_three_lines_with_offset = [&res_ptr, &sum_three_line] (__m128i r0, __m128i r1, __m128i r2, size_t offset) {
+			__m128i sum = sum_three_line(r0, r1, r2);
+			sum = _mm_srli_si128(sum, 1); // сдвигаю результат влево на 1 байт
+			_mm_storeu_si128((__m128i*)(res_ptr + offset + 1), sum);
+		};
+
+		// для крайних правых строк
+		auto calc_three_last_lines = [&res_ptr, &sum_three_line] (__m128i r0, __m128i r1, __m128i r2, size_t offset) {
+			__m128i sum = sum_three_line(r0, r1, r2);
+
+			// приходится сохранять значение следующее после offset, так как оно затирается после сдвига и сохранения на +1
+			T prev_res = res_ptr[offset + 16];
+			sum = _mm_srli_si128(sum, 1); // сдвигаю результат влево на 1 байт
+			_mm_storeu_si128((__m128i*)(res_ptr + offset + 1), sum);
+			res_ptr[offset + 16] = prev_res;
+		};
+
+
+		// суммирует 2 строки вида:
+		// r0 =   0   1   2   3   4   5 ...
+		// r1 =  15  16  17  18  19  20 ...
+		// res[0] = 1 + 15 + 16
+		// res[1] = 0 + 2 + 15 + 16 + 17
+		// res[2] = 1 + 3 + 16 + 17 + 18 + 31 + 32 + 33
+		// и т.д.
+		auto sum_two_lines = [](__m128i r0, __m128i r1) -> __m128i {
+			__m128i temp_reg {};
+			// в r0 хранятся середины (то есть потом из суммы соседей нужно будет вычесть r0)
+
+			r1 = _mm_add_epi8(r0, r1);			// сумма первых двух строк
+			__m128i r2 = _mm_srli_si128(r1, 1);	// r2 = r1 << 1 побитовый сдвиг влево
+			temp_reg = _mm_slli_si128(r1, 1);	// temp_reg = r1 >> 1 побитовый сдвиг вправо
+
+			r1 = _mm_add_epi8(r1, r2);
+			r1 = _mm_add_epi8(r1, temp_reg);	// r1 = сумма всех соседей
+
+			r1 = _mm_sub_epi8(r1, r0);			// r1 = r1 - r0
+			return r1;
+		};
+
+		// вычисляет сумму для двух строчек. В зависимости от порядка регистров,
+		// можно вычислить как для верхней строчки, так и для последней
+		auto calc_for_two_lines = [&res_ptr, &sum_two_lines] (__m128i r0, __m128i r1, size_t offset) {
+			__m128i sum = sum_two_lines(r0, r1);
+			_mm_storeu_si128((__m128i*)(res_ptr + offset), sum);
+		};
+
+		auto calc_for_two_lines_with_offset = [&res_ptr, &sum_two_lines] (__m128i r0, __m128i r1, size_t offset) {
+			__m128i sum = sum_two_lines(r0, r1);
+			sum = _mm_srli_si128(sum, 1);	// сдвигаю результат влево на 1 байт,
+			_mm_storeu_si128((__m128i*)(res_ptr + offset + 1), sum);
+		};
+
+
+		auto calc_two_last_lines = [&res_ptr, &sum_two_lines] (__m128i r0, __m128i r1, size_t offset) {
+			__m128i sum = sum_two_lines(r0, r1);
+
+			T prev_res = res_ptr[offset + 16];
+			sum = _mm_srli_si128(sum, 1); // сдвигаю результат влево на 1 байт
+			_mm_storeu_si128((__m128i*)(res_ptr + offset + 1), sum);
+			res_ptr[offset + 16] = prev_res;
+		};
+		
+		size_t TOTAL_FULLY_IN_BLOCKS_COUNT = width / 14;
+		size_t REMAINDER = width % 14;
+		
+#pragma region left
+		// крайние левые ряды
+		for (size_t x = 0; x < height; x++) {
+			offsets[x] = x * width;
+		}
+
+		r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[0]));
+		r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[1]));
+		r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[2]));
+
+		calc_for_two_lines(r0, r1, offsets[0]);
+		//DEBUG_RES("after first row");
+
+		calc_three_lines(r0, r1, r2, offsets[1]);
+		//DEBUG_RES("after second row");
+
+		for (size_t i = 2; i < height - 1; i++) {
+			r0 = r1;
+			r1 = r2;
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[i + 1]));
+
+			const size_t offset = offsets[i];
+			calc_three_lines(r0, r1, r2, offset);
+		}
+		calc_for_two_lines(r2, r1, offsets[height - 1]);
+#pragma endregion
+
+#pragma region mid
+		// ряды по середине
+		for (size_t offset_from_zero = 1, i = 0; i < TOTAL_FULLY_IN_BLOCKS_COUNT; offset_from_zero += 14, i++) {
+			for (size_t x = 0; x < height; x++) {
+				offsets[x] = offset_from_zero + x * width;
+			}
+
+			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[0]));
+			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[1]));
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[2]));
+
+			calc_for_two_lines_with_offset(r0, r1, offsets[0]);
+			//DEBUG_RES("after first row");
+
+			calc_three_lines_with_offset(r0, r1, r2, offsets[1]);
+			//DEBUG_RES("after second row");
+
+			for (size_t i = 2; i < height - 1; i++) {
+				r0 = r1;
+				r1 = r2;
+				r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[i + 1]));
+
+				const size_t offset = offsets[i];
+				calc_three_lines_with_offset(r0, r1, r2, offset);
+			}
+			calc_for_two_lines_with_offset(r2, r1, offsets[height - 1]);
+			//DEBUG_RES("after last row");
+		}
+		DEBUG_RES("after main");
+#pragma endregion
+				
+#pragma region last
+		// блок, который не вошёл полностью, то есть крайние правые строки
+		if (REMAINDER > 0) {
+			for (size_t i = 0; i < height; i++) {
+				offsets[i] = (i + 1) * width - 16;
+			}
+
+			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[0]));
+			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[1]));
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[2]));
+
+			calc_two_last_lines(r0, r1, offsets[0]);
+
+			calc_three_last_lines(r0, r1, r2, offsets[1]);
+			DEBUG_RES("NEED THIS");
+
+			for (size_t i = 2; i < height - 1; i++) {
+				r0 = r1;
+				r1 = r2;
+				r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offsets[i + 1]));
+
+				calc_three_last_lines(r0, r1, r2, offsets[i]);
+			}
+			calc_two_last_lines(r2, r1, offsets[height - 1]);
+		}
+		DEBUG_RES("after all main");
+#pragma endregion
+
+#ifdef NDEBUG
+		delete[] offsets;
+#endif // _NDEBUG
 	}
 };

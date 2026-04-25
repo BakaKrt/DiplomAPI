@@ -44,9 +44,9 @@ template<typename T> requires allowed_type<T>
 /// </summary>
 class Flat2DArray {
 private:
+	shared_ptr<T[]> _array = nullptr;
 	unique_ptr<SharedMemoryObject> _object;
     size_t _width = 0, _height = 0;
-	shared_ptr<T[]> _array = nullptr;
 	bool _isSharedMemory = true;
 public:
 	Flat2DArray() noexcept;
@@ -198,7 +198,7 @@ ostream& operator<<(ostream& stream, const Flat2DArray<T>& data)
     const size_t capacity = data._width * data._height;
     for (size_t i = 0; i < capacity;)
     {
-        stream << std::setw(2) << (int)data.at(i) << "  ";
+        stream << std::setw(3) << (int)data.at(i) << "  ";
         i++;
         if (i % data._width == 0 && i != 0) stream << '\n';
         else stream << ' ';
