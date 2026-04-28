@@ -4,6 +4,7 @@ export module Flat2DArray;
 
 import std;
 import SharedMemoryHelper;
+import AlignedAllocator;
 
 using namespace SharedMemory;
 
@@ -59,6 +60,14 @@ public:
 	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
 	Flat2DArray(size_t width, size_t height, bool useSharedMemory = true) noexcept;
 
+	/// <summary>
+	/// Конструктор
+	/// </summary>
+	/// <param name="width">Ширина</param>
+	/// <param name="height">Высота</param>
+	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
+	Flat2DArray(size_t width, size_t height, size_t alignment, bool useSharedMemory = true) noexcept;
+
     /// <summary>
     /// Конструктор копирования
     /// </summary>
@@ -84,6 +93,14 @@ public:
 
     template<typename U>
 	friend ostream& operator<<(ostream& stream, const Flat2DArray<U>& data);
+	
+#ifdef _DEBUG
+	void _debug_print_as_arrays(size_t window_size);
+#else
+#define _debug_print_as_arrays(size_t) ((void)0);
+#endif // _DEBUG
+
+
 
 	~Flat2DArray() noexcept;
 };
@@ -96,7 +113,11 @@ Flat2DArray<T>::Flat2DArray() noexcept :
 }
 
 template<typename T> requires allowed_type<T>
-Flat2DArray<T>::Flat2DArray(size_t width, size_t height, bool useSharedMemory) noexcept :
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height, bool useSharedMemory) noexcept
+	: Flat2DArray(width, height, 16, useSharedMemory) {}
+
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height, size_t alignment, bool useSharedMemory) noexcept :
 	_width(width),
 	_height(height), _isSharedMemory(useSharedMemory)
 {
@@ -107,7 +128,7 @@ Flat2DArray<T>::Flat2DArray(size_t width, size_t height, bool useSharedMemory) n
 		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
 	}
 	else {
-		this->_array = make_shared<T[]>(_width * _height);
+		this->_array = AlignedAllocator::SharedAlignedBuffer<T>::create(width * height, alignment);
 		this->_object = nullptr;
 	}
 }
@@ -184,6 +205,55 @@ size_t Flat2DArray<T>::height() const noexcept
 {
 	return _height;
 }
+
+#ifdef _DEBUG
+template<typename T> requires allowed_type<T>
+void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
+{
+	using std::format, std::cout;
+
+	T* data_ptr = _array.get();
+
+	T* window_start_ptr = nullptr;
+	T* window_end_ptr = nullptr;
+
+
+	if (_width < window_size) {
+		cout << format("ширина строки уже ширины окна!\n");
+	}
+
+	for (size_t y = 0, y_offset = 0; y < _height; y++, y_offset = y * _width) {
+		size_t x_offset = 0;
+
+		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x) {
+			window_start_ptr = data_ptr + y_offset + x;
+			window_end_ptr = window_start_ptr + window_size;
+
+			cout << format("y: {:>2}, x: {:>3}: ", y, x);
+
+			while (window_start_ptr != window_end_ptr) {
+				cout << format("{:>3} ", *window_start_ptr);
+				window_start_ptr += 1;
+			}
+			cout << "\n";
+		}
+
+		// последние элементы отображать как целую строку
+		if (_width % window_size != 0) {
+			window_end_ptr = data_ptr + y_offset + _width;
+			window_start_ptr = window_end_ptr - 16;
+
+			cout << format("y: {:>2}, x: {:>3}: ", y, _width - 16);
+
+			while (window_start_ptr != window_end_ptr) {
+				cout << format("{:>3} ", *window_start_ptr);
+				window_start_ptr += 1;
+			}
+			cout << "\n";
+		}
+	}
+}
+#endif // _DEBUG
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::~Flat2DArray() noexcept

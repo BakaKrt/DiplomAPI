@@ -76,7 +76,10 @@
     <ClCompile Include="normalsum.ixx" />
     <ClCompile Include="random.ixx" />
     <ClCompile Include="SharedMemoryHelper.ixx" />
-    <ClCompile Include="sse.ixx" />
+    <ClCompile Include="sseHelper.ixx" />
+    <ClCompile Include="sse_horizontal.ixx" />
+    <ClCompile Include="sse_vertical.ixx" />
+    <ClCompile Include="AlignedAllocator.ixx" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="test.ixx" />
   </ItemGroup>

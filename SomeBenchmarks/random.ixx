@@ -3,7 +3,7 @@ export module random;
 import std;
 import Flat2DArray;
 
-using std::shared_ptr;
+using std::shared_ptr, std::make_shared;
 using std::vector, std::array;
 
 thread_local std::mt19937 gen(std::random_device {}());
@@ -37,7 +37,9 @@ export std::uint8_t randomUint8(uint8_t min = 0, uint8_t max = 255) {
 
 export template <typename T>
 shared_ptr<Flat2DArray<T>> generateTestMemory(size_t width, size_t height) {
-	auto obj = make_shared<Flat2DArray<T>>(width, height, false);
+	constexpr size_t ALIGNMENT = 16;
+
+	auto obj = make_shared<Flat2DArray<T>>(width, height, ALIGNMENT, false);
 	auto ptr = obj->data();
 
 	const size_t size = width * height;

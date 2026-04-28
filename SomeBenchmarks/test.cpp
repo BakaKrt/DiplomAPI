@@ -25,7 +25,8 @@
 import test;
 import normalsum;
 import iter;
-import sse;
+import sse_vertical;
+import sse_horizontal;
 
 import Flat2DArray;
 import random;
@@ -263,24 +264,27 @@ int main() {
 	#define run_test
 	#ifdef run_test
 	{
-		IterSum iterTest {}; SSEv1Sum sseTest {};
-		size_t width = 35, height = 3, capacity = width * height;
-		auto mem = Flat2DArray<uint8_t>(width, height);
+		SSEv2Sum horizontal {}; SSEv1Sum vertical {};
+		size_t width = 55, height = 3, capacity = width * height;
+		auto mem = Flat2DArray<uint8_t>(width, height, 16, false);
 
 		for (size_t i = 0; i < capacity; i++) {
-			mem[i] = (uint8_t) (i);
+			mem[i] = (uint8_t) (i % 11);
 		}
 
-		cout << "init mem width: " << width << " height: " << height << "\n" << mem << "\n";
-		auto res = sseTest.test_run(mem);
-		auto normalRes = iterTest.test_run(mem);
+		cout << "init mem width: " << width << " height: " << height << "\n";
 
-		cout << "res:\n" << res << "\n";
-		cout << "normalRes:\n" << normalRes << "\n";
+		mem._debug_print_as_arrays(16);
 
-		for (size_t x = 0; x < normalRes.capacity(); x++) {
-			if (normalRes[x] != res[x]) {
-				printf("got diff index[%3u]: n %u s %u\n", (unsigned) x, normalRes[x], res[x]);
+		auto vert_res = vertical.test_run(mem);
+		auto hor_res = horizontal.test_run(mem);
+
+		cout << "res:\n"; vert_res._debug_print_as_arrays(16);
+		cout << "normalRes:\n"; hor_res._debug_print_as_arrays(16);
+
+		for (size_t x = 0; x < vert_res.capacity(); x++) {
+			if (vert_res[x] != hor_res[x]) {
+				printf("got diff index[%3u]: v %u h %u\n", (unsigned) x, vert_res[x], hor_res[x]);
 			}
 		}
 	}
