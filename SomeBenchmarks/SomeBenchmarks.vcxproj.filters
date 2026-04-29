@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="cpuinf.ixx" />
+    <ClCompile Include="random.ixx" />
+    <ClCompile Include="test.cpp" />
+    <ClCompile Include="normalsum.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="iter.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="sse_horizontal.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="sse_vertical.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="FlatArray.ixx">
+      <Filter>Flat2DArray</Filter>
+    </ClCompile>
+    <ClCompile Include="AlignedAllocator.ixx">
+      <Filter>Flat2DArray</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedMemoryHelper.ixx">
+      <Filter>Flat2DArray</Filter>
+    </ClCompile>
+    <ClCompile Include="sseHelper.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="sumFilterBase.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="test.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="normalRule.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="isItWorkingPlayground.ixx" />
+    <ClCompile Include="sseFilter.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarkSumRealizations.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarkFilterRealizations.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="AvxFilter.ixx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="nanobench.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sumRealizations">
+      <UniqueIdentifier>{2727f110-702e-4fe0-a517-ab164d948240}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Flat2DArray">
+      <UniqueIdentifier>{6ee0ed34-b0f1-438f-8f15-ebdc9e4e3f44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sumFilterRealizations">
+      <UniqueIdentifier>{a0873aec-cc05-424e-8739-1299be8d0f35}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="FlatArray.natvis">
+      <Filter>Flat2DArray</Filter>
+    </Natvis>
+  </ItemGroup>
+</Project>

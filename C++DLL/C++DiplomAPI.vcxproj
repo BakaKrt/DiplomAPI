@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AlignedAllocator.ixx" />
     <ClCompile Include="ForBenchmarks\CG_base.cpp" />
     <ClCompile Include="ForBenchmarks\Flat\CG_flat_sse.cpp" />
     <ClCompile Include="ForBenchmarks\Flat\CG_flat_sum.cpp" />
@@ -157,6 +158,9 @@
     <ClInclude Include="ForBenchmarks\CG_std_vector_sse.hpp" />
     <ClInclude Include="ForBenchmarks\nanobench.h" />
     <ClInclude Include="Tests\Tests.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="FlatArray.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

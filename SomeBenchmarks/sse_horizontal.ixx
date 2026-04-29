@@ -92,6 +92,7 @@ public:
 		};
 #else
 #define _DEBUG_REG(reg, at_moment) ((void)0)
+#define DEBUG_REGS(at_moment) ((void)0)
 #define DEBUG_RES(at_moment) ((void)0)
 #endif // _DEBUG
 

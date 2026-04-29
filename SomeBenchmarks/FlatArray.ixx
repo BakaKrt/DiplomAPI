@@ -135,7 +135,7 @@ Flat2DArray<T>::Flat2DArray(size_t width, size_t height, size_t alignment, bool 
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::Flat2DArray(const Flat2DArray<T>& other) noexcept :
-	_width(other._width), _height(other._height)
+	_width(other._width), _height(other._height), _isSharedMemory(other._isSharedMemory)
 {
 	if (other._isSharedMemory) {
 		this->_object = make_unique<SharedMemoryObject>(other._object->getName());
@@ -222,10 +222,12 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 		cout << format("ширина строки уже ширины окна!\n");
 	}
 
+	size_t iterationsCount = 0;
+
 	for (size_t y = 0, y_offset = 0; y < _height; y++, y_offset = y * _width) {
 		size_t x_offset = 0;
 
-		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x) {
+		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x, iterationsCount++) {
 			window_start_ptr = data_ptr + y_offset + x;
 			window_end_ptr = window_start_ptr + window_size;
 
@@ -239,7 +241,7 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 		}
 
 		// последние элементы отображать как целую строку
-		if (_width % window_size != 0) {
+		if (_width % window_size != 0 || iterationsCount == 0) {
 			window_end_ptr = data_ptr + y_offset + _width;
 			window_start_ptr = window_end_ptr - 16;
 
@@ -265,12 +267,15 @@ export
 template<typename T> requires allowed_type<T>
 ostream& operator<<(ostream& stream, const Flat2DArray<T>& data)
 {
-    const size_t capacity = data._width * data._height;
+	const size_t width = data.width();
+	const size_t height = data.height();
+	const size_t capacity = width * height;
+
     for (size_t i = 0; i < capacity;)
     {
         stream << std::setw(3) << (int)data.at(i) << "  ";
         i++;
-        if (i % data._width == 0 && i != 0) stream << '\n';
+        if (i % width == 0 && i != 0) stream << '\n';
         else stream << ' ';
     }
     return stream;

@@ -61,6 +61,8 @@
       <UseUnicodeForAssemblerListing>
       </UseUnicodeForAssemblerListing>
       <AssemblerOutput />
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -70,16 +72,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AvxFilter.ixx" />
+    <ClCompile Include="benchmarkFilterRealizations.ixx">
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </IntrinsicFunctions>
+      <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </FavorSizeOrSpeed>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="benchmarkSumRealizations.ixx" />
     <ClCompile Include="cpuinf.ixx" />
     <ClCompile Include="FlatArray.ixx" />
+    <ClCompile Include="isItWorkingPlayground.ixx" />
     <ClCompile Include="iter.ixx" />
+    <ClCompile Include="normalRule.ixx" />
     <ClCompile Include="normalsum.ixx" />
     <ClCompile Include="random.ixx" />
     <ClCompile Include="SharedMemoryHelper.ixx" />
+    <ClCompile Include="sseFilter.ixx" />
     <ClCompile Include="sseHelper.ixx" />
     <ClCompile Include="sse_horizontal.ixx" />
     <ClCompile Include="sse_vertical.ixx" />
     <ClCompile Include="AlignedAllocator.ixx" />
+    <ClCompile Include="sumFilterBase.ixx" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="test.ixx" />
   </ItemGroup>

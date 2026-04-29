@@ -7,7 +7,7 @@
 #include "../ForBenchmarks/Flat/CG_flat_sse.hpp"
 
 
-import FlatArray;
+import Flat2DArray;
 
 import std.compat;
 
@@ -15,7 +15,7 @@ import std.compat;
 using std::printf;
 
 namespace Test {
-	bool testFlatArray() {
+	bool testFlat2DArray() {
 		constexpr size_t width = 20, height = 5, capacity = width * height;
 		constexpr bool writeToStdout = false;
 
@@ -37,7 +37,7 @@ namespace Test {
 			}
 
 			if (data != x) {
-				if (writeToStdout) printf("ERROR testFlatArray(): ошибка при тестировании плоского массива! .at(x)!\n");
+				if (writeToStdout) printf("ERROR testFlat2DArray(): ошибка при тестировании плоского массива! .at(x)!\n");
 				return false;
 			}
 		}
@@ -49,7 +49,7 @@ namespace Test {
 				if (writeToStdout) printf("%2.f ", data);
 
 				if (data != (x + y * width)) {
-					if (writeToStdout) printf("ERROR testFlatArray(): ошибка при тестировании плоского массива .at(x, y)!\n");
+					if (writeToStdout) printf("ERROR testFlat2DArray(): ошибка при тестировании плоского массива .at(x, y)!\n");
 					return false;
 				}
 			}
@@ -63,15 +63,15 @@ namespace Test {
 	bool testAllRealizationsIsRight() {
 		using std::vector;
 
-		constexpr size_t width = 7, height = 5, capacity = width * height;
+		constexpr size_t width = 16, height = 5, capacity = width * height;
 		constexpr int threadsCount = 2;
 
 		std::array<bool, capacity> idealArray ={
-			0, 1, 1, 1, 1, 1, 0, 
-			1, 0, 0, 0, 0, 0, 1, 
-			1, 0, 0, 0, 0, 0, 1, 
-			1, 0, 0, 0, 0, 0, 1, 
-			0, 1, 1, 1, 1, 1, 0
+			1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,
+			0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,
+			0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,
+			1,1,0,1,0,0,0,1,0,1,0,0,0,1,0,0,
+			0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0
 		};
 
 		vector<bool> vec{};
@@ -80,11 +80,11 @@ namespace Test {
 		// заполнение массива данными
 		for (size_t x = 0; x < width; x++) {
 			for (size_t y = 0; y < height; y++) {
-				vec[x + y * width] = (x + y % 4) % 2 + !(x + 1 != 3);
+				vec[x + y * width] = (x + y % 10) % 2 + ((y + x - 1) %3 != 1) - (x % 5 + 1 != 0);
 			}
 		}
 
-		auto printBoolPtr = [&](size_t capacity, size_t width, bool* ptr) {
+		auto printBoolPtr = [&capacity, &width] (bool* ptr) {
 			int row = int(width - 1);
 			for (size_t x = 0; x < capacity; x++, row--) {
 				printf("%d ", ptr[x]);
@@ -92,7 +92,7 @@ namespace Test {
 			}
 			return;
 		};
-		auto printBoolVec = [&](size_t capacity, size_t width, vector<bool>& ptr) {
+		auto printBoolVec = [&capacity, &width] (vector<bool>& ptr) {
 			int row = int(width - 1);
 			for (size_t x = 0; x < capacity; x++, row--) {
 				printf("%d ", (int)ptr[x]);
@@ -103,17 +103,18 @@ namespace Test {
 
 		auto isResultEqual = [&](bool* arr) -> bool {
 			for (size_t x = 0; x < capacity; x++) {
-				if (idealArray[x] != arr[x]) return false;
+				if (idealArray[x] != arr[x])
+					return false;
 			}
 			return true;
 		};
 
 		printf("Source array:\n");
-		printBoolVec(capacity, width, vec);
+		printBoolVec(vec);
 		printf("\n");
 
 		printf("Expected Array:\n");
-		printBoolPtr(capacity, width, idealArray.data());
+		printBoolPtr(idealArray.data());
 
 		using std::shared_ptr, std::make_shared;
 
@@ -131,6 +132,7 @@ namespace Test {
 			cave->Tick();
 			if (isResultEqual(cave->Data()) == false) {
 				printf("Tick [%s] Tick unsuccessful\n", cave->getName().c_str());
+				printBoolPtr(cave->Data());
 			}
 		}
 
@@ -146,7 +148,7 @@ namespace Test {
 	}
 
 	void Run() {
-		assert(testFlatArray() == true && "Плоский массив не прошёл тест"); printf("Flat2DArray passed\n");
+		assert(testFlat2DArray() == true && "Плоский массив не прошёл тест"); printf("Flat2DArray passed\n");
 		assert(testAllRealizationsIsRight() == true && "Реализации не прошли тест на правильность тиков");
 		return;
 	}

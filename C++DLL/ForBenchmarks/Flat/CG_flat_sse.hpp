@@ -14,8 +14,8 @@ using std::array;
 /// </summary>
 class CaveGenerator_flat_sse : public CaveGeneratorBench {
 protected:
-	Flat2DArray<bool>* _mainMatrix = nullptr;
-	Flat2DArray<bool>* _secondMatrix = nullptr;
+	Flat2DArray<uint8_t>* _mainMatrix = nullptr;
+	Flat2DArray<uint8_t>* _secondMatrix = nullptr;
 
 	vector<int> _CHUNKS_INDEXES{};
 public:
@@ -27,11 +27,6 @@ public:
 	void inline InitThreads(int threadsCount) noexcept;
 
 	int GetNeighbours(size_t x, size_t y) const noexcept override;
-	inline int GetNeighboursTop(size_t x, size_t y) const noexcept;
-	inline int GetNeighboursRight(size_t x, size_t y) const noexcept;
-	inline int GetNeighboursBottom(size_t x, size_t y) const noexcept;
-	inline int GetNeighboursLeft(size_t x, size_t y) const noexcept;
-	inline array<int, 4> SumCorners() const noexcept;
 	
 	void Tick(const int count = 1) noexcept override;
 	void TickMT(const int count = 1) noexcept override;

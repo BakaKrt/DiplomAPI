@@ -161,7 +161,10 @@ public:
 		};
 		
 		size_t TOTAL_FULLY_IN_BLOCKS_COUNT = width / 14;
-		size_t REMAINDER = width % 14;
+		size_t REMAINDER = 0;
+		
+		if (width > 16)
+			REMAINDER = width % 14;
 		
 #pragma region left
 		// крайние левые ряды
@@ -175,6 +178,10 @@ public:
 		calc_three_lines(r0, r1, r2, width);
 		//DEBUG_RES("after second row");
 
+		//std::cout << "temp: \n";
+		//to_save._debug_print_as_arrays(16);
+
+		
 		for (size_t i = 2; i < height - 1; i++) {
 			const size_t offset = width * i;
 
@@ -185,11 +192,14 @@ public:
 			calc_three_lines(r0, r1, r2, offset);
 		}
 		calc_for_two_lines(r2, r1, width * (height - 1));
+
+		std::cout << "on last left sum: \n";
+		to_save._debug_print_as_arrays(16);
 #pragma endregion
 
 #pragma region mid
 		// ряды по середине
-		for (size_t offset_from_zero = 1, i = 0; i < TOTAL_FULLY_IN_BLOCKS_COUNT; offset_from_zero += 14, i++) {
+		for (size_t offset_from_zero = 0, i = 1; i < TOTAL_FULLY_IN_BLOCKS_COUNT; offset_from_zero += 14, i++) {
 
 			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero));
 			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero + width));

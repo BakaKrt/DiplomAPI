@@ -1,8 +1,7 @@
 #pragma once
-#include <cstddef>
-
 import std;
-import FlatArray;
+
+import Flat2DArray;
 import Useful;
 
 using std::unordered_set;

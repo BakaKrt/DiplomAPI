@@ -13,10 +13,7 @@ template<typename Derived>
 class test {
 protected:
     string name {};
-
 public:
-    test() = default;
-
     inline const string getName() const {
         return static_cast<const Derived*>(this)->getName_impl();
     }
@@ -28,6 +25,4 @@ public:
 
         return temp_array;
     }
-
-    ~test() = default; // Если нужно, можно оставить
 };

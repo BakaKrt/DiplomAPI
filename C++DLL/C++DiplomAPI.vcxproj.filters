@@ -60,8 +60,11 @@
     <ClCompile Include="ForBenchmarks\Flat\CG_flat_sum.cpp">
       <Filter>Исходные файлы\Benchmark</Filter>
     </ClCompile>
-    <ClCompile Include="switchToDiplom.cpp">
-      <Filter>Исходные файлы\Benchmark</Filter>
+    <ClCompile Include="C++DiplomAPI.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="AlignedAllocator.ixx">
+      <Filter>Файлы заголовков\FlatArray</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -92,5 +95,10 @@
     <ClInclude Include="Tests\Tests.hpp">
       <Filter>Файлы заголовков\Tests</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="FlatArray.natvis">
+      <Filter>Файлы заголовков\FlatArray</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

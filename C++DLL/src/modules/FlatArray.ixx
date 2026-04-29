@@ -1,30 +1,34 @@
 #include <cstdint>
-#include <string>
 
-export module FlatArray;
+export module Flat2DArray;
 
 import std;
 import SharedMemoryHelper;
+import AlignedAllocator;
 
 using namespace SharedMemory;
+
+using std::wstring;
 
 using std::ostream;
 using byte = std::uint8_t;
 using std::make_unique, std::unique_ptr;
+using std::make_shared, std::shared_ptr;
+
+using std::ostream;
 
 // Список разрешённых типов
 export template<typename T>
-struct is_allowed_type : std::integral_constant<bool,
+concept allowed_type =
 	std::is_same_v<T, int> ||
 	std::is_same_v<T, float> ||
-	std::is_same_v<T, bool> ||
-	std::is_same_v<T, std::uint8_t>
-> {
-};
+	std::is_same_v<T, uint8_t> ||
+	std::is_same_v<T, bool>
+;
 
 
-export 
-template<typename T, typename = std::enable_if_t<is_allowed_type<T>::value>>
+export
+template<typename T> requires allowed_type<T>
 /// <summary>
 /// Использует разделяемую память для создания плоского массива с интерфейсом двумерного
 /// Измерения:
@@ -41,161 +45,235 @@ template<typename T, typename = std::enable_if_t<is_allowed_type<T>::value>>
 /// </summary>
 class Flat2DArray {
 private:
+	shared_ptr<T[]> _array = nullptr;
 	unique_ptr<SharedMemoryObject> _object;
-    size_t _width = 0, _height = 0;
-	T* _array = nullptr;
-	friend class HeightMap;
+	size_t _width = 0, _height = 0;
+	bool _isSharedMemory = true;
 public:
-    Flat2DArray() noexcept;
+	Flat2DArray() noexcept;
 
-	Flat2DArray(size_t width, size_t height) noexcept;
+	/// <summary>
+	/// Конструктор
+	/// </summary>
+	/// <param name="width">Ширина</param>
+	/// <param name="height">Высота</param>
+	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
+	Flat2DArray(size_t width, size_t height, bool useSharedMemory = true) noexcept;
 
-    /// <summary>
-    /// Конструктор копирования
-    /// </summary>
-    /// <param name="other"></param>
-    Flat2DArray(const Flat2DArray& other) noexcept;
+	/// <summary>
+	/// Конструктор
+	/// </summary>
+	/// <param name="width">Ширина</param>
+	/// <param name="height">Высота</param>
+	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
+	Flat2DArray(size_t width, size_t height, size_t alignment, bool useSharedMemory = true) noexcept;
 
-	Flat2DArray& operator=(const Flat2DArray& other);
+	/// <summary>
+	/// Конструктор копирования
+	/// </summary>
+	/// <param name="other"></param>
+	Flat2DArray(const Flat2DArray<T>& other) noexcept;
 
-    inline T& at(size_t x) const noexcept;
-    inline T& at(size_t x, size_t y) const noexcept;
+	/// <summary>
+	/// Конструктор перемещения
+	/// </summary>
+	/// <param name="other"></param>
+	Flat2DArray(Flat2DArray<T>&& other) noexcept;
+
+	inline T& at(size_t x) const noexcept;
+	inline T& at(size_t x, size_t y) const noexcept;
 
 	inline T& operator[] (size_t posX) noexcept;
 	inline const T& operator[] (size_t posX) const noexcept;
 
-    T* data() const noexcept;
-    size_t capacity() const noexcept;
-    size_t width() const noexcept;
-    size_t height() const noexcept;
+	T* data() const noexcept;
+	size_t capacity() const noexcept;
+	size_t width() const noexcept;
+	size_t height() const noexcept;
 
-	friend ostream& operator <<(ostream& stream, Flat2DArray& data);
+	template<typename U>
+	friend ostream& operator<<(ostream& stream, const Flat2DArray<U>& data);
+
+#ifdef _DEBUG
+	void _debug_print_as_arrays(size_t window_size);
+#else
+#define _debug_print_as_arrays(size_t) ((void)0);
+#endif // _DEBUG
+
+
 
 	~Flat2DArray() noexcept;
 };
 
-
-template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>::Flat2DArray() noexcept :
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray() noexcept :
 	_width(0), _height(0)
 {
 
 }
 
-template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>::Flat2DArray(size_t width, size_t height) noexcept :
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height, bool useSharedMemory) noexcept
+	: Flat2DArray(width, height, 16, useSharedMemory) {}
+
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height, size_t alignment, bool useSharedMemory) noexcept :
 	_width(width),
-	_height(height)
+	_height(height), _isSharedMemory(useSharedMemory)
 {
-	this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
-
-	auto settings = _object->create();
-	this->_array = static_cast<T*>(settings.array);
-}
-
-
-template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>::Flat2DArray(const Flat2DArray<T, Enabled>& other) noexcept
-{
-	_width = other._width;
-	_height = other._height;
-
-
-	wstring memoryName = other._object->getName();
-
-	this->_object = make_unique<SharedMemoryObject>(memoryName);
-	auto settings = _object->connect();
-
-	this->_array = static_cast<T*>(settings.array);
-}
-
-template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>& Flat2DArray<T, Enabled>::operator=(const Flat2DArray& other)
-{
-	//exit(-1);
-	throw std::exception("допилить надо");
-	if (this != &other) { // Проверка на самоприсваивание
-		delete[] _array; // Освобождаем старую память
-
-		_width = other._width;
-		_height = other._height;
-		const size_t capacity = _width * _height;
-
-		if (other._array) {
-			_array = new T[capacity];
-			std::memcpy(_array, other._array, capacity);
-		}
-		else {
-			_array = nullptr;
-		}
+	if (useSharedMemory) {
+		this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
+		auto settings = _object->create();
+		T* raw_ptr = static_cast<T*>(settings.array);
+		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
 	}
-	return *this;
+	else {
+		this->_array = AlignedAllocator::SharedAlignedBuffer<T>::create(width * height, alignment);
+		this->_object = nullptr;
+	}
 }
 
-template<typename T, typename Enabled>
-inline T& Flat2DArray<T, Enabled>::at(size_t x) const noexcept
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray(const Flat2DArray<T>& other) noexcept :
+	_width(other._width), _height(other._height), _isSharedMemory(other._isSharedMemory)
 {
-	return _array[x];
+	if (other._isSharedMemory) {
+		this->_object = make_unique<SharedMemoryObject>(other._object->getName());
+		auto settings = _object->connect();
+		T* raw_ptr = static_cast<T*>(settings.array);
+		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
+	}
+	else {
+		this->_array = other._array;
+	}
 }
 
-template<typename T, typename Enabled>
-inline T& Flat2DArray<T, Enabled>::at(size_t x, size_t y) const noexcept
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::Flat2DArray(Flat2DArray<T>&& other) noexcept
+	: _width(other._width), _height(other._height), _isSharedMemory(other._isSharedMemory),
+	_array(other._array), _object(std::move(other._object))
 {
-	return _array[x + y * _width];
+	other._array = nullptr;
+	other._width = 0;
+	other._height = 0;
 }
 
-template<typename T, typename Enabled>
-inline T& Flat2DArray<T, Enabled>::operator[](size_t posX) noexcept
+template<typename T> requires allowed_type<T>
+inline T& Flat2DArray<T>::at(size_t x) const noexcept
 {
-	return _array[posX];
+	return _array.get()[x];
 }
 
-template<typename T, typename Enabled>
-inline const T& Flat2DArray<T, Enabled>::operator[](size_t posX) const noexcept
+template<typename T> requires allowed_type<T>
+inline T& Flat2DArray<T>::at(size_t x, size_t y) const noexcept
 {
-	return _array[posX];
+	return _array.get()[x + y * _width];
 }
 
-template<typename T, typename Enabled>
-T* Flat2DArray<T, Enabled>::data() const noexcept
+template<typename T> requires allowed_type<T>
+inline T& Flat2DArray<T>::operator[](size_t posX) noexcept
 {
-	return _array;
+	return _array.get()[posX];
 }
 
-template<typename T, typename Enabled>
-size_t Flat2DArray<T, Enabled>::capacity() const noexcept
+template<typename T> requires allowed_type<T>
+inline const T& Flat2DArray<T>::operator[](size_t posX) const noexcept
+{
+	return _array.get()[posX];
+}
+
+template<typename T> requires allowed_type<T>
+T* Flat2DArray<T>::data() const noexcept
+{
+	return _array.get();
+}
+
+template<typename T> requires allowed_type<T>
+size_t Flat2DArray<T>::capacity() const noexcept
 {
 	return this->_width * this->_height;
 }
 
-template<typename T, typename Enabled>
-size_t Flat2DArray<T, Enabled>::width() const noexcept
+template<typename T> requires allowed_type<T>
+size_t Flat2DArray<T>::width() const noexcept
 {
 	return _width;
 }
 
-template<typename T, typename Enabled>
-size_t Flat2DArray<T, Enabled>::height() const noexcept
+template<typename T> requires allowed_type<T>
+size_t Flat2DArray<T>::height() const noexcept
 {
 	return _height;
 }
 
-template<typename T, typename Enabled>
-Flat2DArray<T, Enabled>::~Flat2DArray() noexcept
+#ifdef _DEBUG
+template<typename T> requires allowed_type<T>
+void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 {
-	_array = nullptr;
+	using std::format, std::cout;
+
+	T* data_ptr = _array.get();
+
+	T* window_start_ptr = nullptr;
+	T* window_end_ptr = nullptr;
+
+
+	if (_width < window_size) {
+		cout << format("ширина строки уже ширины окна!\n");
+	}
+
+	for (size_t y = 0, y_offset = 0; y < _height; y++, y_offset = y * _width) {
+		size_t x_offset = 0;
+
+		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x) {
+			window_start_ptr = data_ptr + y_offset + x;
+			window_end_ptr = window_start_ptr + window_size;
+
+			cout << format("y: {:>2}, x: {:>3}: ", y, x);
+
+			while (window_start_ptr != window_end_ptr) {
+				cout << format("{:>3} ", *window_start_ptr);
+				window_start_ptr += 1;
+			}
+			cout << "\n";
+		}
+
+		// последние элементы отображать как целую строку
+		if (_width % window_size != 0) {
+			window_end_ptr = data_ptr + y_offset + _width;
+			window_start_ptr = window_end_ptr - 16;
+
+			cout << format("y: {:>2}, x: {:>3}: ", y, _width - 16);
+
+			while (window_start_ptr != window_end_ptr) {
+				cout << format("{:>3} ", *window_start_ptr);
+				window_start_ptr += 1;
+			}
+			cout << "\n";
+		}
+	}
+}
+#endif // _DEBUG
+
+template<typename T> requires allowed_type<T>
+Flat2DArray<T>::~Flat2DArray() noexcept
+{
 	_width = 0; _height = 0;
 }
 
-template<typename T, typename Enabled>
-ostream& operator<<(ostream& stream, Flat2DArray<T, Enabled>& data)
+export
+template<typename T> requires allowed_type<T>
+ostream& operator<<(ostream& stream, const Flat2DArray<T>& data)
 {
-	const size_t capacity = data._width * data._height;
+	const size_t width = data.width();
+	const size_t height = data.height();
+	const size_t capacity = width * height;
+
 	for (size_t i = 0; i < capacity;)
 	{
-		stream << (int)data.at(i) << "\t";
+		stream << std::setw(3) << (int) data.at(i) << "  ";
 		i++;
-		if (i % data._width == 0 && i != 0) stream << '\n';
+		if (i % width == 0 && i != 0) stream << '\n';
 		else stream << ' ';
 	}
 	return stream;
