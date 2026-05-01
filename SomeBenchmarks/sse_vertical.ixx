@@ -1,4 +1,4 @@
-#include <emmintrin.h>
+#include <smmintrin.h>
 
 export module sse_vertical;
 
@@ -39,6 +39,8 @@ public:
 	/// <param name="to_save"></param>
 	template<typename T> requires allowed_type<T>
 	inline void run_verticalSumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+		constexpr size_t SSE_SIZE = 16;
+
 		const size_t width = object.width();
 		const size_t height = object.height();
 
@@ -48,17 +50,19 @@ public:
 		__m128i r0,		// хранит верхнюю строку окна
 			r1,			// хранит среднюю строку окна
 			r2;			// хранит нижнюю строку окна
-#define _DEBUG_SSE_VERTICAL 0
+#define _DEBUG_SSE_VERTICAL 1
 #if defined(_DEBUG) && _DEBUG_SSE_VERTICAL == 1
 
 		auto _DEBUG_REG = [] ( __m128i reg, string msg) {
 			std::printf("reg: %s\n", msg.c_str());
-			print_m128i_uint8(reg, "reg"); printf("\n");
+			sseHelperNS::print_uint8(reg, "reg"); printf("\n");
 		};
 
 		auto DEBUG_RES = [&to_save] (string at_moment) {
-			std::cout << "to_save " << at_moment << "\n" << to_save << "\n";
+			std::cout << "to_save " << at_moment << "\n";
+			to_save._debug_print_as_arrays(16);
 		};
+
 #else
 		#define _DEBUG_REG(reg, at_moment) ((void)0)
 		#define DEBUG_RES(at_moment) ((void)0)
@@ -109,8 +113,9 @@ public:
 			// приходится сохранять значение следующее после offset, так как оно затирается после сдвига и сохранения на +1
 			T prev_res = res_ptr[offset + 16];
 			sum = _mm_srli_si128(sum, 1); // сдвигаю результат влево на 1 байт
+			sum = _mm_insert_epi8(sum, prev_res, 15);
 			_mm_storeu_si128((__m128i*)(res_ptr + offset + 1), sum);
-			res_ptr[offset + 16] = prev_res;
+			//res_ptr[offset + 16] = prev_res;
 		};
 
 
@@ -154,18 +159,18 @@ public:
 		auto calc_two_last_lines = [&res_ptr, &sum_two_lines] (__m128i r0, __m128i r1, size_t offset) {
 			__m128i sum = sum_two_lines(r0, r1);
 
-			T prev_res = res_ptr[offset + 16];
+			T prev_res = res_ptr[offset + SSE_SIZE];
 			sum = _mm_srli_si128(sum, 1); // сдвигаю результат влево на 1 байт
+			sum = _mm_insert_epi8(sum, prev_res, 15);
+
 			_mm_store_si128((__m128i*)(res_ptr + offset + 1), sum);
-			res_ptr[offset + 16] = prev_res;
+			//res_ptr[offset + 16] = prev_res;
 		};
 		
 		size_t TOTAL_FULLY_IN_BLOCKS_COUNT = width / 14;
-		size_t REMAINDER = 0;
 		
-		if (width > 16)
-			REMAINDER = width % 14;
-		
+		size_t GLOBAL_X_OFFSET = 0;
+
 #pragma region left
 		// крайние левые ряды
 		r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr));
@@ -182,8 +187,8 @@ public:
 		//to_save._debug_print_as_arrays(16);
 
 		
-		for (size_t i = 2; i < height - 1; i++) {
-			const size_t offset = width * i;
+		for (size_t y = 2; y < height - 1; y++) {
+			const size_t offset = width * y;
 
 			r0 = r1;
 			r1 = r2;
@@ -193,26 +198,28 @@ public:
 		}
 		calc_for_two_lines(r2, r1, width * (height - 1));
 
-		std::cout << "on last left sum: \n";
-		to_save._debug_print_as_arrays(16);
+		//std::cout << "on last left sum: \n";
+		//to_save._debug_print_as_arrays(16);
+
+		DEBUG_RES("before second part");
 #pragma endregion
 
 #pragma region mid
+		//if (REMAINDER == 0) return;
+
 		// ряды по середине
-		for (size_t offset_from_zero = 0, i = 1; i < TOTAL_FULLY_IN_BLOCKS_COUNT; offset_from_zero += 14, i++) {
+		for (size_t mid_iterations_count = 1; mid_iterations_count < TOTAL_FULLY_IN_BLOCKS_COUNT; GLOBAL_X_OFFSET += 14, mid_iterations_count++) {
+			// вычисление первых трёх строк при GLOBAL_X_OFFSET сдвиге по X
+			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + GLOBAL_X_OFFSET));
+			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + GLOBAL_X_OFFSET + width));
+			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + GLOBAL_X_OFFSET + 2 * width));
 
-			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero));
-			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero + width));
-			r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + offset_from_zero + 2 * width));
+			calc_for_two_lines_with_offset(r0, r1, GLOBAL_X_OFFSET);
+			calc_three_lines_with_offset(r0, r1, r2, GLOBAL_X_OFFSET + width);
+			// конец вычисления первых трёх строк при GLOBAL_X_OFFSET сдвиге по X
 
-			calc_for_two_lines_with_offset(r0, r1, offset_from_zero);
-			//DEBUG_RES("after first row");
-
-			calc_three_lines_with_offset(r0, r1, r2, offset_from_zero + width);
-			//DEBUG_RES("after second row");
-
-			for (size_t i = 2; i < height - 1; i++) {
-				const size_t offset = offset_from_zero + width * i;
+			for (size_t y = 2; y < height - 1; y++) {
+				const size_t offset = GLOBAL_X_OFFSET + width * y;
 
 				r0 = r1;
 				r1 = r2;
@@ -220,27 +227,27 @@ public:
 
 				calc_three_lines_with_offset(r0, r1, r2, offset);
 			}
-			calc_for_two_lines_with_offset(r2, r1, offset_from_zero + width * (height - 1));
+			calc_for_two_lines_with_offset(r2, r1, GLOBAL_X_OFFSET + width * (height - 1));
 			//DEBUG_RES("after last row");
 		}
 		DEBUG_RES("after main");
 #pragma endregion
 				
 #pragma region last
-		if (REMAINDER == 0) return;
+		if (GLOBAL_X_OFFSET >= width) return;
 
 		// блок, который не вошёл полностью, то есть крайние правые строки
-		r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + width - 16));
-		r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + 2 * width - 16));
-		r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + 3 * width - 16));
+		r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + width - SSE_SIZE));
+		r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + 2 * width - SSE_SIZE));
+		r2 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + 3 * width - SSE_SIZE));
 
-		calc_two_last_lines(r0, r1, width - 16);
+		calc_two_last_lines(r0, r1, width - SSE_SIZE);
 
-		calc_three_last_lines(r0, r1, r2, 2 * width - 16);
+		calc_three_last_lines(r0, r1, r2, 2 * width - SSE_SIZE);
 		DEBUG_RES("NEED THIS");
 
-		for (size_t i = 2; i < height - 1; i++) {
-			const size_t offset = width * i - 16;
+		for (size_t y = 3; y < height; y++) {
+			const size_t offset = width * y - SSE_SIZE;
 
 			r0 = r1;
 			r1 = r2;
@@ -248,7 +255,7 @@ public:
 
 			calc_three_last_lines(r0, r1, r2, offset);
 		}
-		calc_two_last_lines(r2, r1, height * width - 16);
+		calc_two_last_lines(r2, r1, height * width - SSE_SIZE);
 		
 		DEBUG_RES("after all main");
 #pragma endregion

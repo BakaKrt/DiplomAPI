@@ -41,10 +41,10 @@ int main() {
 	playgroundTest0();
 #endif // _DEBUG
 	
-	return 0;
-//#if defined(NDEBUG)
+	//return 0;
+#if defined(NDEBUG)
 	{
-		constexpr size_t width = 100, height = 100;
+		constexpr size_t width = 300, height = 300;
 
 		vector<FilterRealizationTestStruct> tests {}; tests.reserve(2);
 		tests.emplace_back(SseRule {});
@@ -55,13 +55,13 @@ int main() {
 		
 
 		printf("support AVX2? = %s\n", InstructionSet::AVX2() ? "true" : "false");
-		runBenchmarkForFilters(width, height, tests, 10, "test");
+		runBenchmarkForFilters(width, height, tests, 20, "test");
 	}
-//#endif // RELEASEs 
+#endif // RELEASEs 
 
 
 
-#define RUN_SUM_TESTS 0
+#define RUN_SUM_TESTS 1
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
 		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 20 + 8, 16 * 5);

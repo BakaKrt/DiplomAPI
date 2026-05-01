@@ -94,11 +94,7 @@ public:
     template<typename U>
 	friend ostream& operator<<(ostream& stream, const Flat2DArray<U>& data);
 	
-#ifdef _DEBUG
 	void _debug_print_as_arrays(size_t window_size);
-#else
-#define _debug_print_as_arrays(size_t) ((void)0);
-#endif // _DEBUG
 
 
 
@@ -206,10 +202,14 @@ size_t Flat2DArray<T>::height() const noexcept
 	return _height;
 }
 
-#ifdef _DEBUG
+
 template<typename T> requires allowed_type<T>
 void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 {
+#ifdef NDEBUG
+	return;
+#else
+	size_t capacity = this->capacity();
 	using std::format, std::cout;
 
 	T* data_ptr = _array.get();
@@ -219,7 +219,7 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 
 
 	if (_width < window_size) {
-		cout << format("ширина строки уже ширины окна!\n");
+		cout << format("Flat2DArray width less then window size!\n");
 	}
 
 	size_t iterationsCount = 0;
@@ -227,7 +227,7 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 	for (size_t y = 0, y_offset = 0; y < _height; y++, y_offset = y * _width) {
 		size_t x_offset = 0;
 
-		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x, iterationsCount++) {
+		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x) {
 			window_start_ptr = data_ptr + y_offset + x;
 			window_end_ptr = window_start_ptr + window_size;
 
@@ -236,6 +236,12 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 			while (window_start_ptr != window_end_ptr) {
 				cout << format("{:>3} ", *window_start_ptr);
 				window_start_ptr += 1;
+
+				iterationsCount++;
+				if (iterationsCount > capacity) {
+					cout << "\n";
+					return;
+				}
 			}
 			cout << "\n";
 		}
@@ -243,9 +249,9 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 		// последние элементы отображать как целую строку
 		if (_width % window_size != 0 || iterationsCount == 0) {
 			window_end_ptr = data_ptr + y_offset + _width;
-			window_start_ptr = window_end_ptr - 16;
+			window_start_ptr = window_end_ptr - window_size;
 
-			cout << format("y: {:>2}, x: {:>3}: ", y, _width - 16);
+			cout << format("y: {:>2}, x: {:>3}: ", y, _width - window_size);
 
 			while (window_start_ptr != window_end_ptr) {
 				cout << format("{:>3} ", *window_start_ptr);
@@ -254,8 +260,9 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 			cout << "\n";
 		}
 	}
-}
 #endif // _DEBUG
+}
+
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::~Flat2DArray() noexcept
