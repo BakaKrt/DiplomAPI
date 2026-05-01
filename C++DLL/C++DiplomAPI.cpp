@@ -1,15 +1,18 @@
-﻿#define TEST
-#ifdef TEST
-#include "Tests/Tests.hpp"
-#endif // TEST
-
-//#define BENCHMARK
-#ifdef BENCHMARK
-#include "ForBenchmarks/Benchmark.hpp"
-#endif // BENCHMARK
+﻿#define TEST 1
+#define BENCH 1
 
 
 import std;
+
+
+#if defined(TEST) && TEST == 1
+#include "Tests/Tests.hpp"
+#endif // TEST
+
+
+#if !defined(_DEBUG) && defined(BENCH) && BENCH == 1
+#include "ForBenchmarks/Benchmark.hpp" // <-- Здесь должно быть включение
+#endif // BENCHMARK
 
 
 
@@ -17,7 +20,7 @@ import std;
 int main()
 {
     setlocale(0, "");
-#ifdef BENCHMARK
+#if !defined(_DEBUG) && defined(BENCH) && BENCH == 1
     benchmarkSettings settings{
         .sizeX = 128,
         .sizeY = 128,
@@ -26,15 +29,8 @@ int main()
     test(settings);
 #endif // BENCHMARK
 
-    auto cave = CaveGenerator_flat_sse(15, 5, 1, true);
-    std::cout << cave;
-    cave.TickMT();
 
-
-#ifdef TEST
+#if defined(TEST) && TEST == 1
     Test::Run();
 #endif // TEST
-
-
-
 }

@@ -32,7 +32,7 @@ struct benchmarkSettings {
 static void test(benchmarkSettings settings) {
     vector<unique_ptr<CaveGeneratorBench>> caves;
 
-    constexpr int CAVES_COUNT = 2;
+    constexpr int CAVES_COUNT = 5;
 
     caves.reserve(CAVES_COUNT);
 

@@ -66,6 +66,9 @@
     <ClCompile Include="AlignedAllocator.ixx">
       <Filter>Файлы заголовков\FlatArray</Filter>
     </ClCompile>
+    <ClCompile Include="SseHelper.ixx">
+      <Filter>Файлы заголовков\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ForBenchmarks\nanobench.h">

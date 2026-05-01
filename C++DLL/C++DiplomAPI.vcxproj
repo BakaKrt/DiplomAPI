@@ -42,15 +42,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableFuzzer>true</EnableFuzzer>
+    <EnableFuzzer>false</EnableFuzzer>
     <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -147,6 +147,7 @@
     <ClCompile Include="src\modules\SharedMemoryHelper.ixx" />
     <ClCompile Include="src\modules\Useful.ixx" />
     <ClCompile Include="C++DiplomAPI.cpp" />
+    <ClCompile Include="SseHelper.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ForBenchmarks\Benchmark.hpp" />

@@ -8,8 +8,8 @@ using std::array;
 
 
 /// <summary>
-/// Р’СЃСЏ РёРЅС„РѕСЂРјР°С†РёСЏ РґР»СЏ SSE РІР·СЏС‚Р° СЃ СЃР°Р№С‚Р° Intel: https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
-/// Р—РµСЂРєР°Р»Рѕ: https://www.laruence.com/sse/
+/// Вся информация для SSE взята с сайта Intel: https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
+/// Зеркало: https://www.laruence.com/sse/
 /// </summary>
 export namespace sseHelperNS {
 
@@ -21,22 +21,22 @@ export namespace sseHelperNS {
 		for (int i = 0; i < 4; ++i) std::printf(" %f", buf[i]);
 	};
 	void print_uint8(const __m128i reg, std::string name) {
-		alignas(__m128i)  uint8_t buf[16] {};
+		alignas(__m128i)  uint8_t buf[16]{};
 		_mm_store_si128((__m128i*)buf, reg);
 		std::printf("%5s:", name.c_str());
-		for (int i = 0; i < 16; ++i) std::printf("%3u ", (uint8_t) buf[i]);
+		for (int i = 0; i < 16; ++i) std::printf("%3u ", (uint8_t)buf[i]);
 	};
 
 	void print_uint8_half(const __m128i reg, std::string name) {
-		alignas(__m128i)  uint8_t buf[16] {};
+		alignas(__m128i)  uint8_t buf[16]{};
 		_mm_store_si128((__m128i*)buf, reg);
 		std::printf("%5s:", name.c_str());
-		for (int i = 0; i < 8; ++i) std::printf("%3u ", (uint8_t) buf[i]);
+		for (int i = 0; i < 8; ++i) std::printf("%3u ", (uint8_t)buf[i]);
 	};
 
 	void print_two_uint(const array<__m128i, 2>& arr, const std::string& name) {
 		for (size_t i = 0; i < arr.size(); i++) {
-			// РІС‹РІРѕРґ РІ РєРѕРЅСЃРѕР»СЊ РІ С„РѕСЂРјР°С‚Рµ: name<i>: values
+			// вывод в консоль в формате: name<i>: values
 			print_uint8(arr[i], name + std::to_string(i));
 		}
 		std::printf("\n");

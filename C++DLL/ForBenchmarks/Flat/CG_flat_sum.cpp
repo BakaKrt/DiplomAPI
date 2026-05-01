@@ -78,75 +78,90 @@ void CaveGenerator_flat_sum::InitThreads(int threadsCount) noexcept
 /// <returns></returns>
 int CaveGenerator_flat_sum::GetNeighbours(size_t x, size_t y) const noexcept
 {
-	if (x > 0 && x + 1 < _width && y > 0 && y + 1 < _height) {
-		const array<int, 8> objects{
-			_mainMatrix->at(x - 1,y - 1), // вл
-			_mainMatrix->at(x - 1,y	   ), // л
-			_mainMatrix->at(x - 1,y + 1), // нл 
+	const size_t offset_to_top_left = this->_width * (y - 1) + x - 1;
+	bool* ptr = _mainMatrix->data() + offset_to_top_left;
 
-			_mainMatrix->at(x	 ,y - 1), // вв
-			_mainMatrix->at(x	 ,y + 1), // нн
-
-			_mainMatrix->at(x + 1,y - 1), // вп
-			_mainMatrix->at(x + 1,y	   ), // п
-			_mainMatrix->at(x + 1,y + 1)  // нп
-		};
-
-		//const array<int, 8> objects{
-		//	_mainMatrix->at(x - 1, y - 1), // вл
-		//	_mainMatrix->at(x	 , y - 1), // вв
-		//	_mainMatrix->at(x + 1, y - 1), // вп
-		//	_mainMatrix->at(x - 1, y	 ), // л
-		//	_mainMatrix->at(x + 1, y - 1), // п
-		//	_mainMatrix->at(x - 1, y + 1), // нл 
-		//	_mainMatrix->at(x	 , y + 1), // нн
-		//	_mainMatrix->at(x + 1, y + 1)  // нп
-		//};
-		
-		return objects[0] + objects[1] + objects[2] + objects[3] + \
-			objects[4] + objects[5] + objects[6] + objects[7];
-	}
-	
-	int sum = 0;
-	if (x > 0) {
-		if (y > 0 && this->_mainMatrix->at(x - 1, y - 1)) ++sum;
-		if (this->_mainMatrix->at(x - 1, y)) ++sum;
-		if (y < _height - 1 && this->_mainMatrix->at(x - 1, y + 1)) ++sum;
-	}
-
-	if (this->_mainMatrix->at(x, y - 1)) ++sum;
-	if (this->_mainMatrix->at(x, y + 1)) ++sum;
-
-	if (x < _width - 1) {
-		if (y > 0 && this->_mainMatrix->at(x + 1, y - 1)) ++sum;
-		if (this->_mainMatrix->at(x + 1, y)) ++sum;
-		if (y < _height - 1 && this->_mainMatrix->at(x + 1, y + 1)) ++sum;
-	}
-
-	return sum;
+	return ptr[0] + ptr[1] + ptr[2] + \
+		ptr[_width] + ptr[_width + 2] + \
+		ptr[_width * 2] + ptr[_width * 2 + 1] + ptr[_width * 2 + 2];
 }
 
 void CaveGenerator_flat_sum::Tick(const int count) noexcept
 {
+#ifdef _DEBUG
+	auto DEBUG_RES = [&](string at_moment) {
+		std::cout << "second_matrix" << at_moment << "\n";
+		_secondMatrix->_debug_print_as_arrays(16);
+	};
+#else
+	#define DEBUG_RES(at_moment) ((void)0)
+#endif // DEBUG
+
+
+	bool* ptr = _mainMatrix->data();
+	bool* secondPtr = _secondMatrix->data();
+	const size_t width = this->_width;
+	const size_t height = this->_height;
+	const size_t capacity = width * height;
+
+	auto GNTop = [&]() noexcept {
+		for (size_t i = 1; i < width - 1; i++) {
+			int neighbours = ptr[i - 1] + ptr[i + 1] + ptr[i - 1 + width] + ptr[i + width] + ptr[i + 1 + width];
+			secondPtr[i] = (ptr[i] == 0) ? B.contains(neighbours) : S.contains(neighbours);
+		}
+	};
+	auto GNBot = [&]() noexcept {
+		for (size_t i = capacity - width + 1; i < capacity - 1; i++) {
+			int neighbours = ptr[i - 1 - width] + ptr[i - width] + ptr[i + 1 - width] + ptr[i - 1] + ptr[i + 1];
+			secondPtr[i] = (ptr[i] == 0) ? B.contains(neighbours) : S.contains(neighbours);
+		}
+	};
+
+	auto GNLeft = [&]() noexcept {
+		for (size_t y = 1; y < height - 1; y++) {
+			int neighbours = _mainMatrix->at(0, y - 1) +  _mainMatrix->at(1, y - 1) +  _mainMatrix->at(1, y) +  _mainMatrix->at(0, y + 1) + _mainMatrix->at(1, y + 1);
+			_secondMatrix->at(0, y) = _mainMatrix->at(0, y) == 0 ? B.contains(neighbours) : S.contains(neighbours);
+		}
+	};
+	auto GNRight = [&]() noexcept {
+		const size_t x = width - 1;
+		for (size_t y = 1; y < height - 1; y++) {
+			int neighbours = _mainMatrix->at(x - 1, y - 1) + _mainMatrix->at(x, y - 1) +  _mainMatrix->at(x - 1, y) +  _mainMatrix->at(x - 1, y + 1) + _mainMatrix->at(x, y + 1);
+			_secondMatrix->at(x, y) = _mainMatrix->at(x, y) == 0 ? B.contains(neighbours) : S.contains(neighbours);
+		}
+	};
+
+	auto GNTopLeft = [&ptr, width]() noexcept -> int{ return ptr[1] + ptr[width] + ptr[width + 1];};
+	auto GNTopRight = [&ptr, width] () noexcept -> int{ return ptr[width - 2] + ptr[2 * width - 2] + ptr[2 * width - 1];};
+	auto GNBotLeft = [&ptr, width, capacity]() noexcept -> int{	return ptr[capacity - 2 * width] + ptr[capacity - 2 * width + 1] + ptr[capacity - width];};
+	auto GNBotRight = [&ptr, width, capacity] () noexcept -> int{ return ptr[capacity - width - 2] + ptr[capacity - width - 1] + ptr[capacity - 2];};
+
+	auto applyRules = [&] (int neighboursCount, size_t x, size_t y) {
+		bool& secondAt = this->_secondMatrix->at(x, y);
+		bool& mainAt = this->_mainMatrix->at(x, y);
+		secondAt = (mainAt == 0) ? B.contains(neighboursCount) : S.contains(neighboursCount);
+	};
+
 	for (int i = 0; i < count; i++) {
 		
-		for (size_t y = 0; y < _height; y++) {
-			for (size_t x = 0; x < _width; x++) {
+		applyRules(GNTopLeft(), 0, 0);			// верхний левый угол
+		GNTop();								// вверх
+		applyRules(GNTopRight(), width - 1, 0);	// верхний правый угол
+
+		GNLeft();
+		for (size_t y = 1; y < _height - 1; y++) {		
+			for (size_t x = 1; x < _width - 1; x++) {
 				int neighbours = GetNeighbours(x, y);
 
-				bool& secondAt = this->_secondMatrix->at(x, y);
-				bool& mainAt = this->_mainMatrix->at(x, y);
-				
-				/*secondAt = (mainAt && this->S.contains(neighbours)) ||
-					(!mainAt && this->B.contains(neighbours));*/
-
-
-				secondAt = (mainAt == 0) ? B.contains(neighbours) : S.contains(neighbours);
-				
-				/* at = (at && this->S.count(neighbours)) ||
-					(!at && this->B.count(neighbours));*/
+				applyRules(neighbours, x, y);
 			}
 		}
+		GNRight();
+
+		applyRules(GNBotLeft(), 0, height - 1);
+		GNBot();
+		applyRules(GNBotRight(), width - 1, height - 1);
+
 
 		std::swap(_mainMatrix, _secondMatrix);
 	}
@@ -154,6 +169,9 @@ void CaveGenerator_flat_sum::Tick(const int count) noexcept
 
 void CaveGenerator_flat_sum::TickMT(const int count) noexcept
 {
+	// NOT IMPLEMENTED
+	return;
+
 	static const size_t THREADS_COUNT = this->_threadsCount;
 	static const size_t CHUNK_SIZE = (this->_height + THREADS_COUNT - 1) / THREADS_COUNT;
 

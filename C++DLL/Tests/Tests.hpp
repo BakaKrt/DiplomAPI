@@ -67,11 +67,11 @@ namespace Test {
 		constexpr int threadsCount = 2;
 
 		std::array<bool, capacity> idealArray ={
-			1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,
+			1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,
 			0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,
 			0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,
 			1,1,0,1,0,0,0,1,0,1,0,0,0,1,0,0,
-			0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0
+			0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0
 		};
 
 		vector<bool> vec{};
@@ -131,15 +131,21 @@ namespace Test {
 		for (auto& cave : cavesTICK) {
 			cave->Tick();
 			if (isResultEqual(cave->Data()) == false) {
-				printf("Tick [%s] Tick unsuccessful\n", cave->getName().c_str());
+				printf("Tick [%s] unsuccessful\n", cave->getName().c_str());
 				printBoolPtr(cave->Data());
+			}
+			else {
+				printf("Tick [%s] passed\n", cave->getName().c_str());
 			}
 		}
 
 		for (auto& cave : cavesTICKMT) {
 			cave->TickMT();
 			if (isResultEqual(cave->Data()) == false) {
-				printf("TickMT [%s] TickMT unsuccessful\n", cave->getName().c_str());
+				printf("TickMT [%s] unsuccessful\n", cave->getName().c_str());
+			}
+			else {
+				printf("TickMT [%s] passed\n", cave->getName().c_str());
 			}
 		}
 		
@@ -149,7 +155,7 @@ namespace Test {
 
 	void Run() {
 		assert(testFlat2DArray() == true && "Плоский массив не прошёл тест"); printf("Flat2DArray passed\n");
-		assert(testAllRealizationsIsRight() == true && "Реализации не прошли тест на правильность тиков");
+		assert(testAllRealizationsIsRight() == true && "Realizations didn't passed");
 		return;
 	}
 }

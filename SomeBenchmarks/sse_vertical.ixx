@@ -50,7 +50,7 @@ public:
 		__m128i r0,		// хранит верхнюю строку окна
 			r1,			// хранит среднюю строку окна
 			r2;			// хранит нижнюю строку окна
-#define _DEBUG_SSE_VERTICAL 1
+#define _DEBUG_SSE_VERTICAL 0
 #if defined(_DEBUG) && _DEBUG_SSE_VERTICAL == 1
 
 		auto _DEBUG_REG = [] ( __m128i reg, string msg) {
@@ -115,7 +115,6 @@ public:
 			sum = _mm_srli_si128(sum, 1); // сдвигаю результат влево на 1 байт
 			sum = _mm_insert_epi8(sum, prev_res, 15);
 			_mm_storeu_si128((__m128i*)(res_ptr + offset + 1), sum);
-			//res_ptr[offset + 16] = prev_res;
 		};
 
 
@@ -164,10 +163,13 @@ public:
 			sum = _mm_insert_epi8(sum, prev_res, 15);
 
 			_mm_store_si128((__m128i*)(res_ptr + offset + 1), sum);
-			//res_ptr[offset + 16] = prev_res;
 		};
 		
+
 		size_t TOTAL_FULLY_IN_BLOCKS_COUNT = width / 14;
+		size_t REMAINDER = width - TOTAL_FULLY_IN_BLOCKS_COUNT * 14;
+
+		if (REMAINDER <= 2) TOTAL_FULLY_IN_BLOCKS_COUNT--;
 		
 		size_t GLOBAL_X_OFFSET = 0;
 
@@ -205,10 +207,8 @@ public:
 #pragma endregion
 
 #pragma region mid
-		//if (REMAINDER == 0) return;
-
 		// ряды по середине
-		for (size_t mid_iterations_count = 1; mid_iterations_count < TOTAL_FULLY_IN_BLOCKS_COUNT; GLOBAL_X_OFFSET += 14, mid_iterations_count++) {
+		for (size_t mid_iterations_count = 0; mid_iterations_count < TOTAL_FULLY_IN_BLOCKS_COUNT; GLOBAL_X_OFFSET += 14, mid_iterations_count++) {
 			// вычисление первых трёх строк при GLOBAL_X_OFFSET сдвиге по X
 			r0 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + GLOBAL_X_OFFSET));
 			r1 = _mm_load_si128(reinterpret_cast<__m128i*>(data_ptr + GLOBAL_X_OFFSET + width));

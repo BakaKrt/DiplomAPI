@@ -38,7 +38,7 @@ int main() {
 
 
 #ifdef _DEBUG
-	playgroundTest0();
+	playgroundTest01();
 #endif // _DEBUG
 	
 	//return 0;
@@ -79,21 +79,6 @@ int main() {
 			&runFullSumBenchmark<uint8_t>,
 			"all object sum"
 		);
-
-		//   runBenchmark(tests, testMemUint8, iterations,
-		   //	&runHorizontalBenchmark<uint8_t>,
-		   //	"horizontal"
-		   //);
-
-		//   runBenchmark(tests, testMemUint8, iterations,
-		   //	&runHorizontalNextLineSum<uint8_t>,
-		   //	"horizontalNextLine"
-		   //);
-
-		//   runBenchmark(tests, testMemUint8, iterations,
-		   //	&runVerticalBenchmark<uint8_t>,
-		   //	"vertical"
-		   //);
 
 		std::printf("end");
 		std::cin.get();
