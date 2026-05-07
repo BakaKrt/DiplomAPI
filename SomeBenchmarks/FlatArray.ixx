@@ -225,9 +225,8 @@ void Flat2DArray<T>::_debug_print_as_arrays(size_t window_size)
 	size_t iterationsCount = 0;
 
 	for (size_t y = 0, y_offset = 0; y < _height; y++, y_offset = y * _width) {
-		size_t x_offset = 0;
 
-		for (size_t x = 0; x < _width - window_size; x += window_size, x_offset = x) {
+		for (size_t x = 0; x < _width - window_size + 1; x += window_size) {
 			window_start_ptr = data_ptr + y_offset + x;
 			window_end_ptr = window_start_ptr + window_size;
 

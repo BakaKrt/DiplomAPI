@@ -46,6 +46,36 @@ export inline void playgroundTest0() {
 	}
 }
 
+export inline void playgroundTest3() {
+	SSEv2Sum horizontal {}; IterSum vertical {};
+	size_t width = 16 * 2 + 4, height = 6, capacity = width * height;
+
+	size_t minimal = (width < 16) ? width : 16;
+
+	auto mem = Flat2DArray<uint8_t>(width, height, 16, false);
+
+	for (size_t i = 0; i < capacity; i++) {
+		mem[i] = (uint8_t) (i % 11);
+	}
+
+	cout << "init mem width: " << width << " height: " << height << "\n";
+
+	mem._debug_print_as_arrays(minimal);
+
+	auto vert_res = vertical.test_run(mem);
+	cout << "res:\n"; vert_res._debug_print_as_arrays(minimal);
+
+	auto hor_res = horizontal.test_run(mem);
+	cout << "normalRes:\n"; hor_res._debug_print_as_arrays(minimal);
+	cout << "res:\n"; vert_res._debug_print_as_arrays(minimal);
+	
+	for (size_t x = 0; x < vert_res.capacity(); x++) {
+		if (vert_res[x] != hor_res[x]) {
+			printf("got diff index[%3u]: v %u h %u\n", (unsigned) x, vert_res[x], hor_res[x]);
+		}
+	}
+}
+
 export inline void playgroundTest01() {
 	IterSum horizontal {}; SSEv1Sum vertical {};
 	size_t height = 4, capacity = 0;

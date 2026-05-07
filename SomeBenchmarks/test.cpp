@@ -38,7 +38,7 @@ int main() {
 
 
 #ifdef _DEBUG
-	playgroundTest01();
+	playgroundTest3();
 #endif // _DEBUG
 	
 	//return 0;
@@ -57,15 +57,15 @@ int main() {
 		printf("support AVX2? = %s\n", InstructionSet::AVX2() ? "true" : "false");
 		runBenchmarkForFilters(width, height, tests, 20, "test");
 	}
-#endif // RELEASEs 
+#endif // RELEASE
 
 
 
 #define RUN_SUM_TESTS 1
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
-		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(4, 16 * 20 + 8, 16 * 5);
-		auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
+		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(1, 256 + 4, 256 + 4);
+		//auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
 
 		constexpr int TEST_ELEM_COUNT = 3;
 		vector<AnyTest> tests {}; tests.reserve(TEST_ELEM_COUNT);

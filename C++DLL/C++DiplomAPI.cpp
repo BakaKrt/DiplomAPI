@@ -15,19 +15,20 @@ import std;
 #endif // BENCHMARK
 
 
-
-
 int main()
 {
     setlocale(0, "");
-#if !defined(_DEBUG) && defined(BENCH) && BENCH == 1
-    benchmarkSettings settings{
+    #if !defined(_DEBUG) && defined(BENCH) && BENCH == 1
+    benchmarkSettings settings {
         .sizeX = 128,
         .sizeY = 128,
         .threadsCount = 2,
     };
     test(settings);
-#endif // BENCHMARK
+    #endif // BENCHMARK
+
+
+
 
 
 #if defined(TEST) && TEST == 1

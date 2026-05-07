@@ -41,7 +41,7 @@ static void test(benchmarkSettings settings) {
     caves.push_back(make_unique<CaveGenerator_vector_sse>(settings.sizeX, settings.sizeY, settings.threadsCount, settings.randInit));
 
     caves.push_back(make_unique<CaveGenerator_flat_sum>(settings.sizeX, settings.sizeY, settings.threadsCount, settings.randInit));
-    //caves.push_back(make_unique<CaveGenerator_flat_sse>(settings.sizeX, settings.sizeY, settings.threadsCount, settings.randInit));
+    caves.push_back(make_unique<CaveGenerator_flat_sse>(settings.sizeX, settings.sizeY, settings.threadsCount, settings.randInit));
 
 
     for (auto& cave : caves) {
