@@ -73,6 +73,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AvxFilter.ixx" />
+    <ClCompile Include="avx_horizontal.ixx" />
     <ClCompile Include="benchmarkFilterRealizations.ixx">
       <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </IntrinsicFunctions>

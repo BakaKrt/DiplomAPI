@@ -48,6 +48,9 @@
       <Filter>sumFilterRealizations</Filter>
     </ClCompile>
     <ClCompile Include="AvxFilter.ixx" />
+    <ClCompile Include="avx_horizontal.ixx">
+      <Filter>sumRealizations</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanobench.h" />

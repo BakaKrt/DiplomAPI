@@ -69,6 +69,8 @@ public:
 	/// <param name="to_save"></param>
 	template<typename T> requires allowed_type<T>
 	inline void run_horizontalSumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+		constexpr size_t WINDOW_SIZE = 16; // размер окна для SSE = 16 элементов типа uint8_t
+
 		const size_t width  = object.width();
 		const size_t height = object.height();
 
@@ -79,16 +81,16 @@ public:
 		const size_t mid_index = width;
 
 		// количество блоков, которые полностью помещаются в ширину
-		const size_t blocks_count = mid_index / 16;
+		const size_t blocks_count = mid_index / WINDOW_SIZE;
 
-		// количество блоков, которые не полностью помещаются в ширину. Если ширина не кратна 16, то последний блок будет обрабатываться отдельно
-		const size_t remainder = width % 16;
+		// количество блоков, которые не полностью помещаются в ширину. Если ширина не кратна SSE_SIZE, то последний блок будет обрабатываться отдельно
+		const size_t remainder = width % WINDOW_SIZE;
 
-		constexpr size_t window_size = 2;
+		
 
-		array<__m128i, window_size> top {};
-		array<__m128i, window_size> mid {};
-		array<__m128i, window_size> low {};
+		array<__m128i, 2> top {};
+		array<__m128i, 2> mid {};
+		array<__m128i, 2> low {};
 
 		/*
 		граница двух регистров:
@@ -123,7 +125,7 @@ public:
 				std::cout << "x_offset " << offset << " ";
 			}
 			std::cout << "to_save " << at_moment << "\n";
-			to_save._debug_print_as_arrays(16);
+			to_save._debug_print_as_arrays(WINDOW_SIZE);
 		};
 #else
 #define _DEBUG_REG(reg, at_moment) ((void)0)
@@ -135,21 +137,21 @@ public:
 			__m128i verticalSum0 = _mm_add_epi8(top[0], mid[0]);
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
 
-			uint8_t left_sum = _mm_extract_epi8(verticalSum0, 15);
+			uint8_t left_sum = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
 			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
 
-			*rightElement = _mm_extract_epi8(verticalSum1, 15);
+			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
 
 			verticalSum0 = getNeighboursByVertical(verticalSum0); // теперь здесь хранится сумма этого элемента с соседями
 			verticalSum1 = getNeighboursByVertical(verticalSum1);
 
-			uint8_t leftValue = _mm_extract_epi8(verticalSum0, 15);
+			uint8_t leftValue = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
 			uint8_t rightValue = _mm_extract_epi8(verticalSum1, 0);
 
 			leftValue += right_sum;
 			rightValue += left_sum;
 
-			verticalSum0 = _mm_insert_epi8(verticalSum0, leftValue, 15);	// для крайних элементов вставлена недостающая сумма
+			verticalSum0 = _mm_insert_epi8(verticalSum0, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
 			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
 
 			verticalSum0 = _mm_sub_epi8(verticalSum0, top[0]);	// теперь тут хранится результат для первой строчки
@@ -164,9 +166,9 @@ public:
 
 			uint8_t left_sum = *rightElement;
 			
-			uint8_t leftValue = _mm_extract_epi8(leftVerticalResWithoutRightNeighbour, 15);
+			uint8_t leftValue = _mm_extract_epi8(leftVerticalResWithoutRightNeighbour, WINDOW_SIZE - 1);
 			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
-			*rightElement = _mm_extract_epi8(verticalSum1, 15);
+			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
 
 			verticalSum1 = getNeighboursByVertical(verticalSum1);	 // теперь здесь хранится сумма этого элемента с соседями
 
@@ -175,7 +177,7 @@ public:
 			leftValue += right_sum;
 			rightValue += left_sum;
 
-			leftVerticalResWithoutRightNeighbour = _mm_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, 15);	// для крайних элементов вставлена недостающая сумма
+			leftVerticalResWithoutRightNeighbour = _mm_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
 			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
 
 			leftVerticalResWithoutRightNeighbour = _mm_sub_epi8(leftVerticalResWithoutRightNeighbour, top[0]);
@@ -191,10 +193,10 @@ public:
 			verticalSum = getNeighboursByVertical(verticalSum);	 // теперь здесь хранится сумма этого элемента с соседями
 			verticalSum = _mm_sub_epi8(verticalSum, top[1]);
 
-			uint8_t buffer[16];
+			uint8_t buffer[WINDOW_SIZE] {};
 			_mm_store_si128(reinterpret_cast<__m128i*>(buffer), verticalSum);
 
-			memcpy(res_ptr + save_offset + remainder, buffer + remainder, 16 - remainder);
+			memcpy(res_ptr + save_offset + remainder, buffer + remainder, WINDOW_SIZE - remainder);
 		};
 
 		auto calcFirstThreeLines = [&top, &mid, &low, &res_ptr] (uint8_t* rightElement, size_t save_offset) -> __m128i {
@@ -202,21 +204,21 @@ public:
 			verticalSum0 = justSum(top[0], mid[0], low[0]);
 			verticalSum1 = justSum(top[1], mid[1], low[1]);
 
-			uint8_t left_sum = _mm_extract_epi8(verticalSum0, 15);
+			uint8_t left_sum = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
 			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
 
-			*rightElement = _mm_extract_epi8(verticalSum1, 15);
+			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
 
 			verticalSum0 = getNeighboursByVertical(verticalSum0);			// теперь здесь хранится сумма этого элемента с соседями
 			verticalSum1 = getNeighboursByVertical(verticalSum1);
 
-			uint8_t leftValue = _mm_extract_epi8(verticalSum0, 15);
+			uint8_t leftValue = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
 			uint8_t rightValue = _mm_extract_epi8(verticalSum1, 0);
 
 			leftValue += right_sum;
 			rightValue += left_sum;
 
-			verticalSum0 = _mm_insert_epi8(verticalSum0, leftValue, 15);	// для крайних элементов вставлена недостающая сумма
+			verticalSum0 = _mm_insert_epi8(verticalSum0, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
 			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
 
 			verticalSum0 = _mm_sub_epi8(verticalSum0, mid[0]);	// теперь тут хранится результат для первой строчки
@@ -231,9 +233,9 @@ public:
 
 			uint8_t left_sum = *rightElement;
 
-			uint8_t leftValue = _mm_extract_epi8(leftVerticalResWithoutRightNeighbour, 15);
+			uint8_t leftValue = _mm_extract_epi8(leftVerticalResWithoutRightNeighbour, WINDOW_SIZE - 1);
 			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
-			*rightElement = _mm_extract_epi8(verticalSum1, 15);
+			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
 
 			verticalSum1 = getNeighboursByVertical(verticalSum1);
 
@@ -242,7 +244,7 @@ public:
 			leftValue += right_sum;
 			rightValue += left_sum;
 
-			leftVerticalResWithoutRightNeighbour = _mm_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, 15);	// для крайних элементов вставлена недостающая сумма
+			leftVerticalResWithoutRightNeighbour = _mm_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
 			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
 
 			leftVerticalResWithoutRightNeighbour = _mm_sub_epi8(leftVerticalResWithoutRightNeighbour, mid[0]);	// теперь тут хранится результат для первой строчки
@@ -258,10 +260,10 @@ public:
 			verticalSum = getNeighboursByVertical(verticalSum);
 			verticalSum = _mm_sub_epi8(verticalSum, mid[1]);
 
-			uint8_t buffer[16];
+			uint8_t buffer[WINDOW_SIZE];
 			_mm_store_si128(reinterpret_cast<__m128i*>(buffer), verticalSum);
 
-			memcpy(res_ptr + save_offset + remainder, buffer + remainder, 16 - remainder);
+			memcpy(res_ptr + save_offset + remainder, buffer + remainder, WINDOW_SIZE - remainder);
 		};
 #pragma endregion
 
@@ -283,13 +285,13 @@ public:
 #pragma region first_line
 		T* y_ptr = obj_ptr;
 		top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr));
-		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 16));
+		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + WINDOW_SIZE));
 		
 		mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width));
-		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width + 16));
+		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width + WINDOW_SIZE));
 		
 		low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
-		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + 16));
+		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + WINDOW_SIZE));
 
 		uint8_t vertical2sum {}, vertical3sum {};
 		auto saved2VerticalSum = calcFirstTwoLines(&vertical2sum, 0);
@@ -297,11 +299,11 @@ public:
 		
 		//DEBUG_RES("after first sums");
 
-		x_offset += 16;
+		x_offset += WINDOW_SIZE;
 
 		// средние строки
-		for (size_t i = 1; i < blocks_count; i++, x_offset += 16) {
-			T* ptr = obj_ptr + x_offset + 16;
+		for (size_t i = 1; i < blocks_count; i++, x_offset += WINDOW_SIZE) {
+			T* ptr = obj_ptr + x_offset + WINDOW_SIZE;
 
 			top[0] = top[1];
 			mid[0] = mid[1];
@@ -318,7 +320,7 @@ public:
 		DEBUG_RES("after middle sums", x_offset);
 
 		if (remainder > 0) {
-			x_offset = x_offset - 16 + remainder;
+			x_offset = x_offset - WINDOW_SIZE + remainder;
 
 			T* ptr = obj_ptr + x_offset;
 
@@ -341,23 +343,23 @@ public:
 			y_ptr = obj_ptr + y_offset;
 
 			top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr));
-			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 16));
+			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + WINDOW_SIZE));
 
 			mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width));
-			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width + 16));
+			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width + WINDOW_SIZE));
 
 			low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
-			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + 16));
+			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + WINDOW_SIZE));
 
 			saved3VerticalSum = calcFirstThreeLines(&vertical3sum, y_offset + width);
 			DEBUG_RES("after first sum second line", y_offset + width);
 
-			x_offset += 16;
+			x_offset += WINDOW_SIZE;
 
 			// средние блоки
 			T* ptr = nullptr;
-			for (size_t i = 1; i < blocks_count; i++, x_offset += 16) {
-				ptr = y_ptr + x_offset + 16;
+			for (size_t i = 1; i < blocks_count; i++, x_offset += WINDOW_SIZE) {
+				ptr = y_ptr + x_offset + WINDOW_SIZE;
 				top[0] = top[1];
 				mid[0] = mid[1];
 				low[0] = low[1];
@@ -373,7 +375,7 @@ public:
 			if (remainder == 0) continue;
 
 			// последние блоки
-			x_offset = x_offset - 16 + remainder;
+			x_offset = x_offset - WINDOW_SIZE + remainder;
 			ptr = y_ptr + x_offset;
 			
 			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
@@ -394,24 +396,24 @@ public:
 
 		// меняю местами low и top, т.к. тут идёт инверсная логика
 		low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
-		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 16));
+		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + WINDOW_SIZE));
 
 		mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
-		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width + 16));
+		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width + WINDOW_SIZE));
 
 		top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
-		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width + 16));
+		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width + WINDOW_SIZE));
 
 		saved2VerticalSum = calcFirstTwoLines(&vertical2sum, y_offset + 2 * width);
 		saved3VerticalSum = calcFirstThreeLines(&vertical3sum, y_offset + width);
 
 		DEBUG_RES("after first sums");
 
-		x_offset = 16;
+		x_offset = WINDOW_SIZE;
 
 		// средние строки
-		for (size_t i = 1; i < blocks_count; i++, x_offset += 16) {
-			ptr = obj_ptr + y_offset + x_offset + 16;
+		for (size_t i = 1; i < blocks_count; i++, x_offset += WINDOW_SIZE) {
+			ptr = obj_ptr + y_offset + x_offset + WINDOW_SIZE;
 
 			low[0] = low[1];
 			mid[0] = mid[1];
@@ -427,18 +429,19 @@ public:
 
 		DEBUG_RES("after middle sums", x_offset);
 
-		if (remainder > 0) {
-			x_offset = x_offset - 16 + remainder;
+		if (remainder == 0) return;
 
-			ptr = obj_ptr + y_offset + x_offset;
+		x_offset = x_offset - WINDOW_SIZE + remainder;
 
-			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
-			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
-			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
+		ptr = obj_ptr + y_offset + x_offset;
 
-			calcTwoLastLines(y_offset + x_offset + 2 * width);
-			calcThreeLastLines(y_offset + x_offset + width);
-		}
+		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
+		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
+		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
+
+		calcTwoLastLines(y_offset + x_offset + 2 * width);
+		calcThreeLastLines(y_offset + x_offset + width);
+		
 		DEBUG_RES("after last row first sums");
 #pragma endregion
 	}
