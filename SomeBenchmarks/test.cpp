@@ -1,6 +1,7 @@
 import normalsum;
 import iter;
 import sse_vertical;
+import sse_horizontal;
 
 
 import benchmarkSumRealizations;
@@ -64,15 +65,16 @@ int main() {
 #define RUN_SUM_TESTS 1
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
-		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(10, 512, 512);
+		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(10, 1024, 512);
 		//auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
 
-		constexpr int TEST_ELEM_COUNT = 3;
+		constexpr int TEST_ELEM_COUNT = 4;
 		vector<AnyTest> tests {}; tests.reserve(TEST_ELEM_COUNT);
 
 		tests.emplace_back(NormalSum {});
 		tests.emplace_back(IterSum {});
 		tests.emplace_back(SSEv1Sum {});
+		tests.emplace_back(SSEv2Sum {});
 
 		// запуск бенчмарков только в релизе
 		runBenchmark(tests, testMemUint8, iterations,

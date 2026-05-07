@@ -62,6 +62,7 @@ public:
 
 
 	/// <summary>
+	/// Реализует сумму соседей. Итерируется сначала по горизонтали, а потом по вертикали. Не поддерживает массивы шириной меньше 16
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	/// <param name="object"></param>
@@ -89,8 +90,6 @@ public:
 		array<__m128i, window_size> mid {};
 		array<__m128i, window_size> low {};
 
-		array<__m128i, window_size> r3sum {}; // [0] для суммы 2 строк, [1] для суммы 3 строк
-
 		/*
 		граница двух регистров:
 		r00: ... 14 15 | r01: 16 17 ...
@@ -103,26 +102,14 @@ public:
 		Так же сохранить крайний правый элемент из r1sum, так как он понадобится далее в вычислениях
 		*/
 
-		uint8_t
-			left2_sum {},
-			right2_sum {},
-			left3_sum {},
-			right3_sum {},
-			__l_temp {},
-			__r_temp {};
 
-
-		// хранит крайний правый элемент второго регистра
-		uint8_t save_for_next_iter {};
-
-#ifdef _DEBUG
+#define _DEBUG_SSE_HORIZONTAL 1
+#if defined(_DEBUG) && _DEBUG_SSE_HORIZONTAL == 1
 		auto DEBUG_REGS = [&] (string at_moment) {
 			std::printf("regs %s\n", at_moment.c_str());
 			print_two_uint(top, "top");
 			print_two_uint(mid, "mid");
 			print_two_uint(low, "low");
-			print_two_uint(r3sum, "rr");
-			std::printf("kpe: %lu, kle: %lu, __l: %lu, __r: %lu, save: %lu\n", left2_sum, right2_sum, __l_temp, __r_temp, save_for_next_iter);
 			std::printf("\n");
 		};
 
@@ -375,9 +362,9 @@ public:
 				mid[0] = mid[1];
 				low[0] = low[1];
 
-				top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr));
-				mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width));
-				low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
+				top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
+				mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
+				low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
 				saved3VerticalSum = calcThreeLines(saved3VerticalSum, &vertical3sum, y_offset + x_offset + width);
 				DEBUG_RES("after second sum second line", x_offset);

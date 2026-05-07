@@ -6,6 +6,7 @@ import Flat2DArray;
 import normalsum;
 import iter;
 import sse_vertical;
+import sse_horizontal;
 
 using std::string;
 using std::printf;
@@ -29,7 +30,7 @@ using std::is_same_v;
 
 
 // Тут указать все тесты, которые нужно запускать
-export using TestVariant = std::variant<NormalSum, IterSum, SSEv1Sum>;
+export using TestVariant = std::variant<NormalSum, IterSum, SSEv1Sum, SSEv2Sum>;
 
 export struct AnyTest {
 	TestVariant variant;
