@@ -3,7 +3,7 @@
 export module sse_vertical;
 
 import std;
-import test;
+import sumRealizationBase;
 
 import sseHelper;
 
@@ -15,18 +15,12 @@ using std::printf;
 
 using namespace sseHelperNS;
 
-export class SSEv1Sum : public test<SSEv1Sum> {
+export class SSEv1Sum : public SumRealizationBase<SSEv1Sum> {
 public:
 	SSEv1Sum() { name = "sse v1"; }
 
 	inline const string getName_impl() const {
 		return name;
-	}
-
-	template<typename T> requires allowed_type<T>
-	inline void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		run_verticalSumAll(object, to_save);
-
 	}
 	
 
@@ -39,7 +33,7 @@ public:
 	/// <param name="object"></param>
 	/// <param name="to_save"></param>
 	template<typename T> requires allowed_type<T>
-	inline void run_verticalSumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+	__declspec(noinline) void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
 		constexpr size_t SSE_SIZE = 16;
 
 		const size_t width = object.width();

@@ -3,7 +3,7 @@
 export module sse_horizontal;
 
 import std;
-import test;
+import sumRealizationBase;
 
 import sseHelper;
 
@@ -15,19 +15,13 @@ using std::printf;
 
 using namespace sseHelperNS;
 
-export class SSEv2Sum : public test<SSEv2Sum> {
+export class SSEv2Sum : public SumRealizationBase<SSEv2Sum> {
 public:
 	SSEv2Sum() { name = "sse v2"; }
 
 	inline const string getName_impl() const {
 		return name;
 	}
-
-	template<typename T> requires allowed_type<T>
-	inline void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		run_horizontalSumAll(object, to_save);
-	}
-
 
 
 	inline static __m128i justSum(__m128i r0, __m128i r1, __m128i r2) noexcept {
@@ -68,7 +62,7 @@ public:
 	/// <param name="object"></param>
 	/// <param name="to_save"></param>
 	template<typename T> requires allowed_type<T>
-	inline void run_horizontalSumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+	__declspec(noinline) void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
 		constexpr size_t WINDOW_SIZE = 16; // размер окна для SSE = 16 элементов типа uint8_t
 
 		const size_t width  = object.width();
@@ -130,7 +124,7 @@ public:
 #else
 #define _DEBUG_REG(reg, at_moment) ((void)0)
 #define DEBUG_REGS(at_moment) ((void)0)
-#define DEBUG_RES(at_moment) ((void)0)
+#define DEBUG_RES(at_moment, offset) ((void)0)
 #endif // _DEBUG
 #pragma region lambdas
 		auto calcFirstTwoLines = [&top, &mid, &low, &res_ptr] (uint8_t* rightElement, size_t save_offset) -> __m128i {
@@ -331,7 +325,7 @@ public:
 			calcTwoLastLines(x_offset);
 			calcThreeLastLines(x_offset + width);
 		}
-		DEBUG_RES("after last row first sums");
+		DEBUG_RES("after last row first sums", x_offset);
 #pragma endregion
 #pragma region mid_lines
 		// средние по вертикали строки
@@ -407,7 +401,7 @@ public:
 		saved2VerticalSum = calcFirstTwoLines(&vertical2sum, y_offset + 2 * width);
 		saved3VerticalSum = calcFirstThreeLines(&vertical3sum, y_offset + width);
 
-		DEBUG_RES("after first sums");
+		DEBUG_RES("after first sums", x_offset);
 
 		x_offset = WINDOW_SIZE;
 
@@ -442,7 +436,7 @@ public:
 		calcTwoLastLines(y_offset + x_offset + 2 * width);
 		calcThreeLastLines(y_offset + x_offset + width);
 		
-		DEBUG_RES("after last row first sums");
+		DEBUG_RES("after last row first sums", x_offset);
 #pragma endregion
 	}
 };

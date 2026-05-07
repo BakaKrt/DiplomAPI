@@ -3,7 +3,7 @@
 export module avx_horizontal;
 
 import std;
-import test;
+import sumRealizationBase;
 
 import sseHelper;
 
@@ -15,20 +15,13 @@ using std::printf;
 
 using namespace sseHelperNS;
 
-export class AVXv1HorizontalSum : public test<AVXv1HorizontalSum> {
+export class AVXv1HorizontalSum : public SumRealizationBase<AVXv1HorizontalSum> {
 public:
 	AVXv1HorizontalSum() { name = "avx h v1"; }
 
 	inline const string getName_impl() const {
 		return name;
 	}
-
-	template<typename T> requires allowed_type<T>
-	inline void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		run_horizontalSumAll(object, to_save);
-	}
-
-
 
 	inline static __m256i justSum(__m256i r0, __m256i r1, __m256i r2) noexcept {
 		// никак не получается выйти в паралеллизм на уровне инструкций, т.к. результат одного требуется для результата следующей операции
@@ -68,7 +61,7 @@ public:
 	/// <param name="object"></param>
 	/// <param name="to_save"></param>
 	template<typename T> requires allowed_type<T>
-	inline void run_horizontalSumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+	__declspec(noinline) void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
 		constexpr size_t WINDOW_SIZE = 32; // размер окна для AVX = 32 элементов типа uint8_t
 
 		const size_t width = object.width();

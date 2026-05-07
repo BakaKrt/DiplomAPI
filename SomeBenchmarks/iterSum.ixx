@@ -1,13 +1,13 @@
 export module iter;
 
 import std;
-import test;
+import sumRealizationBase;
 
 using std::string;
 using std::array;
 
 
-export class IterSum : public test<IterSum> {
+export class IterSum : public SumRealizationBase<IterSum> {
 public:
 	IterSum() { name = "iter"; }
 
@@ -15,13 +15,9 @@ public:
 		return name;
 	}
 
-	template<typename T> requires allowed_type<T>
-	inline void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		run_SumAll(object, to_save);
-	}
 
 	template<typename T> requires allowed_type<T>
-	inline void run_SumAll(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+	__declspec(noinline) void test_runImpl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
 		// пример массива object
 		//  0    1    2    3    4    5
 		//  6    7    8    9   10   11

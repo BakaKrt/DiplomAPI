@@ -57,21 +57,6 @@ export struct AnyTest {
 	}
 
 	template<typename U>
-	inline auto run_horizontal(Flat2DArray<U>& arg) -> decltype(auto) {
-		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runHorizontalSum(arg); }, variant);
-	}
-
-	template<typename U>
-	inline auto run_horizontalNextLine(Flat2DArray<U>& arg) -> decltype(auto) {
-		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runHorizontalNextLineSum(arg); }, variant);
-	}
-
-	template<typename U>
-	inline auto run_vertical(U& arg) -> decltype(auto) {
-		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.runVerticalSum(arg); }, variant);
-	}
-
-	template<typename U>
 	inline auto run_sumAll(U& arg) -> decltype(auto) {
 		return std::visit([&arg] (auto& obj) -> decltype(auto) { return obj.test_run(arg); }, variant);
 	}
@@ -107,7 +92,6 @@ void runBenchmark(
 			// Вызов измерения с помощью переданной функции.
 			// Поддерживаем две сигнатуры execute_test:
 			//  - Fn(AnyTest&, Flat2DArray<T>&)
-			//  - Fn(AnyTest&, Flat2DArray<T>&, int)  <-- получает номер итерации
 			for (int iter = 0; iter < iterations; ++iter) {
 				for (auto& vec : testData) {
 					if constexpr (std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&>) {
@@ -150,23 +134,6 @@ void runBenchmark(
 #endif
 }
 
-export template<typename T>
-void runHorizontalBenchmark(AnyTest& test_variant,
-								Flat2DArray<T>& testData) {
-	test_variant.run_horizontal(testData);
-}
-
-export template<typename T>
-void runHorizontalNextLineSum(AnyTest& test_variant,
-								Flat2DArray<T>& testData) {
-	test_variant.run_horizontalNextLine(testData);
-}
-
-export template<typename T>
-void runVerticalBenchmark(AnyTest& test_variant,
-								Flat2DArray<T>& testData) {
-	test_variant.run_vertical(testData);
-}
 
 export template<typename T>
 void runFullSumBenchmark(AnyTest& test_variant,

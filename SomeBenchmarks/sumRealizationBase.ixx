@@ -1,4 +1,4 @@
-export module test;
+export module sumRealizationBase;
 
 import std;
 import Flat2DArray;
@@ -10,7 +10,7 @@ using std::array;
 
 export 
 template<typename Derived>
-class test {
+class SumRealizationBase {
 protected:
     string name {};
 public:

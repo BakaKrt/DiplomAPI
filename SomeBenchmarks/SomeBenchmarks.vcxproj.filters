@@ -4,16 +4,16 @@
     <ClCompile Include="cpuinf.ixx" />
     <ClCompile Include="random.ixx" />
     <ClCompile Include="test.cpp" />
-    <ClCompile Include="normalsum.ixx">
+    <ClCompile Include="normalSum.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
-    <ClCompile Include="iter.ixx">
+    <ClCompile Include="iterSum.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
-    <ClCompile Include="sse_horizontal.ixx">
+    <ClCompile Include="sseHorizontal.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
-    <ClCompile Include="sse_vertical.ixx">
+    <ClCompile Include="sseVertical.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
     <ClCompile Include="FlatArray.ixx">
@@ -31,7 +31,7 @@
     <ClCompile Include="sumFilterBase.ixx">
       <Filter>sumFilterRealizations</Filter>
     </ClCompile>
-    <ClCompile Include="test.ixx">
+    <ClCompile Include="sumRealizationBase.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
     <ClCompile Include="normalRule.ixx">

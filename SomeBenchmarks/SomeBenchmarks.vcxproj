@@ -86,19 +86,19 @@
     <ClCompile Include="cpuinf.ixx" />
     <ClCompile Include="FlatArray.ixx" />
     <ClCompile Include="isItWorkingPlayground.ixx" />
-    <ClCompile Include="iter.ixx" />
+    <ClCompile Include="iterSum.ixx" />
     <ClCompile Include="normalRule.ixx" />
-    <ClCompile Include="normalsum.ixx" />
+    <ClCompile Include="normalSum.ixx" />
     <ClCompile Include="random.ixx" />
     <ClCompile Include="SharedMemoryHelper.ixx" />
     <ClCompile Include="sseFilter.ixx" />
     <ClCompile Include="sseHelper.ixx" />
-    <ClCompile Include="sse_horizontal.ixx" />
-    <ClCompile Include="sse_vertical.ixx" />
+    <ClCompile Include="sseHorizontal.ixx" />
+    <ClCompile Include="sseVertical.ixx" />
     <ClCompile Include="AlignedAllocator.ixx" />
     <ClCompile Include="sumFilterBase.ixx" />
     <ClCompile Include="test.cpp" />
-    <ClCompile Include="test.ixx" />
+    <ClCompile Include="sumRealizationBase.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanobench.h" />
