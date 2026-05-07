@@ -48,7 +48,7 @@ export inline void playgroundTest0() {
 
 export inline void playgroundTest3() {
 	SSEv2Sum horizontal {}; IterSum vertical {};
-	size_t width = 17, height = 5, capacity = width * height;
+	size_t width = 35, height = 5, capacity = width * height;
 
 	size_t minimal = (width < 16) ? width : 16;
 
@@ -69,6 +69,8 @@ export inline void playgroundTest3() {
 	cout << "normalRes:\n"; hor_res._debug_print_as_arrays(minimal);
 	cout << "res:\n"; vert_res._debug_print_as_arrays(minimal);
 	
+	cout << "finded bug, with width %16 sseHorizontal calc with error!!!!!!\n";
+
 	for (size_t x = 0; x < vert_res.capacity(); x++) {
 		if (vert_res[x] != hor_res[x]) {
 			printf("got diff index[%3u]: v %u h %u\n", (unsigned) x, vert_res[x], hor_res[x]);

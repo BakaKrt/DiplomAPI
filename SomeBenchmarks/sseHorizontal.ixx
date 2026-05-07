@@ -1,4 +1,5 @@
 #include <smmintrin.h>
+#include <cstdint>
 
 export module sse_horizontal;
 
@@ -131,8 +132,12 @@ public:
 			__m128i verticalSum0 = _mm_add_epi8(top[0], mid[0]);
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
 
-			uint8_t left_sum = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
+			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, 15);
+
+			uint16_t left_elems = _mm_extract_epi16(cross_sum, 0);
+
+			uint8_t left_sum = (left_elems & 0xFF);
+			uint8_t right_sum = ((left_elems >> 8) & 0xFF);
 
 			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
 

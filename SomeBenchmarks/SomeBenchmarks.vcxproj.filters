@@ -48,7 +48,7 @@
       <Filter>sumFilterRealizations</Filter>
     </ClCompile>
     <ClCompile Include="AvxFilter.ixx" />
-    <ClCompile Include="avx_horizontal.ixx">
+    <ClCompile Include="avxHorizontal.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
   </ItemGroup>
