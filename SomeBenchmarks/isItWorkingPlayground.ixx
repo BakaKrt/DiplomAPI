@@ -48,7 +48,7 @@ export inline void playgroundTest0() {
 
 export inline void playgroundTest3() {
 	SSEv2Sum horizontal {}; IterSum vertical {};
-	size_t width = 16 * 2 + 4, height = 6, capacity = width * height;
+	size_t width = 16 * 2 + 4, height = 8, capacity = width * height;
 
 	size_t minimal = (width < 16) ? width : 16;
 

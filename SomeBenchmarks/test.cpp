@@ -64,7 +64,7 @@ int main() {
 #define RUN_SUM_TESTS 1
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
-		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(1, 256 + 4, 256 + 4);
+		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(10, 512, 512);
 		//auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
 
 		constexpr int TEST_ELEM_COUNT = 3;

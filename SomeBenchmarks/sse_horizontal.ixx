@@ -133,7 +133,7 @@ public:
 
 		auto DEBUG_RES = [&to_save] (string at_moment, size_t offset = 0) {
 			if (offset > 0) {
-				std::cout << "offset " << offset << " ";
+				std::cout << "x_offset " << offset << " ";
 			}
 			std::cout << "to_save " << at_moment << "\n";
 			to_save._debug_print_as_arrays(16);
@@ -143,7 +143,7 @@ public:
 #define DEBUG_REGS(at_moment) ((void)0)
 #define DEBUG_RES(at_moment) ((void)0)
 #endif // _DEBUG
-
+#pragma region lambdas
 		auto calcFirstTwoLines = [&top, &mid, &low, &res_ptr] (uint8_t* rightElement, size_t save_offset) -> __m128i {
 			__m128i verticalSum0 = _mm_add_epi8(top[0], mid[0]);
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
@@ -276,8 +276,9 @@ public:
 
 			memcpy(res_ptr + save_offset + remainder, buffer + remainder, 16 - remainder);
 		};
+#pragma endregion
 
-		size_t offset = 0;
+		size_t x_offset = 0;
 
 		const size_t total_blocks_count = blocks_count + bool(remainder);
 
@@ -291,15 +292,17 @@ public:
 		для последней строки последний блок всегда обрабатывается отдельно!
 		*/
 
-		// первый блок
-		top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr));
-		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + 16));
+		// первый блок верхних строк
+#pragma region first_line
+		T* y_ptr = obj_ptr;
+		top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr));
+		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 16));
 		
-		mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + width));
-		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + width + 16));
+		mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width));
+		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width + 16));
 		
-		low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + 2 * width));
-		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + 2 * width + 16));
+		low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
+		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + 16));
 
 		uint8_t vertical2sum {}, vertical3sum {};
 		auto saved2VerticalSum = calcFirstTwoLines(&vertical2sum, 0);
@@ -307,88 +310,149 @@ public:
 		
 		//DEBUG_RES("after first sums");
 
-		offset += 32;
+		x_offset += 16;
 
 		// средние строки
-		for (size_t i = 1; i < blocks_count; i++, offset += 16) {
+		for (size_t i = 1; i < blocks_count; i++, x_offset += 16) {
+			T* ptr = obj_ptr + x_offset + 16;
+
 			top[0] = top[1];
 			mid[0] = mid[1];
 			low[0] = low[1];
 
-			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + offset));
-			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + offset + width));
-			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(obj_ptr + offset + 2 * width));
+			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
+			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
+			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
-			saved2VerticalSum = calcTwoLines(saved2VerticalSum, &vertical2sum, offset - 16);
-			saved3VerticalSum = calcThreeLines(saved3VerticalSum, &vertical3sum, width + offset - 16);
+			saved2VerticalSum = calcTwoLines(saved2VerticalSum, &vertical2sum, x_offset);
+			saved3VerticalSum = calcThreeLines(saved3VerticalSum, &vertical3sum, width + x_offset);
 		}
 
-		//DEBUG_RES("after middle sums");
+		DEBUG_RES("after middle sums", x_offset);
 
 		if (remainder > 0) {
-			const size_t _internal_offset = width - 16;
-			T* ptr = obj_ptr + _internal_offset;
+			x_offset = x_offset - 16 + remainder;
+
+			T* ptr = obj_ptr + x_offset;
 
 			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
 			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
 			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
-			calcTwoLastLines(_internal_offset);
-			calcThreeLastLines(_internal_offset + width);
+			calcTwoLastLines(x_offset);
+			calcThreeLastLines(x_offset + width);
 		}
 		DEBUG_RES("after last row first sums");
+#pragma endregion
+#pragma region mid_lines
+		// средние по вертикали строки
+		for (size_t y = 1, y_offset = y * width; y < height - 3; y++, y_offset += width) {
+			// y_offset указывает на смещение до верхней строки
 
-		//return;
+			x_offset = 0;
 
-		offset = 0;
+			y_ptr = obj_ptr + y_offset;
 
-		for (size_t y = 1, y_offset = y * width; y < height - 2; y++, y_offset += width) {
-			T* ptr = obj_ptr + y_offset;
-			top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
-			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 16));
+			top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr));
+			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 16));
 
-			mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
-			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width + 16));
+			mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width));
+			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width + 16));
 
-			low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
-			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width + 16));
+			low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
+			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + 16));
 
 			saved3VerticalSum = calcFirstThreeLines(&vertical3sum, y_offset + width);
 			DEBUG_RES("after first sum second line", y_offset + width);
-			offset += 32;
 
-			for (size_t i = 1; i < blocks_count; i++, offset += 16) {
-				ptr = ptr + offset;
+			x_offset += 16;
+
+			// средние блоки
+			T* ptr = nullptr;
+			for (size_t i = 1; i < blocks_count; i++, x_offset += 16) {
+				ptr = y_ptr + x_offset + 16;
 				top[0] = top[1];
 				mid[0] = mid[1];
 				low[0] = low[1];
 
-				top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
-				mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
-				low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
+				top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr));
+				mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + width));
+				low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
 
-				const size_t _offset = y_offset + width + offset - 16;
-
-				saved3VerticalSum = calcThreeLines(saved3VerticalSum, &vertical3sum, _offset);
-				DEBUG_RES("after second sum second line", _offset);
+				saved3VerticalSum = calcThreeLines(saved3VerticalSum, &vertical3sum, y_offset + x_offset + width);
+				DEBUG_RES("after second sum second line", x_offset);
 			}
 			
 			if (remainder == 0) continue;
 
-			const size_t _internal_offset = remainder;
-			ptr += _internal_offset;
-
+			// последние блоки
+			x_offset = x_offset - 16 + remainder;
+			ptr = y_ptr + x_offset;
+			
 			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
 			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
 			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
-			//calcThreeLastLines(_internal_offset);
-
-			offset += _internal_offset;
-
-			//DEBUG_RES("after last sum second line", offset);
-
-			
+			calcThreeLastLines(y_offset + x_offset + width);
+			DEBUG_RES("after last sum second line", x_offset);
 		}
+#pragma endregion
+		//return;
+#pragma region last_line
+		// последние по вертикали блоки
+		size_t y_offset = width * height - 3 * width; // указатель на предпоследнюю строку, то есть первый ряд для последних двух рядов
+
+		y_ptr = obj_ptr + y_offset;
+		T* ptr = y_ptr;
+
+		// меняю местами low и top, т.к. тут идёт инверсная логика
+		low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
+		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 16));
+
+		mid[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
+		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width + 16));
+
+		top[0] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
+		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width + 16));
+
+		saved2VerticalSum = calcFirstTwoLines(&vertical2sum, y_offset + 2 * width);
+		saved3VerticalSum = calcFirstThreeLines(&vertical3sum, y_offset + width);
+
+		DEBUG_RES("after first sums");
+
+		x_offset = 16;
+
+		// средние строки
+		for (size_t i = 1; i < blocks_count; i++, x_offset += 16) {
+			ptr = obj_ptr + y_offset + x_offset + 16;
+
+			low[0] = low[1];
+			mid[0] = mid[1];
+			top[0] = top[1];
+
+			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
+			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
+			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
+
+			saved2VerticalSum = calcTwoLines(saved2VerticalSum, &vertical2sum, y_offset + x_offset + 2 * width);
+			saved3VerticalSum = calcThreeLines(saved3VerticalSum, &vertical3sum, y_offset + x_offset + width);
+		}
+
+		DEBUG_RES("after middle sums", x_offset);
+
+		if (remainder > 0) {
+			x_offset = x_offset - 16 + remainder;
+
+			ptr = obj_ptr + y_offset + x_offset;
+
+			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr));
+			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
+			top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
+
+			calcTwoLastLines(y_offset + x_offset + 2 * width);
+			calcThreeLastLines(y_offset + x_offset + width);
+		}
+		DEBUG_RES("after last row first sums");
+#pragma endregion
 	}
 };
