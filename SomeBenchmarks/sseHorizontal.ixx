@@ -27,12 +27,10 @@ public:
 
 	inline static __m128i justSum(__m128i r0, __m128i r1, __m128i r2) noexcept {
 		// никак не получается выйти в паралеллизм на уровне инструкций, т.к. результат одного требуется для результата следующей операции
-		__m128i result;
-		result = _mm_add_epi8(r0, r1);
-		result = _mm_add_epi8(result, r2);
-
-		return result;
+		__m128i result = _mm_add_epi8(r0, r1);
+		return _mm_add_epi8(result, r2);
 	}
+
 	/// <summary>
 	/// Результат суммы соседей слева и справа сохраняется в регистр r0
 	/// </summary>
@@ -45,14 +43,17 @@ public:
 		*r0 = _mm_add_epi8(*r0, r2);
 	}
 
+	/// <summary>
+	/// Задержка: 1 + 2 = 3
+	/// </summary>
+	/// <param name="r0"></param>
+	/// <returns></returns>
 	inline static __m128i getNeighboursByVertical(__m128i r0) noexcept {
 		// параллелизм на уровне инструкций (операции не зависят друг от друга и процессор может выполнить их одновременно)
-		return
-			_mm_add_epi8(r0,
-				_mm_add_epi8(
-					_mm_srli_si128(r0, 1), _mm_slli_si128(r0, 1)
-				)
-		);
+		__m128i left = _mm_slli_si128(r0, 1);
+		__m128i right = _mm_srli_si128(r0, 1);
+		__m128i neighbors = _mm_add_epi8(left, right);
+		return _mm_add_epi8(r0, neighbors);
 	}
 
 
@@ -100,7 +101,7 @@ public:
 		*/
 
 
-#define _DEBUG_SSE_HORIZONTAL 1
+#define _DEBUG_SSE_HORIZONTAL 0
 #if defined(_DEBUG) && _DEBUG_SSE_HORIZONTAL == 1
 		auto DEBUG_REGS = [&] (string at_moment) {
 			std::printf("regs %s\n", at_moment.c_str());
@@ -128,65 +129,53 @@ public:
 #define DEBUG_RES(at_moment, offset) ((void)0)
 #endif // _DEBUG
 #pragma region lambdas
-		auto calcFirstTwoLines = [&top, &mid, &low, &res_ptr] (uint8_t* rightElement, size_t save_offset) -> __m128i {
+		auto calcFirstTwoLines = [&top, &mid, &low, &res_ptr] (__m128i* rightElement, size_t save_offset) -> __m128i {
 			__m128i verticalSum0 = _mm_add_epi8(top[0], mid[0]);
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
 
 			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, 15);
+			cross_sum = _mm_slli_si128(cross_sum, 14);
 
-			uint16_t left_elems = _mm_extract_epi16(cross_sum, 0);
+			const __m128i mask0 = _mm_setr_epi8(14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0);
+			const __m128i mask1 = _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15);
 
-			uint8_t left_sum = (left_elems & 0xFF);
-			uint8_t right_sum = ((left_elems >> 8) & 0xFF);
+			const __m128i leftVElem = _mm_shuffle_epi8(cross_sum, mask0);
+			const __m128i rightVElem = _mm_shuffle_epi8(cross_sum, mask1);
 
-			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
+			__m128i neighbours0 = getNeighboursByVertical(verticalSum0);
+			__m128i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			verticalSum0 = getNeighboursByVertical(verticalSum0); // теперь здесь хранится сумма этого элемента с соседями
-			verticalSum1 = getNeighboursByVertical(verticalSum1);
+			neighbours0 = _mm_add_epi8(neighbours0, rightVElem);
+			neighbours1 = _mm_add_epi8(neighbours1, leftVElem);
 
-			uint8_t leftValue = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t rightValue = _mm_extract_epi8(verticalSum1, 0);
+			*rightElement = verticalSum1;
 
-			leftValue += right_sum;
-			rightValue += left_sum;
+			neighbours0 = _mm_sub_epi8(neighbours0, top[0]);	// теперь тут хранится результат для первой строчки
 
-			verticalSum0 = _mm_insert_epi8(verticalSum0, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
+			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), neighbours0);
 
-			verticalSum0 = _mm_sub_epi8(verticalSum0, top[0]);	// теперь тут хранится результат для первой строчки
-
-			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), verticalSum0);
-
-			return verticalSum1;
+			return neighbours1;
 		};
 
-		auto calcTwoLines = [&top, &mid, &low, &res_ptr] (__m128i leftVerticalResWithoutRightNeighbour, uint8_t* rightElement, size_t save_offset) -> __m128i {
+		auto calcTwoLines = [&top, &mid, &low, &res_ptr] (__m128i leftVerticalResWithoutRightNeighbour, __m128i* leftVElem, size_t save_offset) noexcept -> __m128i {
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
+			__m128i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			uint8_t left_sum = *rightElement;
-			
-			uint8_t leftValue = _mm_extract_epi8(leftVerticalResWithoutRightNeighbour, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
-			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
+			__m128i leftElementRightElements = _mm_srli_si128(*leftVElem, 15);
 
-			verticalSum1 = getNeighboursByVertical(verticalSum1);	 // теперь здесь хранится сумма этого элемента с соседями
+			__m128i rightVElem = _mm_slli_si128(verticalSum1, 15);
+			*leftVElem = verticalSum1;
 
-			uint8_t rightValue = _mm_extract_epi8(verticalSum1, 0);
+			neighbours1 = _mm_add_epi8(neighbours1, leftElementRightElements);
 
-			leftValue += right_sum;
-			rightValue += left_sum;
-
-			leftVerticalResWithoutRightNeighbour = _mm_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
-
-			leftVerticalResWithoutRightNeighbour = _mm_sub_epi8(leftVerticalResWithoutRightNeighbour, top[0]);
-
-			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), leftVerticalResWithoutRightNeighbour);
-
-			return verticalSum1;
+			__m128i leftTotalResult = _mm_add_epi8(leftVerticalResWithoutRightNeighbour, rightVElem);
+			leftTotalResult = _mm_sub_epi8(leftTotalResult, top[0]);
+			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), leftTotalResult);
+				
+			return neighbours1;
 		};
 
-		auto calcTwoLastLines = [&top, &mid, &low, &res_ptr, &remainder] (size_t save_offset) {
+		auto calcTwoLastNotFitLines = [&top, &mid, &low, &res_ptr, &remainder] (size_t save_offset) {
 			__m128i verticalSum = _mm_add_epi8(top[1], mid[1]);
 
 			verticalSum = getNeighboursByVertical(verticalSum);	 // теперь здесь хранится сумма этого элемента с соседями
@@ -198,62 +187,53 @@ public:
 			memcpy(res_ptr + save_offset + remainder, buffer + remainder, WINDOW_SIZE - remainder);
 		};
 
-		auto calcFirstThreeLines = [&top, &mid, &low, &res_ptr] (uint8_t* rightElement, size_t save_offset) -> __m128i {
-			__m128i verticalSum0, verticalSum1;
-			verticalSum0 = justSum(top[0], mid[0], low[0]);
-			verticalSum1 = justSum(top[1], mid[1], low[1]);
-
-			uint8_t left_sum = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
-
-			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
-
-			verticalSum0 = getNeighboursByVertical(verticalSum0);			// теперь здесь хранится сумма этого элемента с соседями
-			verticalSum1 = getNeighboursByVertical(verticalSum1);
-
-			uint8_t leftValue = _mm_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t rightValue = _mm_extract_epi8(verticalSum1, 0);
-
-			leftValue += right_sum;
-			rightValue += left_sum;
-
-			verticalSum0 = _mm_insert_epi8(verticalSum0, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
-
-			verticalSum0 = _mm_sub_epi8(verticalSum0, mid[0]);	// теперь тут хранится результат для первой строчки
-
-			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), verticalSum0);
-
-			return verticalSum1;
-		};
-
-		auto calcThreeLines = [&top, &mid, &low, &res_ptr] (__m128i leftVerticalResWithoutRightNeighbour, uint8_t* rightElement, size_t save_offset) -> __m128i {
+		auto calcFirstThreeLines = [&top, &mid, &low, &res_ptr] (__m128i* rightVSumElem, size_t save_offset) noexcept -> __m128i {
+			__m128i verticalSum0 = justSum(top[0], mid[0], low[0]);
 			__m128i verticalSum1 = justSum(top[1], mid[1], low[1]);
 
-			uint8_t left_sum = *rightElement;
+			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, 15);
+			cross_sum = _mm_slli_si128(cross_sum, 14);
 
-			uint8_t leftValue = _mm_extract_epi8(leftVerticalResWithoutRightNeighbour, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm_extract_epi8(verticalSum1, 0);
-			*rightElement = _mm_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
+			const __m128i mask0 = _mm_setr_epi8(14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+			const __m128i mask1 = _mm_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15);
 
-			verticalSum1 = getNeighboursByVertical(verticalSum1);
+			const __m128i leftVElem = _mm_shuffle_epi8(cross_sum, mask0);
+			const __m128i rightVElem = _mm_shuffle_epi8(cross_sum, mask1);
 
-			uint8_t rightValue = _mm_extract_epi8(verticalSum1, 0);
+			__m128i neighbours0 = getNeighboursByVertical(verticalSum0);
+			__m128i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			leftValue += right_sum;
-			rightValue += left_sum;
+			neighbours0 = _mm_add_epi8(neighbours0, rightVElem);
+			neighbours1 = _mm_add_epi8(neighbours1, leftVElem);
 
-			leftVerticalResWithoutRightNeighbour = _mm_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm_insert_epi8(verticalSum1, rightValue, 0);
+			*rightVSumElem = verticalSum1;
 
-			leftVerticalResWithoutRightNeighbour = _mm_sub_epi8(leftVerticalResWithoutRightNeighbour, mid[0]);	// теперь тут хранится результат для первой строчки
+			neighbours0 = _mm_sub_epi8(neighbours0, mid[0]);	// теперь тут хранится результат для первой строчки
 
-			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), leftVerticalResWithoutRightNeighbour);
+			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), neighbours0);
 
-			return verticalSum1;
+			return neighbours1;
 		};
 
-		auto calcThreeLastLines = [&top, &mid, &low, &res_ptr, &remainder] (size_t save_offset) {
+		auto calcThreeLines = [&top, &mid, &low, &res_ptr] (__m128i leftVerticalResWithoutRightNeighbour, __m128i* leftVElem, size_t save_offset) -> __m128i {
+			__m128i verticalSum1 = justSum(top[1], mid[1], low[1]);
+			__m128i neighbours1 = getNeighboursByVertical(verticalSum1);
+
+			__m128i leftElementRightElements = _mm_srli_si128(*leftVElem, 15);
+
+			__m128i rightVElem = _mm_slli_si128(verticalSum1, 15);
+			*leftVElem = verticalSum1;
+
+			neighbours1 = _mm_add_epi8(neighbours1, leftElementRightElements);
+
+			__m128i leftTotalResult = _mm_add_epi8(leftVerticalResWithoutRightNeighbour, rightVElem);
+			leftTotalResult = _mm_sub_epi8(leftTotalResult, mid[0]);
+			_mm_store_si128(reinterpret_cast<__m128i*>(res_ptr + save_offset), leftTotalResult);
+
+			return neighbours1;
+		};
+
+		auto calcThreeLastNotFitLines = [&top, &mid, &low, &res_ptr, &remainder] (size_t save_offset) {
 			__m128i verticalSum = justSum(top[1], mid[1], low[1]);
 
 			verticalSum = getNeighboursByVertical(verticalSum);
@@ -292,7 +272,7 @@ public:
 		low[0] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width));
 		low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(y_ptr + 2 * width + WINDOW_SIZE));
 
-		uint8_t vertical2sum {}, vertical3sum {};
+		__m128i vertical2sum, vertical3sum;
 		auto saved2VerticalSum = calcFirstTwoLines(&vertical2sum, 0);
 		auto saved3VerticalSum = calcFirstThreeLines(&vertical3sum, width);
 		
@@ -327,8 +307,8 @@ public:
 			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
 			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
-			calcTwoLastLines(x_offset);
-			calcThreeLastLines(x_offset + width);
+			calcTwoLastNotFitLines(x_offset);
+			calcThreeLastNotFitLines(x_offset + width);
 		}
 		DEBUG_RES("after last row first sums", x_offset);
 #pragma endregion
@@ -381,7 +361,7 @@ public:
 			mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
 			low[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
-			calcThreeLastLines(y_offset + x_offset + width);
+			calcThreeLastNotFitLines(y_offset + x_offset + width);
 			DEBUG_RES("after last sum second line", x_offset);
 		}
 #pragma endregion
@@ -438,8 +418,8 @@ public:
 		mid[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + width));
 		top[1] = _mm_load_si128(reinterpret_cast<__m128i*>(ptr + 2 * width));
 
-		calcTwoLastLines(y_offset + x_offset + 2 * width);
-		calcThreeLastLines(y_offset + x_offset + width);
+		calcTwoLastNotFitLines(y_offset + x_offset + 2 * width);
+		calcThreeLastNotFitLines(y_offset + x_offset + width);
 		
 		DEBUG_RES("after last row first sums", x_offset);
 #pragma endregion
