@@ -133,11 +133,11 @@ public:
 			__m128i verticalSum0 = _mm_add_epi8(top[0], mid[0]);
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
 
-			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, 15);
-			cross_sum = _mm_slli_si128(cross_sum, 14);
+			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, WINDOW_SIZE - 1);
+			cross_sum = _mm_slli_si128(cross_sum, WINDOW_SIZE - 2);
 
-			const __m128i mask0 = _mm_setr_epi8(14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0);
-			const __m128i mask1 = _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15);
+			const __m128i mask0 = _mm_setr_epi8(WINDOW_SIZE - 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0);
+			const __m128i mask1 = _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, WINDOW_SIZE - 1);
 
 			const __m128i leftVElem = _mm_shuffle_epi8(cross_sum, mask0);
 			const __m128i rightVElem = _mm_shuffle_epi8(cross_sum, mask1);
@@ -161,9 +161,9 @@ public:
 			__m128i verticalSum1 = _mm_add_epi8(top[1], mid[1]);
 			__m128i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			__m128i leftElementRightElements = _mm_srli_si128(*leftVElem, 15);
+			__m128i leftElementRightElements = _mm_srli_si128(*leftVElem, WINDOW_SIZE - 1);
 
-			__m128i rightVElem = _mm_slli_si128(verticalSum1, 15);
+			__m128i rightVElem = _mm_slli_si128(verticalSum1, WINDOW_SIZE - 1);
 			*leftVElem = verticalSum1;
 
 			neighbours1 = _mm_add_epi8(neighbours1, leftElementRightElements);
@@ -191,8 +191,8 @@ public:
 			__m128i verticalSum0 = justSum(top[0], mid[0], low[0]);
 			__m128i verticalSum1 = justSum(top[1], mid[1], low[1]);
 
-			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, 15);
-			cross_sum = _mm_slli_si128(cross_sum, 14);
+			__m128i cross_sum = _mm_alignr_epi8(verticalSum1, verticalSum0, WINDOW_SIZE - 1);
+			cross_sum = _mm_slli_si128(cross_sum, WINDOW_SIZE - 2);
 
 			const __m128i mask0 = _mm_setr_epi8(14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 			const __m128i mask1 = _mm_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15);
@@ -219,9 +219,9 @@ public:
 			__m128i verticalSum1 = justSum(top[1], mid[1], low[1]);
 			__m128i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			__m128i leftElementRightElements = _mm_srli_si128(*leftVElem, 15);
+			__m128i leftElementRightElements = _mm_srli_si128(*leftVElem, WINDOW_SIZE - 1);
 
-			__m128i rightVElem = _mm_slli_si128(verticalSum1, 15);
+			__m128i rightVElem = _mm_slli_si128(verticalSum1, WINDOW_SIZE - 1);
 			*leftVElem = verticalSum1;
 
 			neighbours1 = _mm_add_epi8(neighbours1, leftElementRightElements);

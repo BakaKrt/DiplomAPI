@@ -1,9 +1,12 @@
 export module benchmarkSumRealizations;
 
+
+
 import std;
 import Flat2DArray;
 
 import normalsum;
+import normalsumv2;
 import iter;
 import sse_vertical;
 import sse_horizontal;
@@ -32,7 +35,7 @@ using std::is_same_v;
 
 
 // Тут указать все тесты, которые нужно запускать
-export using TestVariant = std::variant<NormalSum, IterSum, SSEv1Sum, SSEv2Sum, AVXv1HorizontalSum>;
+export using TestVariant = std::variant<NormalSum, NormalWOAllocSum, IterSum, SSEv1Sum, SSEv2Sum, AVXv1HorizontalSum>;
 
 export struct AnyTest {
 	TestVariant variant;
@@ -62,78 +65,157 @@ export struct AnyTest {
 	}
 };
 
-
-
-export
-template<typename Fn, typename T>
+export template<typename Fn, typename T>
 void runBenchmark(
-	std::vector<AnyTest>& tests,
-	const std::vector<std::shared_ptr<Flat2DArray<T>>>& testData,
-	const int iterations,
-	Fn&& execute_test,
-	const char* benchName
+    std::vector<AnyTest>& tests,
+    const std::vector<std::shared_ptr<Flat2DArray<T>>>& testData,
+    const int iterations,
+    Fn&& execute_test,
+    const char* benchName
 ) noexcept {
-	printf("benchmark %s:\n", benchName);
 
-#ifdef TIMEBASED
-	std::vector<std::pair<std::string, long long>> pairs;
-	pairs.reserve(tests.size());
-#endif
 
-	for (auto& test_variant : tests) {
-		string name = test_variant.getName();
+    struct BenchmarkResult {
+        std::string name;
+        double avg_ms;   // Все значения хранятся в миллисекундах
+        double stddev_ms;
+        double min_ms;
+        double max_ms;
+        double p0_001_ms;  // 0.001%
+        double p0_1_ms;    // 0.1%
+        double p1_ms;      // 1%
+        double p50_ms;     // Медиана
+        double p99_ms;     // 99%
+        double p99_9_ms;   // 99.9%
+        double p99_999_ms; // 99.999%
+    };
 
-#ifdef NANOBENCH
-		ankerl::nanobench::Bench().minEpochIterations(10).warmup(10).run(name, [&] {
-#endif
-#ifdef TIMEBASED
-			auto start = std::chrono::high_resolution_clock::now();
-#endif // TIMEBASED
-			// Вызов измерения с помощью переданной функции.
-			// Поддерживаем две сигнатуры execute_test:
-			//  - Fn(AnyTest&, Flat2DArray<T>&)
-			for (int iter = 0; iter < iterations; ++iter) {
-				for (auto& vec : testData) {
-					if constexpr (std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&>) {
-						std::invoke(execute_test, test_variant, *vec);
-					}
-					else {
-						static_assert(std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&> ||
-									  std::is_invocable_v<Fn, AnyTest&, Flat2DArray<T>&, int>,
-									  "execute_test must be callable as (AnyTest&, Flat2DArray<T>&) or (AnyTest&, Flat2DArray<T>&, int)");
-					}
-				}
-			}
+    auto formatTime = [] (double value, int precision = 7) noexcept -> string {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(precision) << value;
+        return oss.str();
+    };
 
-#ifdef TIMEBASED
-			auto end = std::chrono::high_resolution_clock::now();
-			auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-			printf("%s took:\t%7lld us  | iter/us %f\n", name.c_str(), time, static_cast<float>((float) iterations / (float) time));
-			pairs.push_back(make_pair(name, time));
-#endif // TIMEBASED
-#ifdef NANOBENCH
-		});
-#endif
-	}
 
-#ifdef TIMEBASED
-	// Анализ и вывод результатов
-	auto min_time = std::min_element(pairs.begin(), pairs.end(),
-		[] (const auto& a, const auto& b) { return a.second < b.second; })->second;
+    printf("===== BENCHMARK: %s =====\n", benchName);
+    const size_t _width = testData[0]->width();
+    const size_t _height = testData[0]->height();
+    printf("iterations count = %d, arrays count = %u, sizes: %u * %u, ", iterations, (unsigned)testData.size(), (unsigned)_width, (unsigned)_height);
+    
+    const int warmupIterations = 3;
+    printf("warmup count: %d\n", warmupIterations);
+    std::vector<BenchmarkResult> results;
+    results.reserve(tests.size());
 
-	for (const auto& [name, time] : pairs) {
-		double speedPercent = 0.0;
-		double timePercent = 0.0;
-		if (time != 0) {
-			speedPercent = (double) min_time / (double) time * 100.0;
-			timePercent = (double) time / (double) min_time * 100.0;
-		}
-		printf("%6s - speed: %6.2f%% - time: %5.2f%%\n", name.c_str(), speedPercent, timePercent);
-	}
-	printf("\n\n");
-#endif
+    for (auto& test_variant : tests) {
+        std::string name = test_variant.getName();
+        std::vector<double> timings_ms; // Храним всё сразу в миллисекундах
+        timings_ms.reserve(iterations * testData.size());
+
+        // Прогревочные итерации
+        for (int iter = 0; iter < warmupIterations; ++iter) {
+            for (auto& vec : testData) {
+                std::invoke(execute_test, test_variant, *vec);
+            }
+        }
+
+        // Сбор данных
+        for (int iter = 0; iter < iterations; ++iter) {
+            for (auto& vec : testData) {
+                auto start = std::chrono::high_resolution_clock::now();
+                std::invoke(execute_test, test_variant, *vec);
+                auto end = std::chrono::high_resolution_clock::now();
+
+                // Конвертация НАПРЯМУЮ в миллисекунды
+                auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    end - start).count() / 1000.0; // микросекунды -> миллисекунды
+
+                timings_ms.push_back(duration_ms);
+            }
+        }
+
+        // Расчёт статистики
+        if (timings_ms.empty()) continue;
+        std::sort(timings_ms.begin(), timings_ms.end());
+        const size_t n = timings_ms.size();
+        const double total_ms = std::accumulate(timings_ms.begin(), timings_ms.end(), 0.0);
+
+        auto get_percentile = [n] (const std::vector<double>& sorted, double p) {
+            if (p <= 0.0) return sorted[0];
+            if (p >= 1.0) return sorted[n - 1];
+            double index = p * (n - 1);
+            size_t lo = static_cast<size_t>(index);
+            double fraction = index - lo;
+            return (lo >= n - 1) ? sorted[n - 1] :
+                sorted[lo] + fraction * (sorted[lo + 1] - sorted[lo]);
+            };
+
+        BenchmarkResult res;
+        res.name = name;
+        res.avg_ms = total_ms / n;
+        res.min_ms = timings_ms[0];
+        res.max_ms = timings_ms[n - 1];
+        res.p0_001_ms = get_percentile(timings_ms, 0.00001);
+        res.p0_1_ms = get_percentile(timings_ms, 0.001);
+        res.p1_ms = get_percentile(timings_ms, 0.01);
+        res.p50_ms = get_percentile(timings_ms, 0.5);
+        res.p99_ms = get_percentile(timings_ms, 0.99);
+        res.p99_9_ms = get_percentile(timings_ms, 0.999);
+        res.p99_999_ms = get_percentile(timings_ms, 0.99999);
+
+        // Стандартное отклонение
+        double sum_sq_diff = 0.0;
+        for (double t : timings_ms) {
+            double diff = t - res.avg_ms;
+            sum_sq_diff += diff * diff;
+        }
+        res.stddev_ms = std::sqrt(sum_sq_diff / n);
+
+        results.push_back(res);
+    }
+
+    // Вывод итоговой таблицы В МИЛЛИСЕКУНДАХ
+    if (!results.empty()) {
+        const int precision = 5; // Знаков после запятой
+
+        // Заголовок таблицы
+        printf("\n[SUMMARY] Benchmark results (ALL TIMES IN MILLISECONDS)\n");
+        printf("%-15s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s\n",
+            "Algorithm", "Avg", "StdDev", "Min", "Max",
+            "p0.001%", "p0.1%", "p1%", "p50%", "p99%", "p99.9%", "p99.999%");
+
+        // Разделитель
+        printf("%-15s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s\n",
+            std::string(15, '-').c_str(),
+            "----------", "----------", "----------", "----------", "----------",
+            "----------", "----------", "----------", "----------", "----------", "----------");
+
+        // Данные таблицы
+        for (const auto& r : results) {
+            printf("%-15s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s\n",
+                r.name.substr(0, 15).c_str(),
+                formatTime(r.avg_ms, precision).c_str(),
+                formatTime(r.stddev_ms, precision).c_str(),
+                formatTime(r.min_ms, precision).c_str(),
+                formatTime(r.max_ms, precision).c_str(),
+                formatTime(r.p0_001_ms, precision).c_str(),
+                formatTime(r.p0_1_ms, precision).c_str(),
+                formatTime(r.p1_ms, precision).c_str(),
+                formatTime(r.p50_ms, precision).c_str(),
+                formatTime(r.p99_ms, precision).c_str(),
+                formatTime(r.p99_9_ms, precision).c_str(),
+                formatTime(r.p99_999_ms, precision).c_str()
+            );
+        }
+
+        // Подпись таблицы
+        printf("\nLegend:\n");
+        printf("  All times in milliseconds (ms) - 1 ms = 0.001 seconds\n");
+        printf("  pX%% = X-th percentile (time below which X%% of measurements fall)\n");
+        printf("  Example: p99.9 = time below which 99.9%% of executions completed\n");
+        printf("  StdDev = Standard deviation (stability indicator)\n");
+    }
 }
-
 
 export template<typename T>
 void runFullSumBenchmark(AnyTest& test_variant,

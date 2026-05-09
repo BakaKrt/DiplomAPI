@@ -17,7 +17,7 @@ using namespace sseHelperNS;
 
 export class AVXv1HorizontalSum : public SumRealizationBase<AVXv1HorizontalSum> {
 public:
-	AVXv1HorizontalSum() { name = "avx h v1"; }
+	AVXv1HorizontalSum() { name = "avx h"; }
 
 	inline const string getName_impl() const {
 		return name;
@@ -98,7 +98,7 @@ public:
 		*/
 
 
-#define _DEBUG_AVX_HORIZONTAL 1
+#define _DEBUG_AVX_HORIZONTAL 0
 #if defined(_DEBUG) && _DEBUG_AVX_HORIZONTAL == 1
 		auto DEBUG_REGS = [&](string at_moment) {
 			//std::printf("regs %s\n", at_moment.c_str());
@@ -126,128 +126,113 @@ public:
 #define DEBUG_RES(at_moment, offset) ((void)0)
 #endif // _DEBUG
 #pragma region lambdas
-		auto calcFirstTwoLines = [&top, &mid, &low, &res_ptr](uint8_t* rightElement, size_t save_offset) -> __m256i {
+		auto calcFirstTwoLines = [&top, &mid, &low, &res_ptr](__m256i* rightElement, size_t save_offset) -> __m256i {
 			__m256i verticalSum0 = _mm256_add_epi8(top[0], mid[0]);
 			__m256i verticalSum1 = _mm256_add_epi8(top[1], mid[1]);
 
-			uint8_t left_sum = _mm256_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm256_extract_epi8(verticalSum1, 0);
+			// тут загвоздка в реализации, проверить сайт интел, потому что результат неправильный
+			__m256i cross_sum = _mm256_alignr_epi8(verticalSum1, verticalSum0, WINDOW_SIZE - 1);
+			cross_sum = _mm256_slli_si256(cross_sum, WINDOW_SIZE - 2);
 
-			*rightElement = _mm256_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
+			const __m256i mask0 = _mm256_setr_epi8(WINDOW_SIZE - 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+			const __m256i mask1 = _mm256_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,WINDOW_SIZE - 1);
 
-			verticalSum0 = getNeighboursByVertical(verticalSum0); // теперь здесь хранится сумма этого элемента с соседями
-			verticalSum1 = getNeighboursByVertical(verticalSum1);
+			const __m256i leftVElem = _mm256_shuffle_epi8(cross_sum, mask0);
+			const __m256i rightVElem = _mm256_shuffle_epi8(cross_sum, mask1);
 
-			uint8_t leftValue = _mm256_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t rightValue = _mm256_extract_epi8(verticalSum1, 0);
+			__m256i neighbours0 = getNeighboursByVertical(verticalSum0);
+			__m256i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			leftValue += right_sum;
-			rightValue += left_sum;
+			neighbours0 = _mm256_add_epi8(neighbours0, rightVElem);
+			neighbours1 = _mm256_add_epi8(neighbours1, leftVElem);
 
-			verticalSum0 = _mm256_insert_epi8(verticalSum0, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm256_insert_epi8(verticalSum1, rightValue, 0);
+			*rightElement = verticalSum1;
 
-			verticalSum0 = _mm256_sub_epi8(verticalSum0, top[0]);	// теперь тут хранится результат для первой строчки
+			neighbours0 = _mm256_sub_epi8(neighbours0, top[0]);	// теперь тут хранится результат для первой строчки
 
-			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), verticalSum0);
+			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), neighbours0);
 
-			return verticalSum1;
+			return neighbours1;
 		};
 
-		auto calcTwoLines = [&top, &mid, &low, &res_ptr](__m256i leftVerticalResWithoutRightNeighbour, uint8_t* rightElement, size_t save_offset) -> __m256i {
+		auto calcTwoLines = [&top, &mid, &low, &res_ptr](__m256i leftVerticalResWithoutRightNeighbour, __m256i* leftVElem, size_t save_offset) noexcept -> __m256i {
 			__m256i verticalSum1 = _mm256_add_epi8(top[1], mid[1]);
+			__m256i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			uint8_t left_sum = *rightElement;
+			__m256i leftElementRightElements = _mm256_srli_si256(*leftVElem, WINDOW_SIZE - 1);
 
-			uint8_t leftValue = _mm256_extract_epi8(leftVerticalResWithoutRightNeighbour, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm256_extract_epi8(verticalSum1, 0);
-			*rightElement = _mm256_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
+			__m256i rightVElem = _mm256_slli_si256(verticalSum1, WINDOW_SIZE - 1);
+			*leftVElem = verticalSum1;
 
-			verticalSum1 = getNeighboursByVertical(verticalSum1);	 // теперь здесь хранится сумма этого элемента с соседями
+			neighbours1 = _mm256_add_epi8(neighbours1, leftElementRightElements);
 
-			uint8_t rightValue = _mm256_extract_epi8(verticalSum1, 0);
+			__m256i leftTotalResult = _mm256_add_epi8(leftVerticalResWithoutRightNeighbour, rightVElem);
+			leftTotalResult = _mm256_sub_epi8(leftTotalResult, top[0]);
+			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), leftTotalResult);
 
-			leftValue += right_sum;
-			rightValue += left_sum;
-
-			leftVerticalResWithoutRightNeighbour = _mm256_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm256_insert_epi8(verticalSum1, rightValue, 0);
-
-			leftVerticalResWithoutRightNeighbour = _mm256_sub_epi8(leftVerticalResWithoutRightNeighbour, top[0]);
-
-			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), leftVerticalResWithoutRightNeighbour);
-
-			return verticalSum1;
+			return neighbours1;
 		};
 
-		auto calcTwoLastLines = [&top, &mid, &low, &res_ptr, &remainder](size_t save_offset) {
+		auto calcTwoLastNotFitLines = [&top, &mid, &low, &res_ptr, &remainder] (size_t save_offset) {
 			__m256i verticalSum = _mm256_add_epi8(top[1], mid[1]);
 
 			verticalSum = getNeighboursByVertical(verticalSum);	 // теперь здесь хранится сумма этого элемента с соседями
 			verticalSum = _mm256_sub_epi8(verticalSum, top[1]);
 
-			uint8_t buffer[WINDOW_SIZE]{};
+			uint8_t buffer[WINDOW_SIZE] {};
 			_mm256_store_si256(reinterpret_cast<__m256i*>(buffer), verticalSum);
 
 			memcpy(res_ptr + save_offset + remainder, buffer + remainder, WINDOW_SIZE - remainder);
 			};
 
-		auto calcFirstThreeLines = [&top, &mid, &low, &res_ptr](uint8_t* rightElement, size_t save_offset) -> __m256i {
-			__m256i verticalSum0, verticalSum1;
-			verticalSum0 = justSum(top[0], mid[0], low[0]);
-			verticalSum1 = justSum(top[1], mid[1], low[1]);
-
-			uint8_t left_sum = _mm256_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm256_extract_epi8(verticalSum1, 0);
-
-			*rightElement = _mm256_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
-
-			verticalSum0 = getNeighboursByVertical(verticalSum0);			// теперь здесь хранится сумма этого элемента с соседями
-			verticalSum1 = getNeighboursByVertical(verticalSum1);
-
-			uint8_t leftValue = _mm256_extract_epi8(verticalSum0, WINDOW_SIZE - 1);
-			uint8_t rightValue = _mm256_extract_epi8(verticalSum1, 0);
-
-			leftValue += right_sum;
-			rightValue += left_sum;
-
-			verticalSum0 = _mm256_insert_epi8(verticalSum0, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm256_insert_epi8(verticalSum1, rightValue, 0);
-
-			verticalSum0 = _mm256_sub_epi8(verticalSum0, mid[0]);	// теперь тут хранится результат для первой строчки
-
-			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), verticalSum0);
-
-			return verticalSum1;
-		};
-
-		auto calcThreeLines = [&top, &mid, &low, &res_ptr](__m256i leftVerticalResWithoutRightNeighbour, uint8_t* rightElement, size_t save_offset) -> __m256i {
+		auto calcFirstThreeLines = [&top, &mid, &low, &res_ptr](__m256i* rightVSumElem, size_t save_offset) noexcept -> __m256i {
+			__m256i verticalSum0 = justSum(top[0], mid[0], low[0]);
 			__m256i verticalSum1 = justSum(top[1], mid[1], low[1]);
 
-			uint8_t left_sum = *rightElement;
+			__m256i cross_sum = _mm256_alignr_epi8(verticalSum1, verticalSum0, WINDOW_SIZE - 1);
+			cross_sum = _mm256_slli_si256(cross_sum, WINDOW_SIZE - 2);
 
-			uint8_t leftValue = _mm256_extract_epi8(leftVerticalResWithoutRightNeighbour, WINDOW_SIZE - 1);
-			uint8_t right_sum = _mm256_extract_epi8(verticalSum1, 0);
-			*rightElement = _mm256_extract_epi8(verticalSum1, WINDOW_SIZE - 1);
+			const __m256i mask0 = _mm256_setr_epi8(WINDOW_SIZE - 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+			const __m256i mask1 = _mm256_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, WINDOW_SIZE - 1);
 
-			verticalSum1 = getNeighboursByVertical(verticalSum1);
 
-			uint8_t rightValue = _mm256_extract_epi8(verticalSum1, 0);
+			const __m256i leftVElem = _mm256_shuffle_epi8(cross_sum, mask0);
+			const __m256i rightVElem = _mm256_shuffle_epi8(cross_sum, mask1);
 
-			leftValue += right_sum;
-			rightValue += left_sum;
+			__m256i neighbours0 = getNeighboursByVertical(verticalSum0);
+			__m256i neighbours1 = getNeighboursByVertical(verticalSum1);
 
-			leftVerticalResWithoutRightNeighbour = _mm256_insert_epi8(leftVerticalResWithoutRightNeighbour, leftValue, WINDOW_SIZE - 1);	// для крайних элементов вставлена недостающая сумма
-			verticalSum1 = _mm256_insert_epi8(verticalSum1, rightValue, 0);
+			neighbours0 = _mm256_add_epi8(neighbours0, rightVElem);
+			neighbours1 = _mm256_add_epi8(neighbours1, leftVElem);
 
-			leftVerticalResWithoutRightNeighbour = _mm256_sub_epi8(leftVerticalResWithoutRightNeighbour, mid[0]);	// теперь тут хранится результат для первой строчки
+			*rightVSumElem = verticalSum1;
 
-			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), leftVerticalResWithoutRightNeighbour);
+			neighbours0 = _mm256_sub_epi8(neighbours0, mid[0]);	// теперь тут хранится результат для первой строчки
 
-			return verticalSum1;
+			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), neighbours0);
+
+			return neighbours1;
 		};
 
-		auto calcThreeLastLines = [&top, &mid, &low, &res_ptr, &remainder](size_t save_offset) {
+		auto calcThreeLines = [&top, &mid, &low, &res_ptr](__m256i leftVerticalResWithoutRightNeighbour, __m256i* leftVElem, size_t save_offset) -> __m256i {
+			__m256i verticalSum1 = justSum(top[1], mid[1], low[1]);
+			__m256i neighbours1 = getNeighboursByVertical(verticalSum1);
+
+			__m256i leftElementRightElements = _mm256_srli_si256(*leftVElem, WINDOW_SIZE - 1);
+
+			__m256i rightVElem = _mm256_slli_si256(verticalSum1, WINDOW_SIZE - 1);
+			*leftVElem = verticalSum1;
+
+			neighbours1 = _mm256_add_epi8(neighbours1, leftElementRightElements);
+
+			__m256i leftTotalResult = _mm256_add_epi8(leftVerticalResWithoutRightNeighbour, rightVElem);
+			leftTotalResult = _mm256_sub_epi8(leftTotalResult, mid[0]);
+			_mm256_store_si256(reinterpret_cast<__m256i*>(res_ptr + save_offset), leftTotalResult);
+
+			return neighbours1;
+		};
+
+		auto calcThreeLastNotFitLines = [&top, &mid, &low, &res_ptr, &remainder] (size_t save_offset) {
 			__m256i verticalSum = justSum(top[1], mid[1], low[1]);
 
 			verticalSum = getNeighboursByVertical(verticalSum);
@@ -286,7 +271,7 @@ public:
 		low[0] = _mm256_load_si256(reinterpret_cast<__m256i*>(y_ptr + 2 * width));
 		low[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(y_ptr + 2 * width + WINDOW_SIZE));
 
-		uint8_t vertical2sum{}, vertical3sum{};
+		__m256i vertical2sum{}, vertical3sum{};
 		auto saved2VerticalSum = calcFirstTwoLines(&vertical2sum, 0);
 		auto saved3VerticalSum = calcFirstThreeLines(&vertical3sum, width);
 
@@ -321,8 +306,8 @@ public:
 			mid[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(ptr + width));
 			low[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(ptr + 2 * width));
 
-			calcTwoLastLines(x_offset);
-			calcThreeLastLines(x_offset + width);
+			calcTwoLastNotFitLines(x_offset);
+			calcThreeLastNotFitLines(x_offset + width);
 		}
 		DEBUG_RES("after last row first sums", x_offset);
 #pragma endregion
@@ -375,7 +360,7 @@ public:
 			mid[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(ptr + width));
 			low[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(ptr + 2 * width));
 
-			calcThreeLastLines(y_offset + x_offset + width);
+			calcThreeLastNotFitLines(y_offset + x_offset + width);
 			DEBUG_RES("after last sum second line", x_offset);
 		}
 #pragma endregion
@@ -432,8 +417,8 @@ public:
 		mid[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(ptr + width));
 		top[1] = _mm256_load_si256(reinterpret_cast<__m256i*>(ptr + 2 * width));
 
-		calcTwoLastLines(y_offset + x_offset + 2 * width);
-		calcThreeLastLines(y_offset + x_offset + width);
+		calcTwoLastNotFitLines(y_offset + x_offset + 2 * width);
+		calcThreeLastNotFitLines(y_offset + x_offset + width);
 
 		DEBUG_RES("after last row first sums", x_offset);
 #pragma endregion

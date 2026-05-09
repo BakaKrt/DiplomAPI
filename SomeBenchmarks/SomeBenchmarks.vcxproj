@@ -62,7 +62,8 @@
       </UseUnicodeForAssemblerListing>
       <AssemblerOutput />
       <Optimization>MaxSpeed</Optimization>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <InlineFunctionExpansion>
+      </InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -97,6 +98,7 @@
     <ClCompile Include="sseVertical.ixx" />
     <ClCompile Include="AlignedAllocator.ixx" />
     <ClCompile Include="sumFilterBase.ixx" />
+    <ClCompile Include="sumWithoutMemAlloc.ixx" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="sumRealizationBase.ixx" />
   </ItemGroup>
