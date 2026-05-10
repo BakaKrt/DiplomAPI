@@ -8,7 +8,7 @@ using std::array;
 
 export class NormalWOAllocSum : public SumRealizationBase<NormalWOAllocSum> {
 public:
-	NormalWOAllocSum() { name = "norm v2"; }
+	NormalWOAllocSum() { name = "v lob"; }
 
 	inline const string getName_impl() const {
 		return name;
@@ -27,70 +27,45 @@ public:
 #define DEBUG_RES(at_moment) ((void)0)
 #endif // _DEBUG
 
-
-		T* ptr = object.data();
-		T* secondPtr = to_save.data();
 		const size_t width = object.width();
 		const size_t height = object.height();
-		const size_t capacity = width * height;
 
+		T sum = 0;
 
-		auto GNTop = [&] () noexcept {
-			for (size_t i = 1; i < width - 1; i++) {
-				secondPtr[i] = ptr[i - 1] + ptr[i + 1] + ptr[i - 1 + width] + ptr[i + width] + ptr[i + 1 + width];
-			}
-		};
-		auto GNBot = [&] () noexcept {
-			for (size_t i = capacity - width + 1; i < capacity - 1; i++) {
-				secondPtr[i] = ptr[i - 1 - width] + ptr[i - width] + ptr[i + 1 - width] + ptr[i - 1] + ptr[i + 1];
-			}
-		};
+		for (size_t y = 0; y < height; ++y) {
+			for (size_t x = 0; x < width; ++x) {
+				sum = 0;
+				if (x > 0 && x + 1 < width && y > 0 && y + 1 < height) {
+					sum += object.at(x - 1, y - 1); // верхний левый
+					sum += object.at(x	  , y - 1);	// верхний
+					sum += object.at(x + 1, y - 1); // верхний правый
 
-		auto GNLeft = [&] () noexcept {
-			size_t y_offset = 0;
-			for (size_t y = 1; y < height - 1; y++) {
-				y_offset = y * width;
-				secondPtr[y_offset] = ptr[y_offset - width] + ptr[y_offset - width + 1] + ptr[y_offset + 1] + ptr[y_offset + width] + ptr[y_offset + width + 1];
-			}
-			};
-		auto GNRight = [&] () noexcept {
-			const size_t x = width - 1;
-			size_t y_offset = 0;
-			for (size_t y = 1; y < height - 1; y++) {
-				y_offset = y * width;
-				secondPtr[y_offset + x] = ptr[y_offset - width + x - 1] + ptr[y_offset - width + x] + ptr[y_offset + x - 1] + ptr[y_offset + width + x - 1] + ptr[y_offset + width + x];
-			}
-		};
+					sum += object.at(x - 1, y	 ); // левый
+					sum += object.at(x + 1, y	 ); // правый
 
-		auto GNTopLeft = [&ptr, width, &secondPtr] () noexcept { secondPtr[0] = ptr[1] + ptr[width] + ptr[width + 1]; };
-		auto GNTopRight = [&ptr, width, &secondPtr] () noexcept { secondPtr[width - 1] = ptr[width - 2] + ptr[2 * width - 2] + ptr[2 * width - 1]; };
-		auto GNBotLeft = [&ptr, width, capacity, height, &secondPtr] () noexcept {	secondPtr[width * height - width] = ptr[capacity - 2 * width] + ptr[capacity - 2 * width + 1] + ptr[capacity - width + 1]; };
-		auto GNBotRight = [&ptr, width, capacity, height, &secondPtr] () noexcept { secondPtr[width * height - 1] = ptr[capacity - width - 2] + ptr[capacity - width - 1] + ptr[capacity - 2]; };
+					sum += object.at(x - 1, y + 1); // нижний левый
+					sum += object.at(x	  , y + 1);	// нижний
+					sum += object.at(x + 1, y + 1); // нижний правый
+				}
+				else {
+					if (x > 0) {
+						sum += object.at(x - 1, y);
+						if (y > 0) sum += object.at(x - 1, y - 1);
+						if (y + 1 < height) sum += object.at(x - 1, y + 1);
+					}
 
-		auto GetNeighbours = [&width, &ptr, &secondPtr] (size_t from_offset, size_t save_offset) {
-			T* _ptr = ptr + from_offset;
+					if (y > 0) sum += object.at(x, y - 1);
+					if (y + 1 < height) sum += object.at(x, y + 1);
 
-			secondPtr[save_offset] = _ptr[0] + _ptr[1] + _ptr[2] + \
-				_ptr[width] + _ptr[width + 2] + \
-				_ptr[width * 2] + _ptr[width * 2 + 1] + _ptr[width * 2 + 2];
-		};
+					if (x + 1 < width) {
+						sum += object.at(x + 1, y);
+						if (y > 0) sum += object.at(x + 1, y - 1);
+						if (y + 1 < height) sum += object.at(x + 1, y + 1);
+					}
+				}
 
-		GNTopLeft();
-		GNTop();
-		GNTopRight();
-		GNLeft();
-
-		for (size_t y = 1; y < height - 1; y++) {
-			size_t top_left_y_offset = width * (y - 1);
-			size_t y_offset = y * width;
-			for (size_t x = 1; x < width - 1; x++) {
-				GetNeighbours(top_left_y_offset + x - 1, y_offset + x);
+				to_save.at(x, y) = sum;
 			}
 		}
-
-		GNRight();
-		GNBotLeft();
-		GNBot();
-		GNBotRight();
 	}
 };

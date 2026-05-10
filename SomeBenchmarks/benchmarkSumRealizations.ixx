@@ -81,13 +81,13 @@ void runBenchmark(
         double stddev_ms;
         double min_ms;
         double max_ms;
-        double p0_001_ms;  // 0.001%
+        double p0_01_ms;   // 0.01%
         double p0_1_ms;    // 0.1%
         double p1_ms;      // 1%
         double p50_ms;     // Медиана
         double p99_ms;     // 99%
         double p99_9_ms;   // 99.9%
-        double p99_999_ms; // 99.999%
+        double p99_99_ms;  // 99.99%
     };
 
     auto formatTime = [] (double value, int precision = 7) noexcept -> string {
@@ -102,12 +102,14 @@ void runBenchmark(
     const size_t _height = testData[0]->height();
     printf("iterations count = %d, arrays count = %u, sizes: %u * %u, ", iterations, (unsigned)testData.size(), (unsigned)_width, (unsigned)_height);
     
-    const int warmupIterations = 3;
+    const int warmupIterations = 2;
     printf("warmup count: %d\n", warmupIterations);
     std::vector<BenchmarkResult> results;
     results.reserve(tests.size());
 
     for (auto& test_variant : tests) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
         std::string name = test_variant.getName();
         std::vector<double> timings_ms; // Храним всё сразу в миллисекундах
         timings_ms.reserve(iterations * testData.size());
@@ -127,7 +129,7 @@ void runBenchmark(
                 auto end = std::chrono::high_resolution_clock::now();
 
                 // Конвертация НАПРЯМУЮ в миллисекунды
-                auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(   
                     end - start).count() / 1000.0; // микросекунды -> миллисекунды
 
                 timings_ms.push_back(duration_ms);
@@ -155,13 +157,13 @@ void runBenchmark(
         res.avg_ms = total_ms / n;
         res.min_ms = timings_ms[0];
         res.max_ms = timings_ms[n - 1];
-        res.p0_001_ms = get_percentile(timings_ms, 0.00001);
-        res.p0_1_ms = get_percentile(timings_ms, 0.001);
-        res.p1_ms = get_percentile(timings_ms, 0.01);
-        res.p50_ms = get_percentile(timings_ms, 0.5);
-        res.p99_ms = get_percentile(timings_ms, 0.99);
-        res.p99_9_ms = get_percentile(timings_ms, 0.999);
-        res.p99_999_ms = get_percentile(timings_ms, 0.99999);
+        res.p0_01_ms    = get_percentile(timings_ms, 0.0001);
+        res.p0_1_ms     = get_percentile(timings_ms, 0.001);
+        res.p1_ms       = get_percentile(timings_ms, 0.01);
+        res.p50_ms      = get_percentile(timings_ms, 0.5);
+        res.p99_ms      = get_percentile(timings_ms, 0.99);
+        res.p99_9_ms    = get_percentile(timings_ms, 0.999);
+        res.p99_99_ms   = get_percentile(timings_ms, 0.9999);
 
         // Стандартное отклонение
         double sum_sq_diff = 0.0;
@@ -182,7 +184,7 @@ void runBenchmark(
         printf("\n[SUMMARY] Benchmark results (ALL TIMES IN MILLISECONDS)\n");
         printf("%-15s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s | %10s\n",
             "Algorithm", "Avg", "StdDev", "Min", "Max",
-            "p0.001%", "p0.1%", "p1%", "p50%", "p99%", "p99.9%", "p99.999%");
+            "p0.01%", "p0.1%", "p1%", "p50%", "p99%", "p99.9%", "p99.99%");
 
         // Разделитель
         printf("%-15s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s-+-%s\n",
@@ -198,13 +200,13 @@ void runBenchmark(
                 formatTime(r.stddev_ms, precision).c_str(),
                 formatTime(r.min_ms, precision).c_str(),
                 formatTime(r.max_ms, precision).c_str(),
-                formatTime(r.p0_001_ms, precision).c_str(),
+                formatTime(r.p0_01_ms, precision).c_str(),
                 formatTime(r.p0_1_ms, precision).c_str(),
                 formatTime(r.p1_ms, precision).c_str(),
                 formatTime(r.p50_ms, precision).c_str(),
                 formatTime(r.p99_ms, precision).c_str(),
                 formatTime(r.p99_9_ms, precision).c_str(),
-                formatTime(r.p99_999_ms, precision).c_str()
+                formatTime(r.p99_99_ms, precision).c_str()
             );
         }
 
