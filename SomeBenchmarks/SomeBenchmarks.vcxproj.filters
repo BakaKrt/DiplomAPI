@@ -47,12 +47,14 @@
     <ClCompile Include="benchmarkFilterRealizations.ixx">
       <Filter>sumFilterRealizations</Filter>
     </ClCompile>
-    <ClCompile Include="AvxFilter.ixx" />
     <ClCompile Include="avxHorizontal.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
     <ClCompile Include="sumWithoutMemAlloc.ixx">
       <Filter>sumRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="AvxFilter.ixx">
+      <Filter>sumFilterRealizations</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

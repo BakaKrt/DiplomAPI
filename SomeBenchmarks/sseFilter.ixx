@@ -33,21 +33,20 @@ public:
 		T* dataPtr = object.data();
 		T* resPtr = neighbours.data();
 
-		const __m128i const_mask2 = _mm_set1_epi8(2);
-		const __m128i const_mask3 = _mm_set1_epi8(3);
 
-		auto sum = [&dataPtr, &resPtr,&const_mask2, &const_mask3] (size_t load_offset) -> __m128i {
+		auto sum = [&dataPtr, &resPtr] (size_t load_offset) -> __m128i {
+			static const __m128i const_mask2 = _mm_set1_epi8(2);
+			static const __m128i const_mask3 = _mm_set1_epi8(3);	
+
 			__m128i original	= _mm_load_si128(reinterpret_cast<__m128i*>(dataPtr + load_offset));
 			__m128i neighbours	= _mm_load_si128(reinterpret_cast<__m128i*>(resPtr + load_offset));
 
 			__m128i mask3 = _mm_cmpeq_epi8(neighbours, const_mask3);
 
-			__m128i alive_mask = _mm_or_si128(
-				_mm_cmpeq_epi8(neighbours, const_mask2),
-				mask3
-			);
+			__m128i dead_mask = _mm_andnot_si128(original, mask3);
 
-			__m128i dead_mask  = _mm_andnot_si128(original, mask3);
+			__m128i alive_mask = _mm_cmpeq_epi8(neighbours, const_mask2);
+			alive_mask = _mm_or_si128(alive_mask, mask3);
 			alive_mask = _mm_and_si128(original, alive_mask);
 
 			__m128i res = _mm_or_si128(dead_mask, alive_mask);

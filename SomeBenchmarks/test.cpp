@@ -37,7 +37,7 @@ int main() {
 
 
 #ifdef _DEBUG
-	playgroundTest4();
+	playgroundTestFilters();
 #endif // _DEBUG
 	
 	//return 0;
@@ -47,14 +47,14 @@ int main() {
 
 		vector<FilterRealizationTestStruct> tests {}; tests.reserve(3);
 		tests.emplace_back(SseRule {});
-		tests.emplace_back(NormalRule {});
 		tests.emplace_back(AvxRule {});
+		tests.emplace_back(NormalRule{});
 
 		printf("support AVX2? = %s\n", InstructionSet::AVX2() ? "true" : "false");
-		runBenchmarkForFilters(width, height, tests, 20, "test");
+		runBenchmarkForFilters(width, height, tests, 1000, "test");
 	}
 #endif // RELEASE
-
+	return 0;
 
 
 #define RUN_SUM_TESTS 1

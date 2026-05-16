@@ -10,6 +10,7 @@ import avx_horizontal;
 
 import normalRule;
 import sseRule;
+import avxRule;
 
 import random;
 
@@ -185,5 +186,33 @@ export inline void playgroundTest1() {
 			printf("got diff index[%3u]: 0: %u  1: %u\n", (unsigned) x, neighbours_mem_0[x], neighbours_mem_1[x]);
 		}
 	}
+}
+
+export inline void playgroundTestFilters() {
+	SseRule sse{}; NormalRule normal{};
+
+	constexpr size_t width = 100, height = 100, iterations = 1;
+	constexpr size_t alignment = 16;
+
+	auto originalArray = generateAlignedMemoryForGameOfLife(width, height, iterations, alignment, false);
+	auto neigboursArray = generateAlignedMemoryForGameOfLife(width, height, iterations, alignment, true);
+
+	auto neighbours_copy(neigboursArray);
+
+	for (size_t i = 0; i < iterations; i++) {
+		sse.applyRule(originalArray[i], neigboursArray[i]);
+
+		normal.applyRule(originalArray[i], neighbours_copy[i]);
+
+
+		for (size_t count = 0; count < width * height; count++) {
+			uint8_t& val1 = neigboursArray[i][count];
+			uint8_t& val2 = neighbours_copy[i][count];
+			if (val1 != val2) {
+				printf("there a miss: %ull, values: %2u %2u\n", count, val1, val2);
+			}
+		}
+	}
+	return;
 }
 #endif // _DEBUG	

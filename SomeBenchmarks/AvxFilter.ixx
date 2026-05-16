@@ -1,5 +1,6 @@
 module;
 #include <immintrin.h>
+#include <cstring>
 
 export module avxRule;
 
