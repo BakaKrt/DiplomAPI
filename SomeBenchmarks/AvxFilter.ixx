@@ -1,5 +1,5 @@
+module;
 #include <immintrin.h>
-#include <memory>
 
 export module avxRule;
 

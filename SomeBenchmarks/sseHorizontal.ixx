@@ -1,4 +1,6 @@
-#include <smmintrin.h>
+module;
+#include <emmintrin.h>
+#include <tmmintrin.h>
 #include <cstdint>
 
 export module sse_horizontal;
@@ -38,7 +40,6 @@ public:
 	/// <param name="r1"></param>
 	/// <param name="r2"></param>
 	inline static void justSum(__m128i* r0, __m128i r1, __m128i r2) noexcept {
-		// никак не получается выйти в паралеллизм на уровне инструкций, т.к. результат одного требуется для результата следующей операции
 		*r0 = _mm_add_epi8(*r0, r1);
 		*r0 = _mm_add_epi8(*r0, r2);
 	}

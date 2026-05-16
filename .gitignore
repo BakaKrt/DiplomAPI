@@ -136,3 +136,4 @@ _NCrunch*
 /C++DLL/out
 /SomeBenchmarks/build
 /SomeBenchmarks/CMake
+/.github

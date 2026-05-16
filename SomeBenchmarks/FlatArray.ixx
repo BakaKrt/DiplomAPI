@@ -1,4 +1,4 @@
-#include <cstdint>
+module;
 
 export module Flat2DArray;
 

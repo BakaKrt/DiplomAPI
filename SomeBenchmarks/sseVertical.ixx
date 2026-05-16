@@ -1,3 +1,4 @@
+module;
 #include <smmintrin.h>
 
 export module sse_vertical;

@@ -1,3 +1,5 @@
+module;
+
 #include <emmintrin.h>
 #include <memory>
 
