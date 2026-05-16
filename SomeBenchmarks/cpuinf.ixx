@@ -1,3 +1,4 @@
+module;
 #include <intrin.h>
 
 export module cpuinfo;
@@ -13,17 +14,20 @@ export class InstructionSet
     class InstructionSet_Internal;
 
 public:
-    // getters
     static std::string Vendor(void) { return CPU_Rep.vendor_; }
     static std::string Brand(void) { return CPU_Rep.brand_; }
 
     static bool SSE3(void) { return CPU_Rep.f_1_ECX_[0]; }
+    static bool SSSE3(void) { return CPU_Rep.f_1_ECX_[9]; }
+    static bool AVX2(void) { return CPU_Rep.f_7_EBX_[5]; }
+    static bool SSE41(void) { return CPU_Rep.f_1_ECX_[19]; }
+
     static bool PCLMULQDQ(void) { return CPU_Rep.f_1_ECX_[1]; }
     static bool MONITOR(void) { return CPU_Rep.f_1_ECX_[3]; }
-    static bool SSSE3(void) { return CPU_Rep.f_1_ECX_[9]; }
+    
     static bool FMA(void) { return CPU_Rep.f_1_ECX_[12]; }
     static bool CMPXCHG16B(void) { return CPU_Rep.f_1_ECX_[13]; }
-    static bool SSE41(void) { return CPU_Rep.f_1_ECX_[19]; }
+    
     static bool SSE42(void) { return CPU_Rep.f_1_ECX_[20]; }
     static bool MOVBE(void) { return CPU_Rep.f_1_ECX_[22]; }
     static bool POPCNT(void) { return CPU_Rep.f_1_ECX_[23]; }
@@ -47,7 +51,7 @@ public:
     static bool FSGSBASE(void) { return CPU_Rep.f_7_EBX_[0]; }
     static bool BMI1(void) { return CPU_Rep.f_7_EBX_[3]; }
     static bool HLE(void) { return CPU_Rep.isIntel_ && CPU_Rep.f_7_EBX_[4]; }
-    static bool AVX2(void) { return CPU_Rep.f_7_EBX_[5]; }
+    
     static bool BMI2(void) { return CPU_Rep.f_7_EBX_[8]; }
     static bool ERMS(void) { return CPU_Rep.f_7_EBX_[9]; }
     static bool INVPCID(void) { return CPU_Rep.f_7_EBX_[10]; }

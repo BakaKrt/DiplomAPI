@@ -1,9 +1,9 @@
+module;
 #include <emmintrin.h>
 
 export module sseHelper;
 
 import std;
-
 using std::array;
 
 
