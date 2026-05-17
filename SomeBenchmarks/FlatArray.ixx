@@ -3,10 +3,8 @@ module;
 export module Flat2DArray;
 
 import std;
-import SharedMemoryHelper;
 import AlignedAllocator;
 
-using namespace SharedMemory;
 
 using std::wstring;
 
@@ -30,7 +28,6 @@ concept allowed_type =
 export
 template<typename T> requires allowed_type<T>
 /// <summary>
-/// Использует разделяемую память для создания плоского массива с интерфейсом двумерного
 /// Измерения:
 ///     w  i  d  t  h -> (x)
 /// h   0  1  2  3  4
@@ -46,9 +43,7 @@ template<typename T> requires allowed_type<T>
 class Flat2DArray {
 private:
 	shared_ptr<T[]> _array = nullptr;
-	unique_ptr<SharedMemoryObject> _object;
     size_t _width = 0, _height = 0;
-	bool _isSharedMemory = true;
 public:
 	Flat2DArray() noexcept;
 
@@ -57,16 +52,15 @@ public:
 	/// </summary>
 	/// <param name="width">Ширина</param>
 	/// <param name="height">Высота</param>
-	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
-	Flat2DArray(size_t width, size_t height, bool useSharedMemory = true) noexcept;
+	Flat2DArray(size_t width, size_t height) noexcept;
 
 	/// <summary>
 	/// Конструктор
 	/// </summary>
 	/// <param name="width">Ширина</param>
 	/// <param name="height">Высота</param>
-	/// <param name="useSharedMemory">true, если создать в SharedMemory. Иначе false</param>
-	Flat2DArray(size_t width, size_t height, size_t alignment, bool useSharedMemory = true) noexcept;
+	/// <param name="alignment">Выравнивание</param>
+	Flat2DArray(size_t width, size_t height, size_t alignment) noexcept;
 
     /// <summary>
     /// Конструктор копирования
@@ -109,45 +103,28 @@ Flat2DArray<T>::Flat2DArray() noexcept :
 }
 
 template<typename T> requires allowed_type<T>
-Flat2DArray<T>::Flat2DArray(size_t width, size_t height, bool useSharedMemory) noexcept
-	: Flat2DArray(width, height, 16, useSharedMemory) {}
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height) noexcept
+	: Flat2DArray(width, height, 16) {}
 
 template<typename T> requires allowed_type<T>
-Flat2DArray<T>::Flat2DArray(size_t width, size_t height, size_t alignment, bool useSharedMemory) noexcept :
+Flat2DArray<T>::Flat2DArray(size_t width, size_t height, size_t alignment) noexcept :
 	_width(width),
-	_height(height), _isSharedMemory(useSharedMemory)
+	_height(height)
 {
-	if (useSharedMemory) {
-		this->_object = make_unique<SharedMemoryObject>(this->_width * this->_height, sizeof(T));
-		auto settings = _object->create();
-		T* raw_ptr = static_cast<T*>(settings.array);
-		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
-	}
-	else {
-		this->_array = AlignedAllocator::SharedAlignedBuffer<T>::create(width * height, alignment);
-		this->_object = nullptr;
-	}
+	this->_array = AlignedAllocator::SharedAlignedBuffer<T>::create(width * height, alignment);
 }
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::Flat2DArray(const Flat2DArray<T>& other) noexcept :
-	_width(other._width), _height(other._height), _isSharedMemory(other._isSharedMemory)
+	_width(other._width), _height(other._height)
 {
-	if (other._isSharedMemory) {
-		this->_object = make_unique<SharedMemoryObject>(other._object->getName());
-		auto settings = _object->connect();
-		T* raw_ptr = static_cast<T*>(settings.array);
-		this->_array = std::shared_ptr<T[]>(raw_ptr, [] (T*) {});
-	}
-	else {
-		this->_array = other._array;
-	}
+	this->_array = other._array;
 }
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::Flat2DArray(Flat2DArray<T>&& other) noexcept
-	: _width(other._width), _height(other._height), _isSharedMemory(other._isSharedMemory),
-	_array(other._array), _object(std::move(other._object))
+	: _width(other._width), _height(other._height),
+	_array(other._array)
 {
 	other._array = nullptr;
 	other._width = 0;

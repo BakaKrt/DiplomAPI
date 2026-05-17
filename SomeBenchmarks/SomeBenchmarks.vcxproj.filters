@@ -53,7 +53,16 @@
     <ClCompile Include="sumWithoutMemAlloc.ixx">
       <Filter>sumRealizations</Filter>
     </ClCompile>
-    <ClCompile Include="AvxFilter.ixx">
+    <ClCompile Include="avxFilter.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="masksCreator.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="normalOptimized.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="bufferedRule.ixx">
       <Filter>sumFilterRealizations</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,4 @@
-export module normalRule;
+export module normalOptimizedRule;
 
 import sumFilterBase;
 import std;
@@ -6,13 +6,13 @@ import std;
 using std::string;
 
 
-export class NormalRule: public SumFilterBase<NormalRule> {
+export class NormalRuleIfOpt : public SumFilterBase<NormalRuleIfOpt> {
 private:
 	std::unordered_set<int> ruleB;
 	std::unordered_set<int> ruleS;
 public:
-	NormalRule() {
-		name = "normal";
+	NormalRuleIfOpt() {
+		name = "norm o";
 		ruleB = { 2 };
 		ruleS = { 2, 3 };
 	}
@@ -30,15 +30,10 @@ public:
 
 			bool alive = object[x];
 
-			if (alive && ruleB.contains(saved)) {
-				saved = true;
-			}
-			else if (!alive && ruleS.contains(saved)) {
-				saved = true;
-			}
-			else {
-				saved = false;
-			}
+			bool b_contains = ruleB.contains(saved);
+			bool s_contains = ruleS.contains(saved);
+
+			saved = alive ? b_contains : s_contains;
 		}
 	}
 };

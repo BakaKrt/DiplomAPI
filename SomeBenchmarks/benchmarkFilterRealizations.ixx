@@ -4,6 +4,9 @@ import std;
 import Flat2DArray;
 
 import normalRule;
+import normalOptimizedRule;
+import BufferedRule;
+
 import sseRule;
 import avxRule;
 
@@ -12,7 +15,7 @@ import random;
 
 
 
-export using FilterRealizationsVariant = std::variant<NormalRule, SseRule, AvxRule>;
+export using FilterRealizationsVariant = std::variant<NormalRule, NormalRuleIfOpt, BufferedRule, SseRule, AvxRule>;
 
 export struct FilterRealizationTestStruct {
 	FilterRealizationsVariant variant;

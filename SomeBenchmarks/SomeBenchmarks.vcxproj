@@ -73,7 +73,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AvxFilter.ixx" />
+    <ClCompile Include="avxFilter.ixx" />
     <ClCompile Include="avxHorizontal.ixx" />
     <ClCompile Include="benchmarkFilterRealizations.ixx">
       <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,10 +84,16 @@
       </WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="benchmarkSumRealizations.ixx" />
+    <ClCompile Include="bufferedRule.ixx">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
     <ClCompile Include="cpuinf.ixx" />
     <ClCompile Include="FlatArray.ixx" />
     <ClCompile Include="isItWorkingPlayground.ixx" />
     <ClCompile Include="iterSum.ixx" />
+    <ClCompile Include="masksCreator.ixx" />
+    <ClCompile Include="normalOptimized.ixx" />
     <ClCompile Include="normalRule.ixx" />
     <ClCompile Include="normalSum.ixx" />
     <ClCompile Include="random.ixx" />

@@ -11,8 +11,11 @@ import benchmarkSumRealizations;
 import benchmarkFilterRealizations;
 
 import sseRule;
-import normalRule;
 import avxRule;
+import normalRule;
+import normalOptimizedRule;
+import BufferedRule;
+
 
 import isItWorkingPlayground;
 import Flat2DArray;
@@ -43,12 +46,14 @@ int main() {
 	//return 0;
 #if defined(NDEBUG)
 	{
-		constexpr size_t width = 300, height = 300;
+		constexpr size_t width = 200, height = 200;
 
-		vector<FilterRealizationTestStruct> tests {}; tests.reserve(3);
+		vector<FilterRealizationTestStruct> tests {}; tests.reserve(5);
 		tests.emplace_back(SseRule {});
 		tests.emplace_back(AvxRule {});
 		tests.emplace_back(NormalRule{});
+		tests.emplace_back(NormalRuleIfOpt{});
+		tests.emplace_back(BufferedRule{});
 
 		printf("support AVX2? = %s\n", InstructionSet::AVX2() ? "true" : "false");
 		runBenchmarkForFilters(width, height, tests, 1000, "test");

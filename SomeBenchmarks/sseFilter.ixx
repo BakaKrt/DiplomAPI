@@ -1,19 +1,28 @@
 module;
 
 #include <emmintrin.h>
-#include <memory>
+#include <tmmintrin.h>
+#include <smmintrin.h>
+#include <cstring>
 
 export module sseRule;
 
 import sumFilterBase;
 import std;
+import MasksCreator;
 
 using std::string;
-
+using std::array;
 
 export class SseRule : public SumFilterBase<SseRule> {
+private:
+	array<uint8_t, 32> LUT;
 public:
-	SseRule() { name = "sse"; }
+	
+	SseRule() {
+		name = "sse"; LUT = MasksCreator::Generate32bitLUTByBS({3}, {2, 3});
+	}
+	
 
 	inline const string getName_impl() const {
 		return name;
@@ -22,6 +31,7 @@ public:
 	template<typename T> requires allowed_type<T>
 	inline void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
 		constexpr size_t SSE_WINDOW = 16;
+
 		const size_t
 			width = object.width(),
 			height = object.height(),
@@ -33,27 +43,24 @@ public:
 		T* dataPtr = object.data();
 		T* resPtr = neighbours.data();
 
+		const __m128i lut_birth = _mm_load_si128((const __m128i*)LUT.data());
+		const __m128i lut_survive = _mm_load_si128((const __m128i*)LUT.data() + 16);
+		const __m128i one = _mm_set1_epi8(1);
 
-		auto sum = [&dataPtr, &resPtr] (size_t load_offset) -> __m128i {
-			static const __m128i const_mask2 = _mm_set1_epi8(2);
-			static const __m128i const_mask3 = _mm_set1_epi8(3);	
+		auto sum = [&dataPtr, &resPtr, &lut_birth, &lut_survive, &one] (size_t load_offset) -> __m128i {
+			__m128i state = _mm_load_si128((const __m128i*)(dataPtr + load_offset));
+			__m128i neigh = _mm_load_si128((const __m128i*)(resPtr + load_offset));
 
-			__m128i original	= _mm_load_si128(reinterpret_cast<__m128i*>(dataPtr + load_offset));
-			__m128i neighbours	= _mm_load_si128(reinterpret_cast<__m128i*>(resPtr + load_offset));
+			// Результат для рождения и выживания (сразу по 16 клеток)
+			__m128i birth_res = _mm_shuffle_epi8(lut_birth, neigh);
+			__m128i surv_res = _mm_shuffle_epi8(lut_survive, neigh);
 
-			__m128i mask3 = _mm_cmpeq_epi8(neighbours, const_mask3);
+			// Маска живых клеток (0xFF там, где state == 1)
+			__m128i live_mask = _mm_cmpeq_epi8(state, one);
 
-			__m128i dead_mask = _mm_andnot_si128(original, mask3);
-
-			__m128i alive_mask = _mm_cmpeq_epi8(neighbours, const_mask2);
-			alive_mask = _mm_or_si128(alive_mask, mask3);
-			alive_mask = _mm_and_si128(original, alive_mask);
-
-			__m128i res = _mm_or_si128(dead_mask, alive_mask);
-
-			res = _mm_min_epu8(res, _mm_set1_epi8(1));
-
-			return res;
+			// Если клетка жива -> surv_res, иначе -> birth_res
+			__m128i result = _mm_blendv_epi8(birth_res, surv_res, live_mask);
+			return result;
 		};
 
 		for (size_t x = 0, i = 0; i < iter_count; x += SSE_WINDOW, i++) {
@@ -71,9 +78,13 @@ public:
 			using std::memcpy;
 
 			alignas(__m128i) uint8_t temp_to_remove[SSE_WINDOW] {};
-			_mm_store_si128(reinterpret_cast<__m128i*>(temp_to_remove), res);
+			_mm_storeu_si128(reinterpret_cast<__m128i*>(temp_to_remove), res);
 
-			memcpy(resPtr + (capacity - is_not_fit), temp_to_remove + SSE_WINDOW - is_not_fit, is_not_fit);
+			memcpy(
+				resPtr + (capacity - is_not_fit),
+				temp_to_remove + SSE_WINDOW - is_not_fit,
+				is_not_fit
+			);
 		}
 
 	}

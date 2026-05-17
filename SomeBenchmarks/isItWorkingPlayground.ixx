@@ -11,6 +11,7 @@ import avx_horizontal;
 import normalRule;
 import sseRule;
 import avxRule;
+import BufferedRule;
 
 import random;
 
@@ -24,7 +25,7 @@ export inline void playgroundTest0() {
 
 	size_t minimal = (width < 16) ? width : 16;
 
-	auto mem = Flat2DArray<uint8_t>(width, height, 16, false);
+	auto mem = Flat2DArray<uint8_t>(width, height, 16);
 
 	for (size_t i = 0; i < capacity; i++) {
 		mem[i] = (uint8_t) (i % 11);
@@ -55,7 +56,7 @@ export inline void playgroundTest3() {
 
 	size_t minimal = (width < 16) ? width : 16;
 
-	auto mem = Flat2DArray<uint8_t>(width, height, 16, false);
+	auto mem = Flat2DArray<uint8_t>(width, height, 16);
 
 	for (size_t i = 0; i < capacity; i++) {
 		mem[i] = (uint8_t) (i % 11);
@@ -74,11 +75,14 @@ export inline void playgroundTest3() {
 	
 	cout << "finded bug, with width %16 sseHorizontal calc with error!!!!!!\n";
 
+	bool isEqual = true;
+
 	for (size_t x = 0; x < vert_res.capacity(); x++) {
 		if (vert_res[x] != hor_res[x]) {
-			printf("got diff index[%3u]: v %u h %u\n", (unsigned) x, vert_res[x], hor_res[x]);
+			printf("got diff index[%3u]: v %u h %u\n", (unsigned) x, vert_res[x], hor_res[x]); isEqual = false;
 		}
 	}
+	if (isEqual) printf("arrays are equal\n");
 }
 
 export inline void playgroundTest4() {
@@ -87,7 +91,7 @@ export inline void playgroundTest4() {
 
 	size_t minimal = (width < 16) ? width : 16;
 
-	auto mem = Flat2DArray<uint8_t>(width, height, 16, false);
+	auto mem = Flat2DArray<uint8_t>(width, height, 16);
 
 	for (size_t i = 0; i < capacity; i++) {
 		mem[i] = (uint8_t) (i % 11);
@@ -126,7 +130,7 @@ export inline void playgroundTest01() {
 	vector<bool> results{}; results.reserve(widths.size());
 
 	for (auto& width : widths) {
-		auto mem = Flat2DArray<uint8_t>(width, height, 16, false);
+		auto mem = Flat2DArray<uint8_t>(width, height, 16);
 
 		capacity = width * height;
 
@@ -158,9 +162,9 @@ export inline void playgroundTest01() {
 export inline void playgroundTest1() {
 	SseRule sseRule {}; NormalRule normRule {};
 	size_t width = 17, height = 1, capacity = width * height;
-	auto original_mem = Flat2DArray<uint8_t>(width, height, 16, false);
-	auto neighbours_mem_0 = Flat2DArray<uint8_t>(width, height, 16, false);
-	auto neighbours_mem_1 = Flat2DArray<uint8_t>(width, height, 16, false);
+	auto original_mem = Flat2DArray<uint8_t>(width, height, 16);
+	auto neighbours_mem_0 = Flat2DArray<uint8_t>(width, height, 16);
+	auto neighbours_mem_1 = Flat2DArray<uint8_t>(width, height, 16);
 
 	for (size_t x = 0; x < capacity; x++) {
 		original_mem[x] = uint8_t(x % 2);
@@ -189,15 +193,17 @@ export inline void playgroundTest1() {
 }
 
 export inline void playgroundTestFilters() {
-	SseRule sse{}; NormalRule normal{};
+	BufferedRule sse{}; NormalRule normal{};
 
-	constexpr size_t width = 100, height = 100, iterations = 1;
+	constexpr size_t width = 100, height = 205, iterations = 1;
 	constexpr size_t alignment = 16;
 
 	auto originalArray = generateAlignedMemoryForGameOfLife(width, height, iterations, alignment, false);
 	auto neigboursArray = generateAlignedMemoryForGameOfLife(width, height, iterations, alignment, true);
 
 	auto neighbours_copy(neigboursArray);
+
+	bool isEqual = true;
 
 	for (size_t i = 0; i < iterations; i++) {
 		sse.applyRule(originalArray[i], neigboursArray[i]);
@@ -210,9 +216,13 @@ export inline void playgroundTestFilters() {
 			uint8_t& val2 = neighbours_copy[i][count];
 			if (val1 != val2) {
 				printf("there a miss: %ull, values: %2u %2u\n", count, val1, val2);
+				isEqual = false;
 			}
 		}
 	}
+
+	if (isEqual) printf("arrays are equal ~ SSE vs Normal rules\n");
+
 	return;
 }
 #endif // _DEBUG	
