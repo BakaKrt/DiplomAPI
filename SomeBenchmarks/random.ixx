@@ -59,9 +59,9 @@ vector<Flat2DArray<uint8_t>> generateAlignedMemoryForGameOfLife(size_t width, si
 
 
 export template <typename T>
-shared_ptr<Flat2DArray<T>> generateTestMemory(size_t width, size_t height, size_t align = 16) {
-	auto obj = make_shared<Flat2DArray<T>>(width, height, align);
-	auto ptr = obj->data();
+Flat2DArray<T> generateTestMemory(size_t width, size_t height, size_t align = 16) {
+	auto obj = Flat2DArray<T>(width, height, align);
+	auto ptr = obj.data();
 
 	const size_t size = width * height;
 
@@ -78,8 +78,8 @@ shared_ptr<Flat2DArray<T>> generateTestMemory(size_t width, size_t height, size_
 }
 
 export template <typename T>
-vector<shared_ptr<Flat2DArray<T>>> generateVectorOfTestMemory(size_t len, size_t align, size_t width, size_t height) {
-	vector<shared_ptr<Flat2DArray<T>>> vec {}; vec.reserve(len);
+vector<Flat2DArray<T>> generateVectorOfTestMemory(size_t len, size_t align, size_t width, size_t height) {
+	vector<Flat2DArray<T>> vec {}; vec.reserve(len);
 
 	for (size_t i = 0; i < len; i++) {
 		vec.push_back(generateTestMemory<T>(width, height, align));

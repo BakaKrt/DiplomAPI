@@ -99,8 +99,7 @@ private:
             data_{},
             extdata_{}
         {
-            //int cpuInfo[4] = {-1};
-            std::array<int, 4> cpui;
+            std::array<int, 4> cpui {};
 
             // Calling __cpuid with 0x0 as the function_id argument
             // gets the number of the highest valid function ID.
@@ -174,12 +173,12 @@ private:
             }
         };
 
+        bool isIntel_;
+        bool isAMD_;
         int nIds_;
         int nExIds_;
         std::string vendor_;
         std::string brand_;
-        bool isIntel_;
-        bool isAMD_;
         std::bitset<32> f_1_ECX_;
         std::bitset<32> f_1_EDX_;
         std::bitset<32> f_7_EBX_;

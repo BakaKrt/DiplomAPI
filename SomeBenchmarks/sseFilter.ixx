@@ -3,7 +3,6 @@ module;
 #include <emmintrin.h>
 #include <tmmintrin.h>
 #include <smmintrin.h>
-#include <cstring>
 
 export module sseRule;
 
@@ -13,6 +12,7 @@ import MasksCreator;
 
 using std::string;
 using std::array;
+using std::memcpy;
 
 export class SseRule : public SumFilterBase<SseRule> {
 private:
@@ -45,9 +45,12 @@ public:
 
 		const __m128i lut_birth = _mm_load_si128((const __m128i*)LUT.data());
 		const __m128i lut_survive = _mm_load_si128((const __m128i*)LUT.data() + 16);
-		const __m128i one = _mm_set1_epi8(1);
+		
 
-		auto sum = [&dataPtr, &resPtr, &lut_birth, &lut_survive, &one] (size_t load_offset) -> __m128i {
+		auto sum = [&dataPtr, &resPtr, &lut_birth, &lut_survive] (size_t load_offset) -> __m128i {
+
+			const __m128i one = _mm_set1_epi8(1);
+
 			__m128i state = _mm_load_si128((const __m128i*)(dataPtr + load_offset));
 			__m128i neigh = _mm_load_si128((const __m128i*)(resPtr + load_offset));
 

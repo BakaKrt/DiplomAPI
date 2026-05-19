@@ -15,9 +15,11 @@ export namespace AlignedAllocator {
     public:
         inline static void* allocate(size_t size, size_t alignment = 16) noexcept {
             if (size == 0) return nullptr;
-
+            // защита: alignment должен быть степенью двойки и не равен 0
+            if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+                alignment = 16; // либо вернуть nullptr / логировать ошибку
+            }
             void* ptr = _aligned_malloc(size, alignment);
-            memset(ptr, 0, size);
             return ptr;
         }
 

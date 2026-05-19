@@ -5,17 +5,24 @@ import Flat2DArray;
 
 import normalRule;
 import normalOptimizedRule;
-import BufferedRule;
+import bufferedRule;
+import bitsetRule;
+import bitsetBufferedRule;
 
 import sseRule;
 import avxRule;
 
 import random;
 
+import benchmark;
 
 
-
-export using FilterRealizationsVariant = std::variant<NormalRule, NormalRuleIfOpt, BufferedRule, SseRule, AvxRule>;
+export using FilterRealizationsVariant = std::variant<
+	NormalRule, NormalRuleIfOpt,
+	BufferedRule,
+	BitsetRule, BitsetBufferedRule,
+	SseRule, AvxRule
+>;
 
 export struct FilterRealizationTestStruct {
 	FilterRealizationsVariant variant;
@@ -35,8 +42,8 @@ export struct FilterRealizationTestStruct {
 	FilterRealizationTestStruct& operator=(const FilterRealizationTestStruct&) = default;
 	FilterRealizationTestStruct& operator=(FilterRealizationTestStruct&&) = default;
 
-	std::string getName() const {
-		return std::visit([] (const auto& obj) { return obj.getName_impl(); }, variant);
+	auto getName() -> decltype(auto) {
+		return std::visit([] (const auto& obj) -> decltype(auto) { return obj.getName_impl(); }, variant);
 	}
 
 	template<typename U>
@@ -48,20 +55,19 @@ export struct FilterRealizationTestStruct {
 
 export
 void runBenchmarkForFilters(
-	const size_t width, const size_t height,
+	const size_t width, const size_t height, const size_t warmupCounts,
 	std::vector<FilterRealizationTestStruct>& tests,
 	const int iterations,
 	const char* benchName
 ) noexcept {
-
+	using namespace MyBenchmarkNS;
 	using std::printf, std::string;
+	using std::vector;
 
 	printf("benchmark %s:\n", benchName);
 
-
-	std::vector<std::pair<std::string, long long>> pairs;
-	pairs.reserve(tests.size());
-
+	
+	vector<BenchmarkResult> results; results.reserve(iterations);
 
 	auto originalArray = generateAlignedMemoryForGameOfLife(width, height, iterations, 32, false);
 	auto neigboursArray = generateAlignedMemoryForGameOfLife(width, height, iterations, 32, true);
@@ -69,34 +75,50 @@ void runBenchmarkForFilters(
 	for (auto& test_variant : tests) {
 		string name = test_variant.getName();
 
-		//auto neighbours_copy = generateAlignedMemoryForGameOfLife(width, height, iterations, 32, true);
 		auto neighbours_copy(neigboursArray);
 
-		auto start = std::chrono::high_resolution_clock::now();
-
-		for (int iter = 0; iter < iterations; ++iter) {
-			test_variant.applyRule(originalArray[iter], neighbours_copy[iter]);
-		}
-
-		auto end = std::chrono::high_resolution_clock::now();
-		auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		printf("%s took:\t%7lld us  | iter/us %f\n", name.c_str(), time, static_cast<float>((float) iterations / (float) time));
-		pairs.push_back(make_pair(name, time));
-
+		auto timings = MyBenchmarkNS::run(warmupCounts, iterations, name, SaveTime::nanoseconds, [&] () {
+			for (int iter = 0; iter < iterations; ++iter) {
+				test_variant.applyRule(originalArray[iter], neighbours_copy[iter]);
+			}
+		});
+		results.push_back(timings);
 	}
+	MyBenchmarkNS::printBenchmarkResults(results, MyBenchmarkNS::SaveTime::microseconds);
+}
 
-	// Анализ и вывод результатов
-	auto min_time = std::min_element(pairs.begin(), pairs.end(),
-		[] (const auto& a, const auto& b) { return a.second < b.second; })->second;
+export
+void runBenchmarkForFilters(
+	MyBenchmarkNS::BenchmarkParametr param,
+	std::vector<FilterRealizationTestStruct>& tests,
+	const char* benchName,
+	const size_t runCount = 1
+) noexcept {
+	using namespace MyBenchmarkNS;
+	using std::printf, std::string;
+	using std::vector;
 
-	for (const auto& [name, time] : pairs) {
-		double speedPercent = 0.0;
-		double timePercent = 0.0;
-		if (time != 0) {
-			speedPercent = (double) min_time / (double) time * 100.0;
-			timePercent = (double) time / (double) min_time * 100.0;
-		}
-		printf("%6s - speed: %6.2f%% - time: %5.2f%%\n", name.c_str(), speedPercent, timePercent);
+	printf("benchmark %s:\n", benchName);
+
+	
+	vector<BenchmarkResult> results; results.reserve(param.iterations);
+
+
+	auto originalArray = generateAlignedMemoryForGameOfLife(param.width, param.height, param.iterations, 32, false);
+	auto neigboursArray = generateAlignedMemoryForGameOfLife(param.width, param.height, param.iterations, 32, true);
+
+	for (auto& test_variant : tests) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		string name = test_variant.getName();
+
+		auto neighbours_copy(neigboursArray);
+
+		auto timings = MyBenchmarkNS::run(param.warmups, param.iterations, name, SaveTime::nanoseconds, [&] () {
+			for (int iter = 0; iter < param.iterations; ++iter) {
+				test_variant.applyRule(originalArray[iter], neighbours_copy[iter]);
+			}
+		});
+		results.push_back(timings);
 	}
-	printf("\n\n");
+	MyBenchmarkNS::printBenchmarkResults(results, MyBenchmarkNS::SaveTime::microseconds);
 }

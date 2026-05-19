@@ -1,6 +1,7 @@
 module;
+
 #include <immintrin.h>
-#include <cstring>
+
 
 export module avxRule;
 
@@ -10,6 +11,7 @@ import MasksCreator;
 
 using std::string;
 using std::array;
+using std::memcpy;
 
 
 export class AvxRule : public SumFilterBase<AvxRule> {
@@ -39,11 +41,14 @@ public:
 		T* resPtr = neighbours.data();
 
 		const __m256i lut = _mm256_load_si256((__m256i*) (LUT.data()));
-		const __m256i one = _mm256_set1_epi8(1);
-		const __m256i offset16 = _mm256_set1_epi8(16);
 
 
-		auto sum = [&dataPtr, &resPtr, &lut, &one, &offset16](size_t load_offset) -> __m256i {
+
+		auto sum = [&dataPtr, &resPtr, &lut](size_t load_offset) -> __m256i {
+
+			const __m256i one = _mm256_set1_epi8(1);
+			const __m256i offset16 = _mm256_set1_epi8(16);
+
 			__m256i state = _mm256_load_si256(reinterpret_cast<__m256i*>(dataPtr + load_offset));
 			__m256i neigh = _mm256_load_si256(reinterpret_cast<__m256i*>(resPtr + load_offset));
 

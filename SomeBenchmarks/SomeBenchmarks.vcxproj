@@ -75,6 +75,7 @@
   <ItemGroup>
     <ClCompile Include="avxFilter.ixx" />
     <ClCompile Include="avxHorizontal.ixx" />
+    <ClCompile Include="Benchmark.ixx" />
     <ClCompile Include="benchmarkFilterRealizations.ixx">
       <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </IntrinsicFunctions>
@@ -84,14 +85,16 @@
       </WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="benchmarkSumRealizations.ixx" />
-    <ClCompile Include="bufferedRule.ixx">
-      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-    </ClCompile>
+    <ClCompile Include="bitsetBuffered.ixx" />
+    <ClCompile Include="bitsetFilter.ixx" />
+    <ClCompile Include="bufferedRule.ixx" />
     <ClCompile Include="cpuinf.ixx" />
     <ClCompile Include="FlatArray.ixx" />
     <ClCompile Include="isItWorkingPlayground.ixx" />
-    <ClCompile Include="iterSum.ixx" />
+    <ClCompile Include="iterSum.ixx">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotSet</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
+    </ClCompile>
     <ClCompile Include="masksCreator.ixx" />
     <ClCompile Include="normalOptimized.ixx" />
     <ClCompile Include="normalRule.ixx" />

@@ -65,6 +65,15 @@
     <ClCompile Include="bufferedRule.ixx">
       <Filter>sumFilterRealizations</Filter>
     </ClCompile>
+    <ClCompile Include="bitsetFilter.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="bitsetBuffered.ixx">
+      <Filter>sumFilterRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="Benchmark.ixx">
+      <Filter>Benchmark</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanobench.h" />
@@ -78,6 +87,9 @@
     </Filter>
     <Filter Include="sumFilterRealizations">
       <UniqueIdentifier>{a0873aec-cc05-424e-8739-1299be8d0f35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Benchmark">
+      <UniqueIdentifier>{b866fbb9-6888-454e-9748-12c0afe0efb5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

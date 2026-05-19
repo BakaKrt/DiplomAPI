@@ -25,4 +25,10 @@ public:
 
         return temp_array;
     }
+
+    template<typename T> requires allowed_type<T>
+    inline Flat2DArray<T> test_run(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
+        static_cast<const Derived*>(this)->test_runImpl(object, to_save);
+        return to_save;
+    }
 };

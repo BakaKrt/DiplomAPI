@@ -1,22 +1,25 @@
-export module bufferedRule;
+module;
+
+export module bitsetBufferedRule;
 
 import sumFilterBase;
 import std;
 
 using std::string;
+using std::bitset;
 using std::array;
 using std::memcpy;
 
-export class BufferedRule : public SumFilterBase<BufferedRule> {
+export class BitsetBufferedRule : public SumFilterBase<BitsetBufferedRule> {
 private:
-	std::unordered_set<int> ruleB;
-	std::unordered_set<int> ruleS;
+	bitset<9> ruleB;
+	bitset<9> ruleS;
 	static constexpr size_t windowSize = 8;
 public:
-	BufferedRule() {
-		name = "buffered";
-		ruleB = { 2 };
-		ruleS = { 2, 3 };
+	BitsetBufferedRule() {
+		name = "bit buf";
+		ruleB.set(2);
+		ruleS.set(2).set(3);
 	}
 
 	inline const string getName_impl() const {
@@ -38,8 +41,8 @@ public:
 
 				bool alive = object[x];
 
-				bool b_contains = ruleB.contains(saved);
-				bool s_contains = ruleS.contains(saved);
+				bool b_contains = ruleB.test(saved);
+				bool s_contains = ruleS.test(saved);
 
 				res[i] = alive ? b_contains : s_contains;
 			}

@@ -10,11 +10,16 @@ import avx_horizontal;
 import benchmarkSumRealizations;
 import benchmarkFilterRealizations;
 
+import benchmark;
+
+
 import sseRule;
 import avxRule;
 import normalRule;
 import normalOptimizedRule;
-import BufferedRule;
+import bufferedRule;
+import bitsetRule;
+import bitsetBufferedRule;
 
 
 import isItWorkingPlayground;
@@ -26,14 +31,13 @@ import std;
 using std::array;
 using std::string;
 using std::vector;
-using std::unique_ptr, std::make_unique;
-using std::shared_ptr, std::make_shared;
-
 
 using std::cout, std::printf;
 
 
 int main() {
+	using benchParam = MyBenchmarkNS::BenchmarkParametr;
+
 	printf("%s\n", InstructionSet::Brand().c_str());
 	
 	printf("support SSE4.1? = %s\n", InstructionSet::SSE41() ? "true" : "false");
@@ -42,33 +46,111 @@ int main() {
 #ifdef _DEBUG
 	playgroundTestFilters();
 #endif // _DEBUG
-	
-	//return 0;
+
+
 #if defined(NDEBUG)
 	{
-		constexpr size_t width = 200, height = 200;
+		benchParam param {
+			.warmups = 5,
+			.iterations = 50,
+			.width = 512,
+			.height = 512
+		};
 
-		vector<FilterRealizationTestStruct> tests {}; tests.reserve(5);
+		vector<FilterRealizationTestStruct> tests {}; tests.reserve(7);
 		tests.emplace_back(SseRule {});
 		tests.emplace_back(AvxRule {});
 		tests.emplace_back(NormalRule{});
 		tests.emplace_back(NormalRuleIfOpt{});
+		tests.emplace_back(BitsetRule {});
 		tests.emplace_back(BufferedRule{});
+		tests.emplace_back(BitsetBufferedRule{});
 
 		printf("support AVX2? = %s\n", InstructionSet::AVX2() ? "true" : "false");
-		runBenchmarkForFilters(width, height, tests, 1000, "test");
+		
+		//runBenchmarkForFilters(param, tests, "test2");
+
+		runBenchmarkForFilters(param, tests, "ruleApplyTest", 10);
 	}
+/*
+* 512*512, 10 warmup, 1000 tests
+sse      |  22157,159 |    745,225 |  21245,600 |  31255,200 |  21247,858 |  21268,177 |  21386,727 |  22000,850 |  24646,612 |  29048,609 |  31034,541 |       3,36 |
+avx      |  20645,466 |    495,613 |  19858,600 |  24487,900 |  19859,090 |  19863,495 |  19973,568 |  20550,250 |  22304,941 |  23586,602 |  24397,770 |       2,40 |
+normal   |   2398,428 |    133,456 |   2207,500 |   2917,300 |   2207,580 |   2208,299 |   2220,783 |   2380,050 |   2788,016 |   2849,168 |   2910,487 |       5,56 |
+norm o   |    954,560 |     87,356 |    866,900 |   1545,900 |    866,910 |    867,000 |    867,999 |    925,900 |   1282,915 |   1480,266 |   1539,337 |       9,15 |
+bitset   |    739,948 |     71,909 |    672,300 |   1210,800 |    672,370 |    672,999 |    673,600 |    709,200 |    973,822 |   1188,123 |   1208,532 |       9,72 |
+buffered |    100,966 |     13,720 |     91,400 |    217,900 |     91,420 |     91,600 |     91,600 |     94,300 |    163,410 |    213,105 |    217,420 |      13,59 |
+bit buf  |     86,776 |     13,911 |     78,300 |    238,300 |     78,300 |     78,300 |     78,400 |     80,900 |    145,722 |    231,107 |    237,581 |      16,03 |
+~~~~
+sse      |  22262,760 |   1126,325 |  21117,200 |  33470,700 |  21117,590 |  21121,096 |  21196,757 |  21997,250 |  26284,982 |  33378,193 |  33461,449 |       5,06 |
+avx      |  20307,263 |    422,976 |  19640,700 |  23821,600 |  19641,939 |  19653,088 |  19742,501 |  20225,550 |  21846,922 |  22618,404 |  23701,280 |       2,08 |
+normal   |   2423,350 |    148,791 |   2207,900 |   3007,700 |   2208,429 |   2213,195 |   2222,996 |   2405,850 |   2845,244 |   2963,244 |   3003,254 |       6,14 |
+norm o   |    955,687 |     85,657 |    863,500 |   1481,000 |    863,510 |    863,600 |    864,899 |    922,000 |   1209,106 |   1382,399 |   1471,140 |       8,96 |
+bitset   |    738,439 |     71,779 |    669,800 |   1039,700 |    669,810 |    669,900 |    670,400 |    706,050 |    959,442 |   1038,801 |   1039,610 |       9,72 |
+buffered |    102,557 |     16,420 |     91,400 |    259,000 |     91,400 |     91,400 |     91,599 |     94,450 |    161,743 |    251,308 |    258,231 |      16,01 |
+bit buf  |     87,834 |     13,799 |     77,900 |    253,500 |     77,910 |     78,000 |     78,100 |     81,500 |    129,601 |    245,008 |    252,651 |      15,71 |
+~~~
+sse      |  23532,720 |    805,624 |  22476,100 |  28317,700 |  22481,794 |  22533,043 |  22580,999 |  23328,100 |  26438,929 |  28231,586 |  28309,089 |       3,42 |
+avx      |  21761,866 |    601,329 |  20958,000 |  26908,200 |  20959,049 |  20968,489 |  21010,767 |  21622,250 |  23797,491 |  25847,162 |  26802,096 |       2,76 |
+normal   |   2416,243 |    142,277 |   2210,600 |   3008,100 |   2210,960 |   2214,196 |   2221,900 |   2400,100 |   2807,720 |   3007,800 |   3008,070 |       5,89 |
+norm o   |    964,104 |    101,644 |    867,600 |   1686,100 |    867,600 |    867,600 |    868,897 |    921,750 |   1357,703 |   1536,550 |   1671,145 |      10,54 |
+bitset   |    739,667 |     68,287 |    673,300 |   1144,300 |    673,330 |    673,600 |    674,100 |    709,750 |    953,104 |   1119,625 |   1141,832 |       9,23 |
+buffered |    101,697 |     13,148 |     91,700 |    253,200 |     91,710 |     91,800 |     91,900 |     94,800 |    142,512 |    218,734 |    249,753 |      12,93 |
+bit buf  |     88,927 |     14,737 |     78,400 |    245,800 |     78,410 |     78,500 |     78,600 |     81,800 |    147,203 |    245,400 |    245,760 |      16,57 |
+~~~
+sse      |  22938,901 |   1013,189 |  21550,300 |  38182,100 |  21557,942 |  21626,724 |  21763,202 |  22769,200 |  25919,031 |  33991,195 |  37763,010 |       4,42 |
+avx      |  21263,534 |   1025,330 |  20031,900 |  36024,800 |  20032,449 |  20037,394 |  20106,096 |  21035,100 |  24732,018 |  28572,859 |  35279,606 |       4,82 |
+normal   |   2395,152 |    130,952 |   2212,600 |   2916,600 |   2212,920 |   2215,797 |   2221,197 |   2383,050 |   2771,048 |   2910,606 |   2916,001 |       5,47 |
+norm o   |    949,129 |     77,203 |    866,800 |   1447,200 |    866,900 |    867,799 |    869,100 |    914,400 |   1151,337 |   1350,996 |   1437,580 |       8,13 |
+bitset   |    732,780 |     62,569 |    673,000 |   1086,100 |    673,000 |    673,000 |    673,400 |    704,750 |    905,836 |   1027,059 |   1080,196 |       8,54 |
+buffered |    102,001 |     16,321 |     91,500 |    256,200 |     91,510 |     91,600 |     91,700 |     94,700 |    163,765 |    248,108 |    255,391 |      16,00 |
+bit buf  |     86,976 |     13,691 |     78,400 |    308,800 |     78,400 |     78,400 |     78,500 |     81,300 |    144,403 |    156,952 |    293,615 |      15,74 |
+~~~
+sse      |  22188,140 |    780,214 |  21256,200 |  34645,100 |  21264,032 |  21334,522 |  21412,551 |  22045,100 |  24416,306 |  30885,763 |  34269,166 |       3,52 |
+avx      |  20701,929 |    585,979 |  19911,300 |  24806,400 |  19911,899 |  19917,294 |  20017,999 |  20567,800 |  23089,141 |  24537,469 |  24779,507 |       2,83 |
+normal   |   2422,737 |    158,541 |   2215,900 |   4137,200 |   2216,020 |   2217,099 |   2222,395 |   2405,900 |   2828,731 |   3417,520 |   4065,232 |       6,54 |
+norm o   |    960,404 |     89,347 |    866,400 |   1571,500 |    866,470 |    867,099 |    868,198 |    927,400 |   1243,354 |   1421,350 |   1556,485 |       9,30 |
+bitset   |    743,881 |     73,861 |    673,100 |   1083,100 |    673,110 |    673,200 |    673,799 |    711,050 |    973,947 |   1066,716 |   1081,462 |       9,93 |
+buffered |    101,195 |     12,006 |     91,200 |    211,400 |     91,200 |     91,200 |     91,400 |     94,500 |    138,308 |    148,263 |    205,086 |      11,86 |
+bit buf  |     86,751 |     11,035 |     78,200 |    220,200 |     78,200 |     78,200 |     78,399 |     81,400 |    124,912 |    163,856 |    214,566 |      12,72 |
+*/
+#else
+	benchParam param {
+		.warmups = 10,
+		.iterations = 1000,
+		.width = 40,
+		.height = 40
+	};
+
+	vector<FilterRealizationTestStruct> tests {}; tests.reserve(7);
+	tests.emplace_back(SseRule {});
+	tests.emplace_back(AvxRule {});
+	tests.emplace_back(NormalRule {});
+	tests.emplace_back(NormalRuleIfOpt {});
+	tests.emplace_back(BitsetRule {});
+	tests.emplace_back(BufferedRule {});
+	tests.emplace_back(BitsetBufferedRule {});
+
+	printf("support AVX2? = %s\n", InstructionSet::AVX2() ? "true" : "false");
+
+	runBenchmarkForFilters(param, tests, "test2");
 #endif // RELEASE
-	return 0;
+	//return 0;
 
 
 #define RUN_SUM_TESTS 1
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
+		benchParam param {
+			.warmups = 5,
+			.iterations = 50,
+			.width = 512,
+			.height = 512
+		};
+
 		// Количество прогонов для измерения
-		constexpr int iterations = 10;
-		auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(1000, 32, 512, 512);
-		//auto testMemFloat = generateVectorOfTestMemory< float >(4, 16 * 2, 3);
+		// constexpr int iterations = 10;
+		//auto testMemUint8 = generateVectorOfTestMemory<uint8_t>(1000, 32, 512, 512);
 
 		constexpr int TEST_ELEM_COUNT = 6;
 		vector<AnyTest> tests {}; tests.reserve(TEST_ELEM_COUNT);
@@ -81,10 +163,21 @@ int main() {
 		tests.emplace_back(AVXv1HorizontalSum {});
 
 		// запуск бенчмарков только в релизе
-		runBenchmark(tests, testMemUint8, iterations,
-			&runFullSumBenchmark<uint8_t>,
-			"all object sum"
-		);
+		//runBenchmark(tests, testMemUint8, iterations,
+		//	&runFullSumBenchmark<uint8_t>,
+		//	"all object sum"
+		//);
+
+		/*
+		вроде похоже на правду
+		normal |  189.288 |   26.038 |  171.100 |  295.900 |  171.103 |  171.134 |  171.443 |  174.700 |  278.211 |  294.131 |  295.723 |    13.76 |
+		iter   |  197.146 |   44.886 |  166.000 |  457.100 |  166.002 |  166.020 |  166.196 |  181.000 |  349.202 |  446.310 |  456.021 |    22.77 |
+		sse v1 |  454.500 |   55.085 |  404.500 |  630.900 |  404.500 |  404.500 |  404.500 |  429.750 |  600.324 |  627.842 |  630.594 |    12.12 |
+		sse v2 |  155.274 |   34.480 |  135.300 |  268.800 |  135.301 |  135.310 |  135.398 |  136.300 |  262.332 |  268.153 |  268.735 |    22.21 |
+		avx h  |   77.270 |   16.033 |   68.600 |  136.400 |   68.600 |   68.605 |   68.649 |   69.500 |  124.101 |  135.170 |  136.277 |    20.75 |
+		*/
+
+		runBenchmark(param, 10, tests, "getNeighboursTest");
 
 		std::printf("end");
 		std::cin.get();

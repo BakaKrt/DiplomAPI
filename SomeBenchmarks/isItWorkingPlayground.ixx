@@ -11,7 +11,7 @@ import avx_horizontal;
 import normalRule;
 import sseRule;
 import avxRule;
-import BufferedRule;
+import bufferedRule;
 
 import random;
 
