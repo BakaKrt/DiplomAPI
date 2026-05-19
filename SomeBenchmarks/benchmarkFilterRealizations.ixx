@@ -42,7 +42,7 @@ export struct FilterRealizationTestStruct {
 	FilterRealizationTestStruct& operator=(const FilterRealizationTestStruct&) = default;
 	FilterRealizationTestStruct& operator=(FilterRealizationTestStruct&&) = default;
 
-	auto getName() -> decltype(auto) {
+	auto getName() const -> decltype(auto) {
 		return std::visit([] (const auto& obj) -> decltype(auto) { return obj.getName_impl(); }, variant);
 	}
 

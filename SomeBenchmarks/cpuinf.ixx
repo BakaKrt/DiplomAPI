@@ -14,6 +14,15 @@ export class InstructionSet
     class InstructionSet_Internal;
 
 public:
+    struct CpuInfo {
+        bool supportAvx;
+        bool supportSSE;
+    };
+
+    static CpuInfo getInfo() {
+        return CpuInfo(AVX2(), SSSE3());
+    }
+
     static std::string Vendor(void) { return CPU_Rep.vendor_; }
     static std::string Brand(void) { return CPU_Rep.brand_; }
 
