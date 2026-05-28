@@ -14,6 +14,7 @@ using std::make_unique, std::unique_ptr;
 using std::make_shared, std::shared_ptr;
 
 using std::ostream;
+using std::memcpy;
 
 // Список разрешённых типов
 export template<typename T>
@@ -44,6 +45,7 @@ class Flat2DArray {
 private:
 	shared_ptr<T[]> _array = nullptr;
     size_t _width = 0, _height = 0;
+	size_t _alignment = 4;
 public:
 	Flat2DArray() noexcept;
 
@@ -108,17 +110,18 @@ Flat2DArray<T>::Flat2DArray(size_t width, size_t height) noexcept
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::Flat2DArray(size_t width, size_t height, size_t alignment) noexcept :
-	_width(width),
-	_height(height)
+	_width(width), _height(height),
+	_alignment(alignment)
 {
 	this->_array = AlignedAllocator::SharedAlignedBuffer<T>::create(width * height, alignment);
 }
 
 template<typename T> requires allowed_type<T>
 Flat2DArray<T>::Flat2DArray(const Flat2DArray<T>& other) noexcept :
-	_width(other._width), _height(other._height)
+	_width(other._width), _height(other._height), _alignment(other._alignment)
 {
-	this->_array = other._array;
+	this->_array = AlignedAllocator::SharedAlignedBuffer<T>::create(_width * _height, _alignment);
+	memcpy(this->_array.get(), other._array.get(), _width * _height);
 }
 
 template<typename T> requires allowed_type<T>

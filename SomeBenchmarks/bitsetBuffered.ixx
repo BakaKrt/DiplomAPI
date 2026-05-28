@@ -18,7 +18,7 @@ private:
 public:
 	BitsetBufferedRule() {
 		name = "bit buf";
-		ruleB.set(2);
+		ruleB.set(3);
 		ruleS.set(2).set(3);
 	}
 
@@ -28,26 +28,40 @@ public:
 
 	template<typename T> requires allowed_type<T>
 	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		const size_t width = object.width();
+		const size_t object_capacity = object.width() * object.height();
 
 		T* dataPtr = object.data();
 		T* resPtr = to_save.data();
 
-		for (size_t x = 0; x < width; x += windowSize) {
-			array<uint8_t, windowSize> res {};
+		array<uint8_t, windowSize> res {};
 
-			for (size_t i = x; i < windowSize; i++) {
-				T& saved = to_save[x];
+		size_t x = 0;
+		for (; x < object_capacity - windowSize; x += windowSize) {
+			for (size_t i = 0; i < windowSize; i++) {
+				T& neighbours_count = resPtr[x + i];
 
-				bool alive = object[x];
+				bool alive = dataPtr[x + i];
 
-				bool b_contains = ruleB.test(saved);
-				bool s_contains = ruleS.test(saved);
+				bool s_contains = ruleS.test(neighbours_count);
+				bool b_contains = ruleB.test(neighbours_count);
 
-				res[i] = alive ? b_contains : s_contains;
+				res[i] = alive ? s_contains : b_contains;
 			}
 
 			memcpy(resPtr + x, res.data(), windowSize);
+		}
+		size_t remainder = object_capacity % windowSize;
+		if (remainder != 0) {
+			for (; x < object_capacity; x++) {
+				T& neighbours_count = resPtr[x];
+
+				bool alive = dataPtr[x];
+
+				bool s_contains = ruleS.test(neighbours_count);
+				bool b_contains = ruleB.test(neighbours_count);
+
+				neighbours_count = alive ? s_contains : b_contains;
+			}
 		}
 	}
 };

@@ -25,4 +25,19 @@ public:
         for (auto n : S) if (n < 16) res[n + 16] = 1;
         return res;
     }
+
+    static array<uint8_t, 32> GenerateLUT_B(initializer_list<uint8_t> B) {
+        alignas(32) array<uint8_t, 32> res { 0 };
+        for (auto n : B) if (n < 16) res[n] = 1; // Заполняем только первые 16 байт лана
+        // Для второго лана тоже самое (AVX2 shuffle копирует маску на оба лана, если данные идентичны)
+        for (auto n : B) if (n < 16) res[n + 16] = 1;
+        return res;
+    }
+
+    static array<uint8_t, 32> GenerateLUT_S(initializer_list<uint8_t> S) {
+        alignas(32) array<uint8_t, 32> res { 0 };
+        for (auto n : S) if (n < 16) res[n] = 1;
+        for (auto n : S) if (n < 16) res[n + 16] = 1;
+        return res;
+    }
 };

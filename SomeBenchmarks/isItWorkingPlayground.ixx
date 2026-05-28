@@ -12,6 +12,12 @@ import normalRule;
 import sseRule;
 import avxRule;
 import bufferedRule;
+import bitsetRule;
+import bitsetBufferedRule;
+
+import TotalNaiveRealization;
+import OnlyAvxRealization;
+import AvxBufferedRealization;
 
 import random;
 
@@ -160,68 +166,100 @@ export inline void playgroundTest01() {
 }
 
 export inline void playgroundTest1() {
-	SseRule sseRule {}; NormalRule normRule {};
-	size_t width = 17, height = 1, capacity = width * height;
-	auto original_mem = Flat2DArray<uint8_t>(width, height, 16);
-	auto neighbours_mem_0 = Flat2DArray<uint8_t>(width, height, 16);
-	auto neighbours_mem_1 = Flat2DArray<uint8_t>(width, height, 16);
+	AvxRule avxRule {}; BitsetRule BitsetBuffered {};
+	size_t width = 37, height = 1, capacity = width * height;
+
+	auto originalArray = generateVectorOfAlignedMemoryForGameOfLife(width, height, 1, 32, false)[0];
+	auto bitbufNeighbours = generateVectorOfAlignedMemoryForGameOfLife(width, height, 1, 32, true)[0];
+
+	auto avxNeighbours(bitbufNeighbours);
+
+	cout << "neigh:\n" << bitbufNeighbours << "\n";
+	cout << "ish:\n" << originalArray << "\n";
+
+
+	BitsetBuffered.applyRule(originalArray, bitbufNeighbours);
+	cout << "res bitset:\n" << bitbufNeighbours << "\n";
+
+	avxRule.applyRule(originalArray, avxNeighbours);
+	cout << "res avx:\n" << avxNeighbours << "\n";
 
 	for (size_t x = 0; x < capacity; x++) {
-		original_mem[x] = uint8_t(x % 2);
-
-		auto random_value = randomUint8(0, 5);
-
-		neighbours_mem_0[x] = random_value;
-		neighbours_mem_1[x] = random_value;
-	}
-
-	cout << "ish normal:\n" << neighbours_mem_0 << "\n";
-	cout << "ish sse:\n" << neighbours_mem_1 << "\n";
-
-
-	normRule.applyRule(original_mem, neighbours_mem_0);
-	cout << "res normal:\n" << neighbours_mem_0 << "\n";
-
-	sseRule.applyRule(original_mem, neighbours_mem_1);
-	cout << "res sse:\n" << neighbours_mem_1 << "\n";
-
-	for (size_t x = 0; x < capacity; x++) {
-		if (neighbours_mem_0[x] != neighbours_mem_1[x]) {
-			printf("got diff index[%3u]: 0: %u  1: %u\n", (unsigned) x, neighbours_mem_0[x], neighbours_mem_1[x]);
+		uint8_t& bitVal = bitbufNeighbours[x];
+		uint8_t& avxVal = avxNeighbours[x];
+		if (bitVal != avxVal) {
+			printf("there a miss: %zu, values: %2u %2u\n", x, bitVal, avxVal);
 		}
 	}
 }
 
-export inline void playgroundTestFilters() {
-	BufferedRule sse{}; NormalRule normal{};
+export inline void playgroundTestTotal() {
+	TotalOnlyAvxRealization naive{};  AvxBufferedRealization optimized{};
 
-	constexpr size_t width = 100, height = 205, iterations = 1;
-	constexpr size_t alignment = 16;
+	constexpr size_t width = 32*2 + 5, height = 5, iterations = 1;
+	constexpr size_t alignment = 32;
 
-	auto originalArray = generateAlignedMemoryForGameOfLife(width, height, iterations, alignment, false);
-	auto neigboursArray = generateAlignedMemoryForGameOfLife(width, height, iterations, alignment, true);
+	auto originalArray = generateVectorOfAlignedMemoryForGameOfLife(width, height, iterations, alignment, false);
+	auto neigboursArray = generateVectorOfAlignedMemoryForGameOfLife(width, height, iterations, alignment, true);
 
 	auto neighbours_copy(neigboursArray);
 
 	bool isEqual = true;
 
 	for (size_t i = 0; i < iterations; i++) {
-		sse.applyRule(originalArray[i], neigboursArray[i]);
-
-		normal.applyRule(originalArray[i], neighbours_copy[i]);
+		naive.run(originalArray[i], neigboursArray[i]);
+		optimized.run(originalArray[i], neighbours_copy[i]);
 
 
 		for (size_t count = 0; count < width * height; count++) {
-			uint8_t& val1 = neigboursArray[i][count];
-			uint8_t& val2 = neighbours_copy[i][count];
-			if (val1 != val2) {
-				printf("there a miss: %ull, values: %2u %2u\n", count, val1, val2);
+			uint8_t& naiveVal = neigboursArray[i][count];
+			uint8_t& optVal = neighbours_copy[i][count];
+			if (naiveVal != optVal) {
+				printf("there a miss: %zu, values: %2u %2u\n", count, naiveVal, optVal);
 				isEqual = false;
 			}
 		}
+		std::cout << "naive:\n"; neigboursArray[i]._debug_print_as_arrays(32);
+		std::cout << "optim:\n"; neighbours_copy[i]._debug_print_as_arrays(32);
+		std::cout << " orig:\n"; originalArray[i]._debug_print_as_arrays(32);
 	}
 
 	if (isEqual) printf("arrays are equal ~ SSE vs Normal rules\n");
+
+	return;
+}
+
+export inline void playgroundTestFilters() {
+	BitsetBufferedRule buffered{}; NormalRule normal{};
+
+	constexpr size_t width = 39, height = 2, iterations = 1;
+	constexpr size_t alignment = 8;
+
+	auto originalArray = generateVectorOfAlignedMemoryForGameOfLife(width, height, iterations, alignment, false);
+	auto neigboursArray = generateVectorOfAlignedMemoryForGameOfLife(width, height, iterations, alignment, true);
+
+	auto neighbours_copy(neigboursArray);
+
+	bool isEqual = true;
+
+	for (size_t i = 0; i < iterations; i++) {
+		buffered.applyRule(originalArray[i], neigboursArray[i]);
+		normal.applyRule(originalArray[i], neighbours_copy[i]);
+
+		for (size_t index = 0; index < width * height; index++) {
+			bool localEqual = true;
+			uint8_t& bufVal = neigboursArray[i][index];
+			uint8_t& normalVal = neighbours_copy[i][index];
+			if (bufVal != normalVal) {
+				printf("there a miss: %zu, values: %2u %2u\n", index, bufVal, normalVal);
+				isEqual = false;
+				localEqual = false;
+			}
+		}
+		std::cout << neigboursArray[i] << "\n" << neighbours_copy[i];
+	}
+
+	if (isEqual) printf("arrays are equal ~ Buffered vs Normal rules\n");
 
 	return;
 }

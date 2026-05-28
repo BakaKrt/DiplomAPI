@@ -15,7 +15,7 @@ private:
 public:
 	BufferedRule() {
 		name = "buffered";
-		ruleB = { 2 };
+		ruleB = { 3 };
 		ruleS = { 2, 3 };
 	}
 
@@ -24,27 +24,41 @@ public:
 	}
 
 	template<typename T> requires allowed_type<T>
-	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		const size_t width = object.width();
+	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
+		const size_t object_capacity = object.width() * object.height();
 
 		T* dataPtr = object.data();
-		T* resPtr = to_save.data();
+		T* neighPtr = neighbours.data();
 
-		for (size_t x = 0; x < width; x += windowSize) {
-			array<uint8_t, windowSize> res {};
+		array<uint8_t, windowSize> res {};
+		
+		size_t x = 0;
+		for (; x < object_capacity - windowSize; x += windowSize) {
+			for (size_t i = 0; i < windowSize; i++) {
+				T& neighbours_count = neighPtr[x + i];
 
-			for (size_t i = x; i < windowSize; i++) {
-				T& saved = to_save[x];
+				bool alive = dataPtr[x + i];
 
-				bool alive = object[x];
+				bool b_contains = ruleB.contains(neighbours_count);
+				bool s_contains = ruleS.contains(neighbours_count);
 
-				bool b_contains = ruleB.contains(saved);
-				bool s_contains = ruleS.contains(saved);
-
-				res[i] = alive ? b_contains : s_contains;
+				res[i] = alive ? s_contains : b_contains;
 			}
+			memcpy(neighPtr + x, res.data(), windowSize);
+		}
 
-			memcpy(resPtr + x, res.data(), windowSize);
+		size_t remainder = object_capacity % windowSize;
+		if (remainder != 0) {
+			for (; x < object_capacity; x++) {
+				T& neighbours_count = neighPtr[x];
+
+				bool alive = dataPtr[x];
+
+				bool b_contains = ruleB.contains(neighbours_count);
+				bool s_contains = ruleS.contains(neighbours_count);
+
+				neighbours_count = alive ? b_contains : s_contains;
+			}
 		}
 	}
 };

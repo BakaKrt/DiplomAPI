@@ -15,7 +15,7 @@ private:
 public:
 	BitsetRule() {
 		name = "bitset";
-		ruleB.set(2);
+		ruleB.set(3);
 		ruleS.set(2).set(3);
 	}
 
@@ -25,9 +25,9 @@ public:
 
 	template<typename T> requires allowed_type<T>
 	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		const size_t width = object.width();
+		const size_t object_capacity = object.width() * object.height();
 
-		for (size_t x = 0; x < width; x++) {
+		for (size_t x = 0; x < object_capacity; x++) {
 			T& saved = to_save[x];
 
 			bool alive = object[x];
@@ -35,7 +35,7 @@ public:
 			bool b_contains = ruleB.test(saved);
 			bool s_contains = ruleS.test(saved);
 
-			saved = alive ? b_contains : s_contains;
+			saved = alive ? s_contains : b_contains;
 		}
 	}
 };

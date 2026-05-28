@@ -74,6 +74,21 @@
     <ClCompile Include="Benchmark.ixx">
       <Filter>Benchmark</Filter>
     </ClCompile>
+    <ClCompile Include="onlyAvxRealization.ixx">
+      <Filter>TotalRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="Base.ixx">
+      <Filter>TotalRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="naiveRealization.ixx">
+      <Filter>TotalRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarkTotalRealizations.ixx">
+      <Filter>TotalRealizations</Filter>
+    </ClCompile>
+    <ClCompile Include="avxBufferedRealization.ixx">
+      <Filter>TotalRealizations</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanobench.h" />
@@ -90,6 +105,9 @@
     </Filter>
     <Filter Include="Benchmark">
       <UniqueIdentifier>{b866fbb9-6888-454e-9748-12c0afe0efb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TotalRealizations">
+      <UniqueIdentifier>{17d93415-bedd-4139-98f8-2fd742b79699}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

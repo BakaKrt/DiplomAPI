@@ -37,7 +37,7 @@
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <ExpandAttributedSource />
       <AssemblerOutput />
       <BuildStlModules>true</BuildStlModules>
@@ -55,7 +55,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <ExpandAttributedSource>
       </ExpandAttributedSource>
       <UseUnicodeForAssemblerListing>
@@ -64,6 +64,8 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>
       </InlineFunctionExpansion>
+      <BuildStlModules>true</BuildStlModules>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -73,8 +75,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="avxBufferedRealization.ixx" />
     <ClCompile Include="avxFilter.ixx" />
     <ClCompile Include="avxHorizontal.ixx" />
+    <ClCompile Include="Base.ixx" />
     <ClCompile Include="Benchmark.ixx" />
     <ClCompile Include="benchmarkFilterRealizations.ixx">
       <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -85,6 +89,7 @@
       </WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="benchmarkSumRealizations.ixx" />
+    <ClCompile Include="benchmarkTotalRealizations.ixx" />
     <ClCompile Include="bitsetBuffered.ixx" />
     <ClCompile Include="bitsetFilter.ixx" />
     <ClCompile Include="bufferedRule.ixx" />
@@ -96,6 +101,7 @@
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <ClCompile Include="masksCreator.ixx" />
+    <ClCompile Include="onlyAvxRealization.ixx" />
     <ClCompile Include="normalOptimized.ixx" />
     <ClCompile Include="normalRule.ixx" />
     <ClCompile Include="normalSum.ixx" />
@@ -110,6 +116,7 @@
     <ClCompile Include="sumWithoutMemAlloc.ixx" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="sumRealizationBase.ixx" />
+    <ClCompile Include="naiveRealization.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanobench.h" />

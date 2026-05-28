@@ -3,11 +3,9 @@
 	<Type Name="Flat2DArray&lt;*&gt;">
 		<DisplayString>[Flat2D] {(_width)}×{(_height)}</DisplayString>
 		<Expand>
-			<Item Name="object">_object</Item>
 			<Item Name="width">_width</Item>
 			<Item Name="height">_height</Item>
 			<Item Name="capacity">((_width) * (_height))</Item>
-			<Item Name="shared_in_memory">(_isSharedMemory)</Item>
 			
 			<Synthetic Name="_array">
 				<Expand>

@@ -16,10 +16,13 @@ using std::memcpy;
 
 export class AvxRule : public SumFilterBase<AvxRule> {
 private:
-	array<uint8_t, 32> LUT;
+	array<uint8_t, 32> LUT_B;
+	array<uint8_t, 32> LUT_S;
 public:
 	AvxRule() {
-		name = "avx"; LUT = MasksCreator::Generate32bitLUTByBS({ 3 }, { 2, 3 });
+		name = "avx";
+		LUT_B = MasksCreator::GenerateLUT_B({ 3 });
+		LUT_S = MasksCreator::GenerateLUT_S({ 2, 3 });
 	}
 
 	inline const string getName_impl() const {
@@ -27,7 +30,7 @@ public:
 	}
 
 	template<typename T> requires allowed_type<T>
-	inline void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
+	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
 		constexpr size_t AVX2_WINDOW = 32;
 		const size_t
 			width = object.width(),
@@ -40,27 +43,21 @@ public:
 		T* dataPtr = object.data();
 		T* resPtr = neighbours.data();
 
-		const __m256i lut = _mm256_load_si256((__m256i*) (LUT.data()));
+		const __m256i lutB = _mm256_load_si256((__m256i*) (LUT_B.data()));
+		const __m256i lutS = _mm256_load_si256((__m256i*) (LUT_S.data()));
 
 
-
-		auto sum = [&dataPtr, &resPtr, &lut](size_t load_offset) -> __m256i {
-
-			const __m256i one = _mm256_set1_epi8(1);
-			const __m256i offset16 = _mm256_set1_epi8(16);
-
+		auto sum = [&dataPtr, &resPtr, &lutB, &lutS] (size_t load_offset) -> __m256i {
 			__m256i state = _mm256_load_si256(reinterpret_cast<__m256i*>(dataPtr + load_offset));
 			__m256i neigh = _mm256_load_si256(reinterpret_cast<__m256i*>(resPtr + load_offset));
 
-			// Формируем индекс: state==1 ? neigh+16 : neigh
-			__m256i live_mask = _mm256_cmpeq_epi8(state, one);   // 0xFF где жива
-			__m256i state_off = _mm256_and_si256(live_mask, offset16);
-			__m256i idx = _mm256_or_si256(neigh, state_off);     // neigh + 0 или 16
+			const __m256i one = _mm256_set1_epi8(1);
 
-			// Одна перестановка даёт всё правило
-			__m256i result = _mm256_shuffle_epi8(lut, idx);
+			__m256i res_B = _mm256_shuffle_epi8(lutB, neigh);
+			__m256i res_S = _mm256_shuffle_epi8(lutS, neigh);
+			__m256i live_mask = _mm256_cmpeq_epi8(state, one);
 
-			return result;
+			return _mm256_blendv_epi8(res_B, res_S, live_mask);
 		};
 
 		for (size_t x = 0, i = 0; i < iter_count; x += AVX2_WINDOW, i++) {

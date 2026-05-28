@@ -34,7 +34,7 @@ export std::uint8_t randomUint8(uint8_t min = 0, uint8_t max = 255) {
 }
 
 export 
-vector<Flat2DArray<uint8_t>> generateAlignedMemoryForGameOfLife(size_t width, size_t height, size_t count, size_t alignment = 16, bool isNeighbours = true) {
+vector<Flat2DArray<uint8_t>> generateVectorOfAlignedMemoryForGameOfLife(size_t width, size_t height, size_t count, size_t alignment = 16, bool isNeighbours = true) {
 	auto res = vector<Flat2DArray<uint8_t>>(); res.reserve(count);
 
 	uint8_t min = 0, max = 8;

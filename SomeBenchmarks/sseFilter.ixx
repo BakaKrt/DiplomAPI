@@ -29,7 +29,7 @@ public:
 	}
 
 	template<typename T> requires allowed_type<T>
-	inline void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
+	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
 		constexpr size_t SSE_WINDOW = 16;
 
 		const size_t

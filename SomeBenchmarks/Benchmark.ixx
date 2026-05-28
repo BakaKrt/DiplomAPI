@@ -57,7 +57,6 @@ export namespace MyBenchmarkNS {
             this->p99       += other.p99;
             this->p99_9     += other.p99_9;
             this->p99_99    += other.p99_99;
-            this->variation += other.variation;
             return *this;
         }
 
@@ -74,7 +73,6 @@ export namespace MyBenchmarkNS {
             this->p99       /= del;
             this->p99_9     /= del;
             this->p99_99    /= del;
-            this->variation /= del;
             return *this;
         }
     };
@@ -250,43 +248,32 @@ export namespace MyBenchmarkNS {
         std::cout << std::endl;
     }
 
-    /// <summary>
-    /// Выполняет "прогрев" кода
-    /// </summary>
-    /// <typeparam name="Callable"></typeparam>
-    /// <param name="warmups"></param>
-    /// <param name="codeToBenchmark"></param>
-    template<typename Callable>
-    void warmup(size_t warmups, Callable&& codeToBenchmark) {
-        for (size_t i = 0; i < warmups; ++i) {
-            invoke(codeToBenchmark);
-        }
-    }
-
     
     template<typename Callable>
     BenchmarkResult run(size_t warmups, size_t runCount, string name, SaveTime saveAs, Callable&& codeToBenchmark) {
         using namespace std::chrono;
+        using Clock = steady_clock;
 
         vector<double> timings {}; timings.reserve(runCount);
 
         // прогрев
-        warmup(warmups, codeToBenchmark);
-
-        steady_clock::time_point start, end;
-        double duration;
+        for (size_t i = 0; i < warmups; ++i) {
+            invoke(codeToBenchmark);
+        }
 
         // замер времени выполнения
         for (size_t currentRunCount = 0; currentRunCount < runCount; currentRunCount++) {
-            start = high_resolution_clock::now();
+            auto start = Clock::now();
             invoke(codeToBenchmark);
-            end = high_resolution_clock::now();
+            auto end = Clock::now();
 
-            duration = duration_cast<nanoseconds>(end - start).count() / (double) saveAs;
-            timings.push_back(duration);
+            auto ns = duration_cast<nanoseconds>(end - start).count();
+
+            double val = static_cast<double>(ns) / static_cast<double>(saveAs);
+            timings.push_back(val);
         }
 
-        // сортировка времени выполнения по возврастанию
+        // сортировка времени выполнения по возрастанию
         if (timings.empty()) return BenchmarkResult {};
         std::sort(timings.begin(), timings.end());
 
@@ -325,7 +312,7 @@ export namespace MyBenchmarkNS {
         double sumSqDiff = 0.0;
         for (double timing : timings) {
             double diff = timing - result.avg;
-            sumSqDiff += diff * diff;
+            sumSqDiff += std::pow(diff, 2);
         }
 
         result.stdDev = std::sqrt(sumSqDiff / timingsCount);

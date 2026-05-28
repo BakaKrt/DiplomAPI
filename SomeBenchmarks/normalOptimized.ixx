@@ -13,7 +13,7 @@ private:
 public:
 	NormalRuleIfOpt() {
 		name = "norm o";
-		ruleB = { 2 };
+		ruleB = { 3 };
 		ruleS = { 2, 3 };
 	}
 
@@ -23,9 +23,9 @@ public:
 
 	template<typename T> requires allowed_type<T>
 	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		const size_t width = object.width();
+		const size_t object_capacity = object.width() * object.height();
 
-		for (size_t x = 0; x < width; x++) {
+		for (size_t x = 0; x < object_capacity; x++) {
 			T& saved = to_save[x];
 
 			bool alive = object[x];
@@ -33,7 +33,7 @@ public:
 			bool b_contains = ruleB.contains(saved);
 			bool s_contains = ruleS.contains(saved);
 
-			saved = alive ? b_contains : s_contains;
+			saved = alive ? s_contains : b_contains;
 		}
 	}
 };

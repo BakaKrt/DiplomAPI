@@ -13,7 +13,7 @@ private:
 public:
 	NormalRule() {
 		name = "normal";
-		ruleB = { 2 };
+		ruleB = { 3 };
 		ruleS = { 2, 3 };
 	}
 
@@ -22,22 +22,22 @@ public:
 	}
 
 	template<typename T> requires allowed_type<T>
-	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& to_save) const noexcept {
-		const size_t width = object.width();
+	__declspec(noinline) void applyRule_impl(Flat2DArray<T>& object, Flat2DArray<T>& neighbours) const noexcept {
+		const size_t object_capacity = object.width() * object.height();
 
-		for (size_t x = 0; x < width; x++) {
-			T& saved = to_save[x];
+		for (size_t x = 0; x < object_capacity; x++) {
+			T& neighbours_count = neighbours[x];
 
 			bool alive = object[x];
 
-			if (alive && ruleB.contains(saved)) {
-				saved = true;
+			if (alive && ruleS.contains(neighbours_count)) {
+				neighbours_count = true;
 			}
-			else if (!alive && ruleS.contains(saved)) {
-				saved = true;
+			else if (!alive && ruleB.contains(neighbours_count)) {
+				neighbours_count = true;
 			}
 			else {
-				saved = false;
+				neighbours_count = false;
 			}
 		}
 	}

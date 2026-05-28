@@ -97,17 +97,24 @@ void runBenchmark(
     vector<BenchmarkResult> results; results.reserve(param.iterations);
 
     for (auto& test_variant : tests) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
         
         string name = test_variant.getName();
         
-        auto timings = MyBenchmarkNS::run(param.warmups, param.iterations, name, SaveTime::nanoseconds, [&] () {
+        auto rawTimings = MyBenchmarkNS::run(
+            param.warmups,
+            param.iterations,
+            name,
+            SaveTime::nanoseconds, [&] () {
             for (size_t iter = 0; iter < arraysCount; ++iter) {
                 test_variant.run_sumAll(originalMemory[iter], secondArray[iter]);
             }
         });
-        results.push_back(timings);
+
+        BenchmarkResult normalizedResult = rawTimings / static_cast<double>(arraysCount);
+
+        results.push_back(normalizedResult);
     }
 
-    MyBenchmarkNS::printBenchmarkResults(results, MyBenchmarkNS::SaveTime::microseconds);
+    MyBenchmarkNS::printBenchmarkResults(results, MyBenchmarkNS::SaveTime::nanoseconds);
 }
