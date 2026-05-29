@@ -4,6 +4,7 @@ import std;
 
 import TotalNaiveRealization;
 import OnlyAvxRealization;
+import TotalOnlyScalarRealization;
 import AvxBufferedRealization;
 
 import benchmark;
@@ -11,7 +12,7 @@ import benchmark;
 import random;
 
 export using TotalRealizationsVariant = std::variant<
-	TotalOnlyAvxRealization, AvxBufferedRealization, NaiveRealization
+	TotalOnlyAvxRealization, OnlyScalarRealization, AvxBufferedRealization, NaiveRealization
 >;
 
 export struct TotalRealizationTestStruct {

@@ -89,6 +89,9 @@
     <ClCompile Include="avxBufferedRealization.ixx">
       <Filter>TotalRealizations</Filter>
     </ClCompile>
+    <ClCompile Include="onlyScalarRealization.ixx">
+      <Filter>TotalRealizations</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nanobench.h" />

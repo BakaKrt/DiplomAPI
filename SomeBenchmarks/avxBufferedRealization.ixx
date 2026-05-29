@@ -52,8 +52,8 @@ private:
 			);
 	}
 
-	bitset<9> ruleB;
-	bitset<9> ruleS;
+	bitset<9> ruleB {};
+	bitset<9> ruleS {};
 	static constexpr size_t windowSize = 8;
 public:
 	AvxBufferedRealization() {

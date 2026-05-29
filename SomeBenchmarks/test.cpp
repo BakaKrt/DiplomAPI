@@ -22,6 +22,7 @@ import bitsetBufferedRule;
 
 import TotalNaiveRealization;
 import OnlyAvxRealization;
+import TotalOnlyScalarRealization;
 import AvxBufferedRealization;
 import benchmarkTotalRealizations;
 
@@ -66,15 +67,16 @@ int main() {
 	{
 		benchParam param {
 			.warmups = 0,
-			.iterations = 15,
-			.width = 1024*5,
-			.height = 1024*5
+			.iterations = 1,
+			.width = 1024*10,
+			.height = 1024*10
 		};
-		const size_t arraysCount = 2;
+		const size_t arraysCount = 1;
 
-		vector<TotalRealizationTestStruct> tests {}; tests.reserve(3);
-		tests.emplace_back(NaiveRealization {});
+		vector<TotalRealizationTestStruct> tests {}; tests.reserve(4);
+		//tests.emplace_back(NaiveRealization {});
 		tests.emplace_back(TotalOnlyAvxRealization {});
+		tests.emplace_back(OnlyScalarRealization {});
 		tests.emplace_back(AvxBufferedRealization {});
 		runBenchmarkForTotalRealizations(param, tests, "total test", arraysCount);
 	}
