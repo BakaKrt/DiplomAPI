@@ -62,19 +62,19 @@ int main() {
 		std::cout << "bad.\n";
 	}
 
-#define RUN_TOTAL_TESTS 1
+#define RUN_TOTAL_TESTS 0
 #if defined(NDEBUG) && defined(RUN_TOTAL_TESTS) && RUN_TOTAL_TESTS == 1
 	{
 		benchParam param {
 			.warmups = 0,
-			.iterations = 1,
+			.iterations = 5,
 			.width = 1024*10,
 			.height = 1024*10
 		};
 		const size_t arraysCount = 1;
 
 		vector<TotalRealizationTestStruct> tests {}; tests.reserve(4);
-		//tests.emplace_back(NaiveRealization {});
+		tests.emplace_back(NaiveRealization {});
 		tests.emplace_back(TotalOnlyAvxRealization {});
 		tests.emplace_back(OnlyScalarRealization {});
 		tests.emplace_back(AvxBufferedRealization {});
@@ -82,23 +82,23 @@ int main() {
 	}
 #endif
 
-#define RUN_FILTER_TESTS 0
+#define RUN_FILTER_TESTS 1
 #if defined(NDEBUG) && defined(RUN_FILTER_TESTS) && RUN_FILTER_TESTS == 1
 	{
 		benchParam param {
 			.warmups = 0,
-			.iterations = 100,
+			.iterations = 1000,
 			.width = 4096,
 			.height = 4096
 		};
-		const size_t arraysCount = 100;
+		const size_t arraysCount = 10;
 
 		vector<FilterRealizationTestStruct> tests {}; tests.reserve(7);
-		//tests.emplace_back(SseRule {});
-		//tests.emplace_back(AvxRule {});
-		//tests.emplace_back(NormalRule{});
-		//tests.emplace_back(NormalRuleIfOpt{});
-		//tests.emplace_back(BitsetRule {});
+		tests.emplace_back(SseRule {});
+		tests.emplace_back(AvxRule {});
+		tests.emplace_back(NormalRule{});
+		tests.emplace_back(NormalRuleIfOpt{});
+		tests.emplace_back(BitsetRule {});
 		tests.emplace_back(BufferedRule{});
 		tests.emplace_back(BitsetBufferedRule{});
 		runBenchmarkForFilters(param, tests, "ruleApplyTest", arraysCount);
@@ -158,14 +158,14 @@ bit buf  |    85,873 |     8,114 |    79,000 |   234,500 |    79,000 |    79,200
 */
 #endif // RELEASE
 
-#define RUN_SUM_TESTS 0
+#define RUN_SUM_TESTS 1
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
 		benchParam param {
 			.warmups = 0,
-			.iterations = 1000,
-			.width = 4096,
-			.height = 4096
+			.iterations = 100,
+			.width = 4096*2,
+			.height = 4096*2
 		};
 
 		const size_t arraysCount = 1;
