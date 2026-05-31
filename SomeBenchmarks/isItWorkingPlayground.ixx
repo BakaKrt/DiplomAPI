@@ -194,7 +194,7 @@ export inline void playgroundTest1() {
 }
 
 export inline void playgroundTestTotal() {
-	TotalOnlyAvxRealization naive{};  AvxBufferedRealization optimized{};
+	TotalOnlyAvxRealization optimized {};  NaiveRealization naive{};
 
 	constexpr size_t width = 32*2 + 5, height = 5, iterations = 1;
 	constexpr size_t alignment = 32;
