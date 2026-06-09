@@ -82,7 +82,7 @@ int main() {
 	}
 #endif
 
-#define RUN_FILTER_TESTS 1
+#define RUN_FILTER_TESTS 0
 #if defined(NDEBUG) && defined(RUN_FILTER_TESTS) && RUN_FILTER_TESTS == 1
 	{
 		benchParam param {
@@ -158,7 +158,7 @@ bit buf  |    85,873 |     8,114 |    79,000 |   234,500 |    79,000 |    79,200
 */
 #endif // RELEASE
 
-#define RUN_SUM_TESTS 1
+#define RUN_SUM_TESTS 0
 #if defined(NDEBUG) && defined(RUN_SUM_TESTS) && RUN_SUM_TESTS == 1
 	{
 		benchParam param {
